@@ -13,7 +13,15 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-int main(void)
+#include "Platform/Fang_SDL.c"
+
+int main(int argc, char **argv)
 {
-    return 0;
+    // NOTE: When building with Sublime the output panel doesn't seem to update
+    //       properly without an unbuffered stdout
+    #ifdef FANG_UNBUFFERED_STDOUT
+      setbuf(stdout, NULL);
+    #endif
+
+    return Fang_Main(argc, argv);
 }

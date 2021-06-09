@@ -35,31 +35,62 @@
             "file_regex": "^(..[^:\n]*):([0-9]+):?([0-9]+)?:? (.*)$",
             "syntax": "Packages/Makefile/Make Output.sublime-syntax",
             "osx": {
-                "cmd": ["sh", "Scripts/macOS/Compile.sh", "run"],
+                "cmd": [
+                    "sh",
+                    "Scripts/macOS/Compile.sh",
+                    "run",
+                    "-DFANG_UNBUFFERED_STDOUT",
+                ],
             },
             "variants": [
                 {
                     "name": "Debug",
                     "osx": {
-                        "cmd": ["sh", "Scripts/macOS/Compile.sh", "run", "debug"]
+                        "cmd": [
+                            "sh",
+                            "Scripts/macOS/Compile.sh",
+                            "run",
+                            "debug",
+                            "-DFANG_UNBUFFERED_STDOUT",
+                        ]
                     },
                 },
                 {
                     "name": "ASAN",
                     "osx": {
-                        "cmd": ["sh", "Scripts/macOS/Compile.sh", "run", "debug", "asan"]
+                        "cmd": [
+                            "sh",
+                            "Scripts/macOS/Compile.sh",
+                            "run",
+                            "debug",
+                            "asan",
+                            "-DFANG_UNBUFFERED_STDOUT",
+                        ]
                     },
                 },
                 {
                     "name": "UBSAN",
                     "osx": {
-                        "cmd": ["sh", "Scripts/macOS/Compile.sh", "run", "debug", "ubsan"]
+                        "cmd": [
+                            "sh",
+                            "Scripts/macOS/Compile.sh",
+                            "run",
+                            "debug",
+                            "ubsan",
+                            "-DFANG_UNBUFFERED_STDOUT",
+                        ]
                     },
                 },
                 {
                     "name": "Release",
                     "osx": {
-                        "cmd": ["sh", "Scripts/macOS/Compile.sh", "run", "release"]
+                        "cmd": [
+                            "sh",
+                            "Scripts/macOS/Compile.sh",
+                            "run",
+                            "release",
+                            "-DFANG_UNBUFFERED_STDOUT",
+                        ]
                     },
                 },
             ]
