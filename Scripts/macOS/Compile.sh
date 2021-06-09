@@ -28,6 +28,11 @@ COMPILE_FLAGS=" "
 
 while [ "$1" != "" ]; do
     case $1 in
+        "help" )
+            echo "\$./Scripts/macOS/Compile.sh [debug|release] [asan|ubsan] [run]"
+            exit 0
+            ;;
+
         "ubsan" )
             echo "Compiling with undefined behavior sanitizer..."
             COMPILE_FLAGS+="-fsanitize=undefined "
@@ -51,9 +56,7 @@ while [ "$1" != "" ]; do
             ;;
 
         * )
-            echo "Unrecognized flag '$1'"
-            echo "\$./Scripts/macOS/Compile.sh [debug|release] [asan|ubsan] [run]"
-            exit 1
+            COMPILE_FLAGS+="$1 "
             ;;
     esac
     shift
