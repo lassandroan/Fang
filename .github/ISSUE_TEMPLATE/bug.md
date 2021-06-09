@@ -21,7 +21,3 @@ assignees: lassandroan
 ## Steps to Reproduce the Problem
 
   1.
-
-## Other
-
-
