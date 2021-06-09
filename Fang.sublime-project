@@ -1,0 +1,68 @@
+{
+    "folders":
+    [
+        {
+            "path": ".",
+            "binary_file_patterns": [
+                "Build/*",
+                "*.jpg",
+                "*.jpeg",
+                "*.tiff",
+                "*.png",
+                "*.zip",
+                "*.wav",
+                "*.ogg",
+                "*.plist",
+                "*.obj",
+                "*.o",
+                "*.a",
+                "*.lib",
+                "*.so",
+                "*.dylib",
+            ],
+            "file_exclude_patterns": [
+                ".DS_Store",
+                "*.sublime-workspace",
+            ],
+        }
+    ],
+    "build_systems": [
+        {
+            "name": "Fang Build",
+            "cmd": ["echo", "Unsupported platform"],
+            "selector": "source.c",
+            "working_dir": "$project_path",
+            "file_regex": "^(..[^:\n]*):([0-9]+):?([0-9]+)?:? (.*)$",
+            "syntax": "Packages/Makefile/Make Output.sublime-syntax",
+            "osx": {
+                "cmd": ["sh", "Scripts/macOS/Compile.sh", "run"],
+            },
+            "variants": [
+                {
+                    "name": "Debug",
+                    "osx": {
+                        "cmd": ["sh", "Scripts/macOS/Compile.sh", "run", "debug"]
+                    },
+                },
+                {
+                    "name": "ASAN",
+                    "osx": {
+                        "cmd": ["sh", "Scripts/macOS/Compile.sh", "run", "debug", "asan"]
+                    },
+                },
+                {
+                    "name": "UBSAN",
+                    "osx": {
+                        "cmd": ["sh", "Scripts/macOS/Compile.sh", "run", "debug", "ubsan"]
+                    },
+                },
+                {
+                    "name": "Release",
+                    "osx": {
+                        "cmd": ["sh", "Scripts/macOS/Compile.sh", "run", "release"]
+                    },
+                },
+            ]
+        },
+    ]
+}
