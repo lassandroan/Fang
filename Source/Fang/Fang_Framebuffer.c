@@ -30,7 +30,7 @@ typedef struct Fang_Framebuffer
 } Fang_Framebuffer;
 
 /**
- * @brief Writes a pixel of a given color to the framebuffer.
+ * Writes a pixel of a given color to the framebuffer.
  *
  * This routine utilizes the framebuffer's stencil when placing pixels. If the
  * stencil is enabled, its buffer is checked to see if a value has already been
@@ -94,7 +94,7 @@ Fang_FramebufferPutPixel(
 }
 
 /**
- * @brief Clear's the framebuffer's color and stencil images.
+ * Clear's the framebuffer's color and stencil images.
  *
  * If the framebuffer does not have a stencil image, only the color is cleared.
  * The framebuffer must have a color image.

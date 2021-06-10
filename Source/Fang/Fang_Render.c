@@ -14,12 +14,9 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @brief Draws a line in the framebuffer using Bresenham's Algorithm.
+ * Draws a line in the framebuffer using Bresenham's Algorithm.
  *
- * @param framebuf the target framebuffer, must have color image
- * @param start    the beginning point of the line
- * @param end      the ending point of the line
- * @param color    the color of the line
+ * The target framebuffer must have a valid color image.
 **/
 static void
 Fang_DrawLine(
@@ -71,11 +68,9 @@ Fang_DrawLine(
 }
 
 /**
- * @brief Draws a 1px thick outline of a rectangle in the framebuffer.
+ * Draws a 1px thick outline of a rectangle in the framebuffer.
  *
- * @param framebuf the target framebuffer, must have color image
- * @param rect     the rectangle to draw
- * @param color    the color of the rectangle
+ * The target framebuffer must have a valid color image.
 **/
 static void
 Fang_DrawRect(
@@ -108,11 +103,10 @@ Fang_DrawRect(
     }
 }
 
-/** @brief Draws a solid rectangle in the framebuffer.
+/**
+ * Draws a solid rectangle in the framebuffer.
  *
- * @param framebuf the target framebuffer, must have color image
- * @param rect     the rectangle to draw
- * @param color    the color of the rectangle
+ * The target framebuffer must have a valid color image.
 **/
 static void
 Fang_FillRect(

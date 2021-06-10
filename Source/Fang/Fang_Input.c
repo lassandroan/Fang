@@ -122,22 +122,29 @@ typedef struct Fang_Input {
 } Fang_Input;
 
 /**
- * @brief Returns whether the button was pressed during the frame.
+ * Returns whether the button was pressed during the frame.
 **/
 static inline bool
-Fang_InputWasPressed(
-    Fang_InputButton * const button)
+Fang_InputPressed(
+    const Fang_InputButton * const button)
 {
     assert(button);
-
-    if (button->transitions > 1)
-        return true;
-
-    return button->transitions == 1 && button->pressed;
+    return button->pressed && button->transitions;
 }
 
 /**
- * @brief Resets the transition counts and relative positions for the inputs.
+ * Returns whether the button was released during the frame.
+**/
+static inline bool
+Fang_InputReleased(
+    const Fang_InputButton * const button)
+{
+    assert(button);
+    return !button->pressed && button->transitions;
+}
+
+/**
+ * Resets the transition counts and relative positions for the inputs.
  *
  * Buttons and relative positions (such as for the mouse) will be reset back to
  * 0, but analog values will remain the same. This function should be called

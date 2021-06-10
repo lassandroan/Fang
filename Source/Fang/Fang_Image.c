@@ -22,7 +22,7 @@ typedef struct Fang_Image {
 } Fang_Image;
 
 /**
- * @brief Clears the pixel data for the given image.
+ * Clears the pixel data for the given image.
  *
  * This resets all values in the pixel buffer to 0, meaning the alpha values are
  * not preserved nor reset to 255 during this operation.

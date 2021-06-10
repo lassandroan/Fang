@@ -20,3 +20,22 @@ typedef struct Fang_Point {
 typedef struct Fang_Rect {
     int x, y, w, h;
 } Fang_Rect;
+
+/**
+ * Returns whether or not a point lies within a given area.
+**/
+static inline bool
+Fang_RectContains(
+    const Fang_Rect  * const rect,
+    const Fang_Point * const point)
+{
+    assert(rect);
+    assert(point);
+
+    return (
+        point->x >= rect->x
+     && point->x <= rect->x + rect->w
+     && point->y >= rect->y
+     && point->y <= rect->y + rect->h
+    );
+}
