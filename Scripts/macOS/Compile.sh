@@ -80,6 +80,7 @@ if test $RELEASE -eq 1; then
     DIR_BUILD+="/Release"
 else
     COMPILE_FLAGS+="-g "
+    COMPILE_FLAGS+="-Wno-unused-function "
     DIR_BUILD+="/Debug"
 fi
 
@@ -115,11 +116,7 @@ cc \
     "Source/Main.c"
 
 if test $DEBUG -eq 1; then
-    echo "Launching debugger..."
     lldb -o run "./$BINARY"
 elif test $RUN -eq 1; then
-    echo "Launching game..."
     "./$BINARY"
 fi
-
-echo "Done"
