@@ -13,17 +13,17 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-const int FANG_WINDOW_SIZE = 512;
+#include "Fang_Color.c"
+#include "Fang_Rect.c"
+#include "Fang_Image.c"
+#include "Fang_Framebuffer.c"
+#include "Fang_Render.c"
 
-#include "Platform/Fang_SDL.c"
-
-int main(int argc, char **argv)
+static inline void
+Fang_UpdateAndRender(
+    Fang_Framebuffer * const framebuf)
 {
-    // NOTE: When building with Sublime the output panel doesn't seem to update
-    //       properly without an unbuffered stdout
-    #ifdef FANG_UNBUFFERED_STDOUT
-      setbuf(stdout, NULL);
-    #endif
+    assert(framebuf);
 
-    return Fang_Main(argc, argv);
+    Fang_FramebufferClear(framebuf);
 }

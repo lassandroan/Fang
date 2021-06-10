@@ -13,17 +13,32 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-const int FANG_WINDOW_SIZE = 512;
+typedef struct Fang_Image {
+    uint8_t * pixels;
+    int       width;
+    int       height;
+    int       pitch;
+    int       stride;
+} Fang_Image;
 
-#include "Platform/Fang_SDL.c"
-
-int main(int argc, char **argv)
+/**
+ * @brief Clears the pixel data for the given image.
+ *
+ * This resets all values in the pixel buffer to 0, meaning the alpha values are
+ * not preserved nor reset to 255 during this operation.
+ *
+ * The image must have a valid pixel data pointer.
+**/
+static inline void
+Fang_ImageClear(
+    Fang_Image * const image)
 {
-    // NOTE: When building with Sublime the output panel doesn't seem to update
-    //       properly without an unbuffered stdout
-    #ifdef FANG_UNBUFFERED_STDOUT
-      setbuf(stdout, NULL);
-    #endif
+    assert(image);
+    assert(image->pixels);
 
-    return Fang_Main(argc, argv);
+    memset(
+        (void*)image->pixels,
+        0,
+        image->height * image->pitch + image->width * image->stride
+    );
 }
