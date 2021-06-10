@@ -18,6 +18,11 @@
 
 #include <SDL2/SDL.h>
 
+#define assert SDL_assert
+#define breakpoint SDL_TriggerBreakpoint
+
+#include "../Fang/Fang.c"
+
 int Fang_Main(int argc, char** argv)
 {
     (void)argc;
@@ -41,8 +46,8 @@ int Fang_Main(int argc, char** argv)
         FANG_TITLE,
         SDL_WINDOWPOS_UNDEFINED,
         SDL_WINDOWPOS_UNDEFINED,
-        512,
-        512,
+        FANG_WINDOW_SIZE,
+        FANG_WINDOW_SIZE,
         SDL_WINDOW_SHOWN
             | SDL_WINDOW_ALLOW_HIGHDPI
             | SDL_WINDOW_INPUT_FOCUS
@@ -61,8 +66,19 @@ int Fang_Main(int argc, char** argv)
     if (!renderer)
         goto Error_Renderer;
 
+    SDL_Texture * const texture = SDL_CreateTexture(
+        renderer,
+        SDL_PIXELFORMAT_RGBA8888,
+        SDL_TEXTUREACCESS_STREAMING,
+        FANG_WINDOW_SIZE,
+        FANG_WINDOW_SIZE
+    );
+
+    if (!texture)
+        goto Error_Texture;
+
     SDL_RenderSetIntegerScale(renderer, true);
-    SDL_RenderSetLogicalSize(renderer, 512, 512);
+    SDL_RenderSetLogicalSize(renderer, FANG_WINDOW_SIZE, FANG_WINDOW_SIZE);
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
 
     bool quit = false;
@@ -79,10 +95,36 @@ int Fang_Main(int argc, char** argv)
             }
         }
 
-        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
+
+        {
+            Fang_Framebuffer framebuf;
+            framebuf.color.width  = FANG_WINDOW_SIZE;
+            framebuf.color.height = FANG_WINDOW_SIZE;
+            framebuf.color.stride = SDL_BYTESPERPIXEL(SDL_PIXELFORMAT_RGBA8888);
+
+            const int error = SDL_LockTexture(
+                texture,
+                NULL,
+                (void**)&framebuf.color.pixels,
+                &framebuf.color.pitch
+            );
+
+            if (error)
+                break;
+
+            Fang_UpdateAndRender(&framebuf);
+            SDL_UnlockTexture(texture);
+        }
+
+        SDL_SetRenderTarget(renderer, NULL);
+        SDL_RenderCopy(renderer, texture, NULL, NULL);
         SDL_RenderPresent(renderer);
     }
+
+Error_Texture:
+    SDL_DestroyTexture(texture);
 
 Error_Renderer:
     SDL_DestroyRenderer(renderer);
