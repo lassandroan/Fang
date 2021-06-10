@@ -19,6 +19,9 @@
 #include "Fang_Image.c"
 #include "Fang_Framebuffer.c"
 #include "Fang_Render.c"
+#include "Fang_Interface.c"
+
+Fang_Interface interface;
 
 static inline void
 Fang_UpdateAndRender(
@@ -27,6 +30,10 @@ Fang_UpdateAndRender(
 {
     assert(input);
     assert(framebuf);
+
+    interface.input    = input;
+    interface.framebuf = framebuf;
+    Fang_InterfaceUpdate(&interface);
 
     Fang_FramebufferClear(framebuf);
 }

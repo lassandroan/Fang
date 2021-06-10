@@ -255,7 +255,7 @@ int Fang_Main(int argc, char** argv)
 
                     if (button)
                     {
-                        button->transitions = event.button.clicks;
+                        button->transitions++;
                         button->pressed = (event.button.state == SDL_PRESSED);
                     }
 

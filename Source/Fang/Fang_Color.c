@@ -24,10 +24,11 @@ const Fang_Color FANG_GREEN  = {  0, 255,   0, 255};
 const Fang_Color FANG_BLUE   = {  0,   0, 255, 255};
 const Fang_Color FANG_PURPLE = {128,   0, 255, 255};
 const Fang_Color FANG_WHITE  = {255, 255, 255, 255};
+const Fang_Color FANG_GREY   = {128, 128, 128, 255};
 const Fang_Color FANG_BLACK  = {  0,   0,   0, 255};
 
 /**
- * @brief Maps RGBA components of a Fang_Color to a 32-bit, unsigned integer.
+ * Maps RGBA components of a Fang_Color to a 32-bit, unsigned integer.
 **/
 static inline uint32_t
 Fang_MapColor(
