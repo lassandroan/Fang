@@ -15,14 +15,17 @@
 
 #include "Fang_Color.c"
 #include "Fang_Rect.c"
+#include "Fang_Input.c"
 #include "Fang_Image.c"
 #include "Fang_Framebuffer.c"
 #include "Fang_Render.c"
 
 static inline void
 Fang_UpdateAndRender(
-    Fang_Framebuffer * const framebuf)
+    const Fang_Input       * const input,
+          Fang_Framebuffer * const framebuf)
 {
+    assert(input);
     assert(framebuf);
 
     Fang_FramebufferClear(framebuf);

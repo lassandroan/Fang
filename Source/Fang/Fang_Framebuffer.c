@@ -104,7 +104,7 @@ Fang_FramebufferClear(
     Fang_Framebuffer * const framebuf)
 {
     assert(framebuf);
-    assert(framebuf.color->pixels);
+    assert(framebuf->color.pixels);
 
     Fang_ImageClear(&framebuf->color);
 
