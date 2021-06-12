@@ -17,7 +17,7 @@
  * A structure used for rendering to the screen.
  *
  * Framebuffers consist of two images:
- * - A color image whose result is drawn to the screen
+ * - An RGBA color image whose result is drawn to the screen
  * - A stencil buffer used internally to discard pixels
  *
  * @see Fang_FramebufferPutPixel()
@@ -51,6 +51,7 @@ Fang_FramebufferPutPixel(
 {
     assert(framebuf);
     assert(framebuf->color.pixels);
+    assert(framebuf->color.stride == 4);
 
     if (point->x < 0 || point->x >= framebuf->color.width)
         return false;
@@ -65,7 +66,7 @@ Fang_FramebufferPutPixel(
         assert(framebuf->stencil.pixels);
         assert(framebuf->stencil.width  == framebuf->color.width);
         assert(framebuf->stencil.height == framebuf->color.height);
-        assert(framebuf->stencil.pitch  == framebuf->stencil.width);
+        assert(framebuf->stencil.stride == 1);
 
         const uint8_t pixel  = UINT8_MAX;
         const int     offset = (
@@ -81,13 +82,42 @@ Fang_FramebufferPutPixel(
 
     if (write)
     {
-        const uint32_t pixel  = Fang_MapColor(color);
-        const int      offset = (
-            point->y * framebuf->color.pitch
-          + point->x * framebuf->color.stride
+        uint32_t * dst = (uint32_t*)(
+            framebuf->color.pixels
+          + (point->y * framebuf->color.pitch
+          +  point->x * framebuf->color.stride)
         );
 
-        *(uint32_t*)(framebuf->color.pixels + offset) = pixel;
+        Fang_Color dst_color = Fang_ColorFromRGBA(*dst);
+
+        const float src_r = color->r / 255.0f,
+                    src_g = color->g / 255.0f,
+                    src_b = color->b / 255.0f,
+                    src_a = color->a / 255.0f;
+
+        float dst_r = dst_color.r / 255.0f,
+              dst_g = dst_color.g / 255.0f,
+              dst_b = dst_color.b / 255.0f,
+              dst_a = dst_color.a / 255.0f;
+
+        dst_r = (src_r * src_a) + (dst_r * (1.0f - src_a));
+        dst_g = (src_g * src_a) + (dst_g * (1.0f - src_a));
+        dst_b = (src_b * src_a) + (dst_b * (1.0f - src_a));
+        dst_a = src_a + (dst_a * (1.0f - src_a));
+
+        dst_r = min(max(dst_r, 0.0f), 1.0f);
+        dst_g = min(max(dst_g, 0.0f), 1.0f);
+        dst_b = min(max(dst_b, 0.0f), 1.0f);
+        dst_a = min(max(dst_a, 0.0f), 1.0f);
+
+        *dst = Fang_ColorToRGBA(
+            &(Fang_Color){
+                .r = (uint8_t)(dst_r * 255.0f),
+                .g = (uint8_t)(dst_g * 255.0f),
+                .b = (uint8_t)(dst_b * 255.0f),
+                .a = (uint8_t)(dst_a * 255.0f),
+            }
+        );
     }
 
     return write;

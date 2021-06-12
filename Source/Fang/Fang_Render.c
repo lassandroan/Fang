@@ -128,3 +128,146 @@ Fang_FillRect(
         }
     }
 }
+
+/**
+ * Draws an image (or subsection) to the given area in the framebuffer.
+ *
+ * If the source is NULL, the image size is used with an origin of 0, 0. If the
+ * destination is NULL, the framebuffer color image size is used with an origin
+ * of 0, 0.
+ *
+ * If the sizes of the source and destination rectangles do not match, the image
+ * will be scaled to fit the destination rectangle. This scaling is linear, no
+ * resampling is performed.
+**/
+static void
+Fang_DrawImage(
+          Fang_Framebuffer * const framebuf,
+    const Fang_Image       * const image,
+    const Fang_Rect        * const source,
+    const Fang_Rect        * const dest)
+{
+    assert(framebuf);
+    assert(image);
+    assert(image->pixels);
+
+    assert(
+        image->stride == 1
+     || image->stride == 3
+     || image->stride == 4
+    );
+
+    assert(framebuf->color.stride == 4);
+
+    Fang_Rect source_area = (source)
+        ? *source
+        : (Fang_Rect){.w = image->width, .h = image->height};
+
+    source_area = Fang_RectClip(
+        &source_area,
+        &(Fang_Rect){
+            .w = image->width,
+            .h = image->height,
+        }
+    );
+
+    Fang_Rect dest_area = (dest)
+        ? *dest
+        : (Fang_Rect){.w = framebuf->color.width, .h = framebuf->color.height};
+
+    for (int x = dest_area.x; x < dest_area.x + dest_area.w; ++x)
+    {
+        if (x < 0 || x >= framebuf->color.width)
+            continue;
+
+        for (int y = dest_area.y; y < dest_area.y + dest_area.h; ++y)
+        {
+            if (y < 0 || y >= framebuf->color.height)
+                continue;
+
+            float r_x = (float)(x - dest_area.x)
+                      / (float)(dest_area.x + dest_area.w - dest_area.x);
+
+            float r_y = (float)(y - dest_area.y)
+                      / (float)(dest_area.y + dest_area.h - dest_area.y);
+
+            r_x = max(min(r_x, 1.0f), 0.0f);
+            r_y = max(min(r_y, 1.0f), 0.0f);
+
+            const int t_x = (int)((r_x * source_area.w) + source_area.x);
+            const int t_y = (int)((r_y * source_area.h) + source_area.y);
+
+            uint32_t pixel = 0;
+
+            for (int p = 0; p < image->stride; ++p)
+            {
+                pixel |= *(
+                    image->pixels + p
+                  + (t_x * image->stride)
+                  + (t_y * image->pitch)
+                );
+
+                if (p < image->stride - 1)
+                    pixel <<= 8;
+            }
+
+            for (int p = image->stride; p < 4; ++p)
+            {
+                pixel <<= 8;
+                pixel |= 0x000000FF;
+            }
+
+            const Fang_Color dest_color = Fang_ColorFromRGBA(pixel);
+
+            Fang_FramebufferPutPixel(
+                framebuf,
+                &(Fang_Point){x, y},
+                &dest_color
+            );
+        }
+    }
+}
+
+
+/**
+ * Draws a line of text into the framebuffer using the given font type.
+**/
+static void
+Fang_DrawText(
+          Fang_Framebuffer * const framebuf,
+    const char             *       text,
+    const Fang_FontType            type,
+    const Fang_Point       * const origin)
+{
+    assert(framebuf);
+    assert(text);
+
+    Fang_Point position = (origin) ? *origin : (Fang_Point){0, 0};
+
+    while (*text)
+    {
+        if (*text == ' ')
+        {
+            text++;
+            position.x += FANG_FONTAREA_WIDTH;
+            continue;
+        }
+
+        const Fang_Rect character = Fang_FontGetCharPosition(*text);
+
+        Fang_DrawImage(
+            framebuf,
+            Fang_FontGet(type),
+            &character,
+            &(Fang_Rect){
+                .x = position.x,
+                .y = position.y,
+                .w = character.w,
+                .h = character.h,
+            }
+        );
+
+        text++;
+        position.x += FANG_FONTAREA_WIDTH;
+    }
+}
