@@ -14,34 +14,9 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * A container for image pixel data.
+ * A container for arbitrary data with a length (in bytes).
 **/
-typedef struct Fang_Image {
-    uint8_t * pixels;
-    int       width;
-    int       height;
-    int       pitch;
-    int       stride;
-} Fang_Image;
-
-/**
- * Clears the pixel data for the given image.
- *
- * This resets all values in the pixel buffer to 0, meaning the alpha values are
- * not preserved nor reset to 255 during this operation.
- *
- * The image must have a valid pixel data pointer.
-**/
-static inline void
-Fang_ImageClear(
-    Fang_Image * const image)
-{
-    assert(image);
-    assert(image->pixels);
-
-    memset(
-        (void*)image->pixels,
-        0,
-        (size_t)(image->pitch * image->height)
-    );
-}
+typedef struct Fang_Buffer {
+    void   * data;
+    size_t   size;
+} Fang_Buffer;

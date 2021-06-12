@@ -22,6 +22,26 @@ typedef struct Fang_Rect {
 } Fang_Rect;
 
 /**
+ * Returns the source rectangle, clipped to fit within the bounds of the
+ * destination rectangle.
+**/
+static inline Fang_Rect
+Fang_RectClip(
+    const Fang_Rect * const source,
+    const Fang_Rect * const dest)
+{
+    assert(source);
+    assert(dest);
+
+    Fang_Rect result;
+    result.x = max(source->x, dest->x);
+    result.w = min(source->x + source->w, dest->x + dest->w) - result.x;
+    result.y = max(source->y, dest->y);
+    result.h = min(source->y + source->h, dest->y + dest->h) - result.y;
+    return result;
+}
+
+/**
  * Returns whether or not a point lies within a given area.
 **/
 static inline bool

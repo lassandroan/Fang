@@ -31,7 +31,7 @@ const Fang_Color FANG_BLACK  = {  0,   0,   0, 255};
  * Maps RGBA components of a Fang_Color to a 32-bit, unsigned integer.
 **/
 static inline uint32_t
-Fang_MapColor(
+Fang_ColorToRGBA(
     const Fang_Color * const color)
 {
     assert(color);
@@ -42,4 +42,19 @@ Fang_MapColor(
       | (uint32_t)color->b << 8
       | (uint32_t)color->a
     );
+}
+
+/**
+ * Maps a 32-bit, unsigned integer to RGBA components of a Fang_Color.
+**/
+static inline Fang_Color
+Fang_ColorFromRGBA(
+    uint32_t color)
+{
+    Fang_Color result;
+    result.a = color & 0x000000FF; color >>= 8;
+    result.b = color & 0x000000FF; color >>= 8;
+    result.g = color & 0x000000FF; color >>= 8;
+    result.r = color & 0x000000FF;
+    return result;
 }
