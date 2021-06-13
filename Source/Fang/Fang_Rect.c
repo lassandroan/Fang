@@ -59,3 +59,20 @@ Fang_RectContains(
      && point->y <= rect->y + rect->h
     );
 }
+
+/**
+ * Grows or shrinks a rectangle in each dimension by a given pixel amount.
+**/
+static inline Fang_Rect
+Fang_RectResize(
+    const Fang_Rect * const rect,
+    const int               x,
+    const int               y)
+{
+    return (Fang_Rect){
+        .x = rect->x - (x / 2),
+        .y = rect->y - (y / 2),
+        .w = rect->w + x,
+        .h = rect->h + y,
+    };
+}

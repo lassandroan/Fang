@@ -237,6 +237,7 @@ Fang_DrawText(
           Fang_Framebuffer * const framebuf,
     const char             *       text,
     const Fang_FontType            type,
+    const int                      fontheight,
     const Fang_Point       * const origin)
 {
     assert(framebuf);
@@ -244,12 +245,14 @@ Fang_DrawText(
 
     Fang_Point position = (origin) ? *origin : (Fang_Point){0, 0};
 
+    const float ratio = (float)fontheight / (float)FANG_FONTAREA_HEIGHT;
+
     while (*text)
     {
         if (*text == ' ')
         {
             text++;
-            position.x += FANG_FONTAREA_WIDTH;
+            position.x += (int)((FANG_FONTAREA_WIDTH + 1) * ratio);
             continue;
         }
 
@@ -262,12 +265,12 @@ Fang_DrawText(
             &(Fang_Rect){
                 .x = position.x,
                 .y = position.y,
-                .w = character.w,
-                .h = character.h,
+                .w = (int)(character.w * ratio),
+                .h = (int)(character.h * ratio),
             }
         );
 
         text++;
-        position.x += FANG_FONTAREA_WIDTH;
+        position.x += (int)((FANG_FONTAREA_WIDTH + 1) * ratio);
     }
 }
