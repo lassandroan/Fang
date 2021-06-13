@@ -17,15 +17,16 @@ typedef struct Fang_Color {
     uint8_t r, g, b, a;
 } Fang_Color;
 
-const Fang_Color FANG_RED    = {255,   0,   0, 255};
-const Fang_Color FANG_ORANGE = {255, 128,   0, 255};
-const Fang_Color FANG_YELLOW = {255, 255,   0, 255};
-const Fang_Color FANG_GREEN  = {  0, 255,   0, 255};
-const Fang_Color FANG_BLUE   = {  0,   0, 255, 255};
-const Fang_Color FANG_PURPLE = {128,   0, 255, 255};
-const Fang_Color FANG_WHITE  = {255, 255, 255, 255};
-const Fang_Color FANG_GREY   = {128, 128, 128, 255};
-const Fang_Color FANG_BLACK  = {  0,   0,   0, 255};
+#define FANG_RED          (Fang_Color){255,   0,   0, 255}
+#define FANG_ORANGE       (Fang_Color){255, 128,   0, 255}
+#define FANG_YELLOW       (Fang_Color){255, 255,   0, 255}
+#define FANG_GREEN        (Fang_Color){  0, 255,   0, 255}
+#define FANG_BLUE         (Fang_Color){  0,   0, 255, 255}
+#define FANG_PURPLE       (Fang_Color){128,   0, 255, 255}
+#define FANG_WHITE        (Fang_Color){255, 255, 255, 255}
+#define FANG_GREY         (Fang_Color){128, 128, 128, 255}
+#define FANG_BLACK        (Fang_Color){  0,   0,   0, 255}
+#define FANG_TRANSPARENT  (Fang_Color){  0,   0,   0,   0}
 
 /**
  * Maps RGBA components of a Fang_Color to a 32-bit, unsigned integer.

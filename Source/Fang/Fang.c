@@ -39,7 +39,17 @@
 #include "Fang_Render.c"
 #include "Fang_Interface.c"
 
-Fang_Interface interface;
+Fang_Interface interface = (Fang_Interface){
+    .theme = (Fang_InterfaceTheme){
+        .font = FANG_FONT_FORMULA,
+        .colors = (Fang_InterfaceColors){
+            .background = FANG_TRANSPARENT,
+            .foreground = FANG_RED,
+            .highlight  = FANG_WHITE,
+            .disabled   = FANG_GREY,
+        },
+    },
+};
 
 static inline void
 Fang_UpdateAndRender(
@@ -59,6 +69,7 @@ Fang_UpdateAndRender(
         framebuf,
         "FANG",
         FANG_FONT_FORMULA,
+        FANG_FONTAREA_HEIGHT,
         &(Fang_Point){
             .x = (FANG_WINDOW_SIZE / 2) - (FANG_FONTAREA_WIDTH * 2),
             .y = (FANG_WINDOW_SIZE / 2) - (FANG_FONTAREA_HEIGHT * 2),

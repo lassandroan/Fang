@@ -14,6 +14,24 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
+ * A structure to hold colors used in interface components.
+**/
+typedef struct Fang_InterfaceColors {
+    Fang_Color background;
+    Fang_Color foreground;
+    Fang_Color highlight;
+    Fang_Color disabled;
+} Fang_InterfaceColors;
+
+/**
+ * A structure to hold theme properties used in interface components.
+**/
+typedef struct Fang_InterfaceTheme {
+    Fang_InterfaceColors colors;
+    Fang_FontType        font;
+} Fang_InterfaceTheme;
+
+/**
  * This interface state holds the identifiers used for the immediate-mode,
  * graphical user interface elements.
  *
@@ -44,6 +62,8 @@ typedef struct Fang_Interface {
     uint32_t next;
     uint32_t active;
 
+    Fang_InterfaceTheme theme;
+
     Fang_Framebuffer * framebuf;
     const Fang_Input * input;
 } Fang_Interface;
@@ -66,29 +86,14 @@ Fang_InterfaceUpdate(
     interface->next = 0;
 }
 
-/**
- * Resets all the interface item states back to 0.
- *
- * This should be called when interfaces change, such as moving to a different
- * menu or changing scenes in the game.
-**/
-static inline void
-Fang_InterfaceReset(
-    Fang_Interface * const interface)
-{
-    assert(interface);
-    memset(interface, 0, sizeof(Fang_Interface));
-}
-
 static inline bool
 Fang_InterfaceButton(
           Fang_Interface * const interface,
-    const Fang_Rect      * const bounds,
-    const Fang_Color     * const color)
+    const char           * const text,
+    const Fang_Rect      * const bounds)
 {
     assert(interface);
     assert(bounds);
-    assert(color);
 
     const uint32_t id = ++interface->id;
 
@@ -131,11 +136,32 @@ Fang_InterfaceButton(
         const bool active = interface->active == id;
 
         if (active)
-            Fang_FillRect(framebuf, bounds, color);
+            Fang_FillRect(framebuf, bounds, &interface->theme.colors.highlight);
         else if (hot)
-            Fang_DrawRect(framebuf, bounds, color);
+            Fang_DrawRect(framebuf, bounds, &interface->theme.colors.foreground);
         else
-            Fang_DrawRect(framebuf, bounds, &FANG_GREY);
+            Fang_DrawRect(framebuf, bounds, &interface->theme.colors.disabled);
+
+        if (text)
+        {
+            const Fang_Rect text_area = Fang_RectResize(
+                bounds, -4, -bounds->h / 2
+            );
+
+            Fang_DrawText(
+                framebuf,
+                text,
+                interface->theme.font,
+                text_area.h,
+                &(Fang_Point){
+                    .x = (
+                        (text_area.x + (text_area.w / 2))
+                      - ((int)strlen(text) * text_area.h) / 2
+                    ),
+                    .y = text_area.y,
+                }
+            );
+        }
     }
 
     return result;
@@ -145,12 +171,11 @@ static inline bool
 Fang_InterfaceSlider(
           Fang_Interface * const interface,
           float          * const value,
-    const Fang_Rect      * const bounds,
-    const Fang_Color     * const color)
+    const char           * const text,
+    const Fang_Rect      * const bounds)
 {
     assert(interface);
     assert(bounds);
-    assert(color);
 
     const uint32_t id = ++interface->id;
 
@@ -208,25 +233,62 @@ Fang_InterfaceSlider(
         Fang_Framebuffer * const framebuf = interface->framebuf;
         assert(framebuf);
 
-        const bool hot    = interface->hot    == id;
         const bool active = interface->active == id;
+        const bool hot    = interface->hot    == id;
+        const bool next   = interface->next   == id;
 
-        Fang_DrawRect(
-            framebuf,
-            bounds,
-            (active || hot) ? color : &FANG_GREY
-        );
+        Fang_Color color;
+        if (active)
+            color = interface->theme.colors.foreground;
+        else if (hot)
+            color = interface->theme.colors.highlight;
+        else if (!next)
+            color = interface->theme.colors.disabled;
+
+        Fang_DrawRect(framebuf, bounds, &color);
+
+        Fang_Rect fill_area = Fang_RectResize(bounds, -1, -1);
 
         Fang_FillRect(
             framebuf,
             &(Fang_Rect){
-                .x = 1,
-                .y = 1,
-                .w = (int)roundf((bounds->w - 1) * (*value)),
-                .h = bounds->h - 1,
+                .x = fill_area.x,
+                .y = fill_area.y,
+                .w = (int)roundf(fill_area.w * (*value)),
+                .h = fill_area.h,
             },
-            (active || hot) ? color : &FANG_GREY
+            &color
         );
+
+        {
+            char value_text[5];
+
+            if (active)
+                snprintf(value_text, sizeof(value_text), "%.2f", *value);
+
+            const char * const display_text = (active) ? value_text : text;
+
+            if (display_text)
+            {
+                const Fang_Rect text_area = Fang_RectResize(
+                    bounds, -4, -bounds->h / 2
+                );
+
+                Fang_DrawText(
+                    framebuf,
+                    display_text,
+                    interface->theme.font,
+                    text_area.h,
+                    &(Fang_Point){
+                        .x = (
+                            (text_area.x + (text_area.w / 2))
+                          - ((int)strlen(display_text) * text_area.h) / 2
+                        ),
+                        .y = text_area.y,
+                    }
+                );
+            }
+        }
     }
 
     return result;
