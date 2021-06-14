@@ -1,17 +1,17 @@
-// Copyright (C) 2021 Antonio Lassandro
+// Copyright (C) 2021  Antonio Lassandro
 
 // This program is free software: you can redistribute it and/or modify it
-// under the terms of the GNU Affero General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or (at your
-// option) any later version.
+// under the terms of the GNU General Public License as published by the Free
+// Software Foundation, either version 3 of the License, or (at your option)
+// any later version.
 
 // This program is distributed in the hope that it will be useful, but WITHOUT
 // ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public
-// License for more details.
+// FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+// more details.
 
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU General Public License along
+// with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "../Fang/Fang.c"
 #include <SDL2/SDL.h>
@@ -427,6 +427,7 @@ int Fang_Main(int argc, char** argv)
             framebuf.color.width  = FANG_WINDOW_SIZE;
             framebuf.color.height = FANG_WINDOW_SIZE;
             framebuf.color.stride = SDL_BYTESPERPIXEL(SDL_PIXELFORMAT_RGBA8888);
+            framebuf.enable_stencil = false;
 
             const int error = SDL_LockTexture(
                 texture,

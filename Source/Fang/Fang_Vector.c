@@ -13,10 +13,10 @@
 // You should have received a copy of the GNU General Public License along
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * A container for arbitrary data with a length (in bytes).
-**/
-typedef struct Fang_Buffer {
-    void   * data;
-    size_t   size;
-} Fang_Buffer;
+typedef struct Fang_Vec2 {
+    float x, y;
+} Fang_Vec2;
+
+typedef struct Fang_Vec3 {
+    float x, y, z;
+} Fang_Vec3;
