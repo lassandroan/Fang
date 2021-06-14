@@ -24,9 +24,10 @@
 **/
 typedef struct Fang_Framebuffer
 {
-    Fang_Image color;
-    Fang_Image stencil;
-    bool       enable_stencil;
+    Fang_Image  color;
+    Fang_Image  stencil;
+    bool        enable_stencil;
+    Fang_Mat3x3 transform;
 } Fang_Framebuffer;
 
 /**
@@ -53,10 +54,12 @@ Fang_FramebufferPutPixel(
     assert(framebuf->color.pixels);
     assert(framebuf->color.stride == 4);
 
-    if (point->x < 0 || point->x >= framebuf->color.width)
+    const Fang_Point trans_point = Fang_MatMult(framebuf->transform, *point);
+
+    if (trans_point.x < 0 || trans_point.x >= framebuf->color.width)
         return false;
 
-    if (point->y < 0 || point->y >= framebuf->color.height)
+    if (trans_point.y < 0 || trans_point.y >= framebuf->color.height)
         return false;
 
     bool write = true;
@@ -70,8 +73,8 @@ Fang_FramebufferPutPixel(
 
         const uint8_t pixel  = UINT8_MAX;
         const int     offset = (
-            point->y * framebuf->stencil.pitch
-          + point->x * framebuf->stencil.stride
+            trans_point.y * framebuf->stencil.pitch
+          + trans_point.x * framebuf->stencil.stride
         );
 
         if (*(framebuf->stencil.pixels + offset))
@@ -84,8 +87,8 @@ Fang_FramebufferPutPixel(
     {
         uint32_t * dst = (uint32_t*)(
             framebuf->color.pixels
-          + (point->y * framebuf->color.pitch
-          +  point->x * framebuf->color.stride)
+          + (trans_point.y * framebuf->color.pitch
+          +  trans_point.x * framebuf->color.stride)
         );
 
         Fang_Color dst_color = Fang_ColorFromRGBA(*dst);
@@ -140,4 +143,48 @@ Fang_FramebufferClear(
 
     if (framebuf->stencil.pixels)
         Fang_ImageClear(&framebuf->stencil);
+}
+
+static inline Fang_Rect
+Fang_FramebufferGetViewport(
+    Fang_Framebuffer * const framebuf)
+{
+    assert(framebuf);
+
+    return (Fang_Rect){
+        .x = 0,
+        .y = 0,
+        .w = framebuf->color.width,
+        .h = framebuf->color.height,
+    };
+}
+
+static inline void
+Fang_FramebufferSetViewport(
+          Fang_Framebuffer * const framebuf,
+    const Fang_Rect        * const viewport)
+{
+    assert(framebuf);
+    assert(viewport);
+
+    if (viewport->w == 0 || viewport->h == 0)
+    {
+        memset(&framebuf->transform, 0, sizeof(Fang_Mat3x3));
+        return;
+    }
+
+    const Fang_Rect bounds = Fang_FramebufferGetViewport(framebuf);
+
+    const Fang_Mat3x3 translate = Fang_MatMult(
+        framebuf->transform,
+        Fang_Mat3x3Translate(viewport->x, viewport->y)
+    );
+
+    framebuf->transform = Fang_MatMult(
+        translate,
+        Fang_Mat3x3Scale(
+            (float)viewport->w / (float)bounds.w,
+            (float)viewport->h / (float)bounds.h
+        )
+    );
 }

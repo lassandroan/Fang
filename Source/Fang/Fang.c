@@ -41,6 +41,7 @@
 #include "Fang_Color.c"
 #include "Fang_Rect.c"
 #include "Fang_Vector.c"
+#include "Fang_Matrix.c"
 #include "Fang_Input.c"
 #include "Fang_Image.c"
 #include "Fang_TGA.c"
@@ -70,7 +71,7 @@ Fang_Ray raycast[FANG_WINDOW_SIZE];
 Fang_Camera camera = (Fang_Camera){
     .pos = {
         .x = FANG_TILE_SIZE * 2,
-        .y = FANG_TILE_SIZE * 3,
+        .y = FANG_TILE_SIZE * 2,
         .z = FANG_TILE_SIZE / 2,
     },
     .dir = {.x = -1.0f},
@@ -93,7 +94,7 @@ Fang_UpdateAndRender(
 
     Fang_CameraRotate(
         &camera,
-        0.005f,
+        0.025f,
         0
     );
 
@@ -108,6 +109,19 @@ Fang_UpdateAndRender(
         &camera,
         raycast,
         (size_t)FANG_WINDOW_SIZE
+    );
+
+    Fang_MinimapRender(
+        framebuf,
+        &camera,
+        raycast,
+        (size_t)FANG_WINDOW_SIZE,
+        &(Fang_Rect){
+            .x = FANG_WINDOW_SIZE - 64,
+            .y = FANG_WINDOW_SIZE - 64,
+            .w = 64,
+            .h = 64,
+        }
     );
 
     Fang_DrawText(

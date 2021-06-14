@@ -428,6 +428,7 @@ int Fang_Main(int argc, char** argv)
             framebuf.color.height = FANG_WINDOW_SIZE;
             framebuf.color.stride = SDL_BYTESPERPIXEL(SDL_PIXELFORMAT_RGBA8888);
             framebuf.enable_stencil = false;
+            framebuf.transform = Fang_Mat3x3Identity();
 
             const int error = SDL_LockTexture(
                 texture,
