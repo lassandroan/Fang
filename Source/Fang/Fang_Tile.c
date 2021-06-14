@@ -13,10 +13,15 @@
 // You should have received a copy of the GNU General Public License along
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-/**
- * A container for arbitrary data with a length (in bytes).
-**/
-typedef struct Fang_Buffer {
-    void   * data;
-    size_t   size;
-} Fang_Buffer;
+typedef enum Fang_TileType {
+    FANG_TILETYPE_NONE,
+    FANG_TILETYPE_SOLID,
+    FANG_TILETYPE_FLOATING,
+
+    FANG_NUM_TILETYPE,
+} Fang_TileType;
+
+typedef struct Fang_TileSize {
+    int height;
+    int size;
+} Fang_TileSize;

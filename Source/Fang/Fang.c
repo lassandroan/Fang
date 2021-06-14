@@ -1,24 +1,25 @@
-// Copyright (C) 2021 Antonio Lassandro
+// Copyright (C) 2021  Antonio Lassandro
 
 // This program is free software: you can redistribute it and/or modify it
-// under the terms of the GNU Affero General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or (at your
-// option) any later version.
+// under the terms of the GNU General Public License as published by the Free
+// Software Foundation, either version 3 of the License, or (at your option)
+// any later version.
 
 // This program is distributed in the hope that it will be useful, but WITHOUT
 // ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-// FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public
-// License for more details.
+// FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+// more details.
 
-// You should have received a copy of the GNU Affero General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// You should have received a copy of the GNU General Public License along
+// with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <assert.h>
+#include <math.h>
+#include <signal.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
-#include <stdio.h>
 
 #ifndef min
   #define min(x, y) (x < y ? x : y)
@@ -28,9 +29,18 @@
   #define max(x, y) (x > y ? x : y)
 #endif
 
+#ifndef clamp
+  #define clamp(x, low, high) (max(min(x, high), low))
+#endif
+
+#ifndef breakpoint
+  #define breakpoint() raise(SIGTRAP)
+#endif
+
 #include "Fang_Memory.c"
 #include "Fang_Color.c"
 #include "Fang_Rect.c"
+#include "Fang_Vector.c"
 #include "Fang_Input.c"
 #include "Fang_Image.c"
 #include "Fang_TGA.c"
@@ -38,6 +48,10 @@
 #include "Fang_Framebuffer.c"
 #include "Fang_Render.c"
 #include "Fang_Interface.c"
+#include "Fang_Camera.c"
+#include "Fang_Tile.c"
+#include "Fang_Ray.c"
+#include "Fang_Map.c"
 
 Fang_Interface interface = (Fang_Interface){
     .theme = (Fang_InterfaceTheme){
@@ -49,6 +63,18 @@ Fang_Interface interface = (Fang_Interface){
             .disabled   = FANG_GREY,
         },
     },
+};
+
+Fang_Ray raycast[FANG_WINDOW_SIZE];
+
+Fang_Camera camera = (Fang_Camera){
+    .pos = {
+        .x = FANG_TILE_SIZE * 2,
+        .y = FANG_TILE_SIZE * 3,
+        .z = FANG_TILE_SIZE / 2,
+    },
+    .dir = {.x = -1.0f},
+    .cam = {.y =  0.5f},
 };
 
 static inline void
@@ -65,14 +91,30 @@ Fang_UpdateAndRender(
 
     Fang_FramebufferClear(framebuf);
 
+    Fang_CameraRotate(
+        &camera,
+        0.005f,
+        0
+    );
+
+    Fang_RayCast(
+        &camera,
+        raycast,
+        (size_t)FANG_WINDOW_SIZE
+    );
+
+    Fang_MapRender(
+        framebuf,
+        &camera,
+        raycast,
+        (size_t)FANG_WINDOW_SIZE
+    );
+
     Fang_DrawText(
         framebuf,
         "FANG",
         FANG_FONT_FORMULA,
         FANG_FONTAREA_HEIGHT,
-        &(Fang_Point){
-            .x = (FANG_WINDOW_SIZE / 2) - (FANG_FONTAREA_WIDTH * 2),
-            .y = (FANG_WINDOW_SIZE / 2) - (FANG_FONTAREA_HEIGHT * 2),
-        }
+        &(Fang_Point){.x = 5, .y = 3}
     );
 }
