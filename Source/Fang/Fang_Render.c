@@ -68,6 +68,38 @@ Fang_DrawLine(
 }
 
 /**
+ * Draws a vertical line across the framebuffer.
+**/
+static inline void
+Fang_DrawVerticalLine(
+          Fang_Framebuffer * const framebuf,
+    const int                      x,
+    const Fang_Color       * const color)
+{
+    assert(framebuf);
+    assert(color);
+
+    for (int y = 0; y < framebuf->color.height; ++y)
+        Fang_FramebufferPutPixel(framebuf, &(Fang_Point){x, y}, color);
+}
+
+/**
+ * Draws a horizontal line across the framebuffer.
+**/
+static inline void
+Fang_DrawHorizontalLine(
+          Fang_Framebuffer * const framebuf,
+    const int                      y,
+    const Fang_Color       * const color)
+{
+    assert(framebuf);
+    assert(color);
+
+    for (int x = 0; x < framebuf->color.width; ++x)
+        Fang_FramebufferPutPixel(framebuf, &(Fang_Point){x, y}, color);
+}
+
+/**
  * Draws a 1px thick outline of a rectangle in the framebuffer.
  *
  * The target framebuffer must have a valid color image.

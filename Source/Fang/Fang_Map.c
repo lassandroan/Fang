@@ -210,3 +210,107 @@ Fang_MapRender(
 
     Fang_MapRenderWalls(framebuf, camera, rays, count);
 }
+
+static void
+Fang_MinimapRender(
+          Fang_Framebuffer * const framebuf,
+    const Fang_Camera      * const camera,
+    const Fang_Ray         * const rays,
+    const size_t                   count,
+    const Fang_Rect        * const area)
+{
+    assert(framebuf);
+    assert(camera);
+    assert(rays);
+    assert(count);
+
+    const Fang_Mat3x3 transform_prev = framebuf->transform;
+
+    const Fang_Rect bounds = Fang_FramebufferGetViewport(framebuf);
+
+    Fang_FramebufferSetViewport(framebuf, area);
+
+    Fang_FillRect(framebuf, &bounds, &FANG_BLACK);
+
+    for (int row = 0; row < 8; ++row)
+    {
+        const float rowf = row / 8.0f;
+
+        Fang_DrawHorizontalLine(
+            framebuf, (int)(rowf * framebuf->color.height), &FANG_GREY
+        );
+
+        for (int col = 0; col < 8; ++col)
+        {
+            const float colf = col / 8.0f;
+
+            Fang_DrawVerticalLine(
+                framebuf, (int)(colf * framebuf->color.width), &FANG_GREY
+            );
+
+            const int x = row * FANG_TILE_SIZE;
+            const int y = col * FANG_TILE_SIZE;
+
+            if (!Fang_MapQueryType(x, y))
+                continue;
+
+            const Fang_Color color = Fang_MapQueryColor(x, y);
+
+            Fang_Rect map_tile_bounds = Fang_RectResize(
+                &(Fang_Rect){
+                    .x = (int)(rowf * bounds.w),
+                    .y = (int)(colf * bounds.h),
+                    .w = bounds.w / 8,
+                    .h = bounds.h / 8,
+                },
+                -2,
+                -2
+            );
+
+            Fang_FillRect(framebuf, &map_tile_bounds, &color);
+        }
+    }
+
+    const Fang_Point camera_pos = {
+        .x = (int)(
+            camera->pos.x / (FANG_TILE_SIZE * 8.0f) * bounds.w
+        ),
+        .y = (int)(
+            camera->pos.y / (FANG_TILE_SIZE * 8.0f) * bounds.h
+        ),
+    };
+
+    for (size_t i = 0; i < count; ++i)
+    {
+        const Fang_Ray * const ray = &rays[i];
+
+        const Fang_Vec2 ray_pos = ray->hits[ray->hit_count - 1].front_hit;
+
+        Fang_DrawLine(
+            framebuf,
+            &camera_pos,
+            &(Fang_Point){
+                .x = (int)(
+                    ray_pos.x / (FANG_TILE_SIZE * 8.0f) * bounds.w
+                ),
+                .y = (int)(
+                    ray_pos.y / (FANG_TILE_SIZE * 8.0f) * bounds.h
+                ),
+            },
+            &FANG_BLUE
+        );
+    }
+
+    Fang_FillRect(
+        framebuf,
+        &(Fang_Rect){
+            .x = camera_pos.x - 5,
+            .y = camera_pos.y - 5,
+            .w = 10,
+            .h = 10,
+        },
+        &FANG_RED
+    );
+
+    framebuf->transform = transform_prev;
+}
