@@ -13,48 +13,80 @@
 // You should have received a copy of the GNU General Public License along
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+typedef struct Fang_Map {
+    int width;
+    int height;
+
+    int tile_size;
+
+    Fang_TileType * tiles;
+    Fang_TileSize * sizes;
+    Fang_Color    * colors;
+
+    Fang_Image skybox;
+    Fang_Image floor;
+} Fang_Map;
+
+enum {
+    temp_map_width  = 8,
+    temp_map_height = 8,
+};
+
+Fang_TileType temp_map_map[temp_map_width][temp_map_height] = {
+    {1, 1, 1, 1, 1, 1, 1, 1},
+    {1, 0, 0, 0, 0, 0, 2, 1},
+    {1, 0, 0, 0, 0, 0, 0, 1},
+    {1, 0, 0, 0, 0, 0, 0, 1},
+    {1, 0, 0, 0, 0, 0, 0, 1},
+    {1, 0, 0, 0, 0, 2, 0, 1},
+    {1, 1, 0, 0, 0, 0, 0, 1},
+    {1, 1, 1, 1, 1, 1, 1, 1},
+};
+
+Fang_Map temp_map = {
+    .tiles = &temp_map_map[0][0],
+    .width = temp_map_width,
+    .height = temp_map_height,
+    .tile_size = 16,
+};
+
 static inline Fang_TileType
 Fang_MapQueryType(
+    const Fang_Map * const map,
     int x,
     int y)
 {
-    static const Fang_TileType map[8][8] = {
-        {1, 1, 1, 1, 1, 1, 1, 1},
-        {1, 0, 0, 0, 0, 0, 2, 1},
-        {1, 0, 0, 0, 0, 0, 0, 1},
-        {1, 0, 0, 0, 0, 0, 0, 1},
-        {1, 0, 0, 0, 0, 0, 0, 1},
-        {1, 0, 0, 0, 0, 2, 0, 1},
-        {1, 1, 0, 0, 0, 0, 0, 1},
-        {1, 1, 1, 1, 1, 1, 1, 1},
-    };
+    assert(map);
 
-    x /= FANG_TILE_SIZE;
-    y /= FANG_TILE_SIZE;
+    x /= map->tile_size;
+    y /= map->tile_size;
 
-    if (x < 0 || x >= 8)
+    if (x < 0 || x >= map->width)
         return FANG_TILETYPE_NONE;
 
-    if (y < 0 || y >= 8)
+    if (y < 0 || y >= map->height)
         return FANG_TILETYPE_NONE;
 
-    return map[y][x];
+    return map->tiles[y * map->width + x];
 }
 
 static inline Fang_TileSize
 Fang_MapQuerySize(
+    const Fang_Map * const map,
     const int x,
     const int y)
 {
-    const Fang_TileType type = Fang_MapQueryType(x, y);
+    assert(map);
+
+    const Fang_TileType type = Fang_MapQueryType(map, x, y);
 
     switch (type)
     {
         case FANG_TILETYPE_SOLID:
-            return (Fang_TileSize){0, FANG_TILE_SIZE};
+            return (Fang_TileSize){0, map->tile_size};
 
         case FANG_TILETYPE_FLOATING:
-            return (Fang_TileSize){FANG_TILE_SIZE * 2, FANG_TILE_SIZE};
+            return (Fang_TileSize){map->tile_size * 2, map->tile_size};
 
         default:
             return (Fang_TileSize){0, 0};
@@ -63,15 +95,23 @@ Fang_MapQuerySize(
 
 static inline Fang_Color
 Fang_MapQueryColor(
+    const Fang_Map * const map,
     const int x,
     const int y)
 {
-    const Fang_TileType type = Fang_MapQueryType(x, y);
+    assert(map);
+
+    const Fang_TileType type = Fang_MapQueryType(map, x, y);
 
     switch (type)
     {
         case FANG_TILETYPE_SOLID:
-            return FANG_WHITE;
+            return (Fang_Color){
+                .r = 255,
+                .g = 255,
+                .b = 255,
+                .a = 128,
+            };
 
         case FANG_TILETYPE_FLOATING:
             return FANG_GREY;
@@ -79,238 +119,4 @@ Fang_MapQueryColor(
         default:
             return FANG_TRANSPARENT;
     }
-}
-
-static void
-Fang_MapRenderWalls(
-          Fang_Framebuffer * const framebuf,
-    const Fang_Camera      * const camera,
-    const Fang_Ray         * const rays,
-    const size_t                   count)
-{
-    assert(framebuf);
-    assert(camera);
-    assert(rays);
-    assert(count);
-
-    for (size_t i = 0; i < count; ++i)
-    {
-        const Fang_Ray * const ray = &rays[i];
-
-        for (size_t j = ray->hit_count; j-- > 0;)
-        {
-            const Fang_RayHit * const hit = &ray->hits[j];
-
-            if (hit->front_dist <= 0.0f)
-                continue;
-
-            if (!Fang_MapQueryType(hit->tile_pos.x, hit->tile_pos.y))
-                continue;
-
-            const Fang_TileSize wall_size = Fang_MapQuerySize(
-                hit->tile_pos.x, hit->tile_pos.y
-            );
-
-            Fang_Rect front_face;
-            Fang_Rect  back_face;
-
-            /* Calculate and draw front and back faces of tile */
-            for (size_t k = 0; k < 2; ++k)
-            {
-                const float face_dist = (k == 0)
-                    ? hit->front_dist
-                    : hit->back_dist;
-
-                const Fang_Rect surface = Fang_CameraProjectSurface(
-                    camera,
-                    &(Fang_Rect){
-                        .x = (int)i,
-                        .y = wall_size.height,
-                        .w = 1,
-                        .h = wall_size.size,
-                    },
-                    face_dist,
-                    &(Fang_Rect){0, 0, FANG_WINDOW_SIZE, FANG_WINDOW_SIZE}
-                );
-
-                if (k == 0)
-                    front_face = surface;
-                else
-                    back_face = surface;
-
-                /* NOTE: Cull backfaces until transparent texture support */
-                if (k == 1)
-                    continue;
-
-                const Fang_Color color = Fang_MapQueryColor(
-                    hit->tile_pos.x, hit->tile_pos.y
-                );
-
-                Fang_FillRect(framebuf, &surface, &color);
-            }
-
-            /* Draw top or bottom of tile based on front/back faces */
-            {
-                Fang_Rect face = {.x = 0};
-
-                /* Draw top */
-                if (wall_size.height + wall_size.size < camera->pos.z)
-                {
-                    const int face_diff = front_face.y - back_face.y;
-
-                    face = (Fang_Rect){
-                        .x = (int)i,
-                        .y = back_face.y,
-                        .w = 1,
-                        .h = face_diff,
-                    };
-                }
-                /* Draw bottom */
-                else if (wall_size.height > camera->pos.z)
-                {
-                    const int face_diff = ( back_face.y +  back_face.h)
-                                        - (front_face.y + front_face.h);
-
-                    face = (Fang_Rect){
-                        .x = (int)i,
-                        .y = front_face.y + front_face.h,
-                        .w = 1,
-                        .h = face_diff,
-                    };
-                }
-
-                if (face.h)
-                {
-                    Fang_Color color = Fang_MapQueryColor(
-                        hit->tile_pos.x, hit->tile_pos.y
-                    );
-
-                    color.r /= 2;
-                    color.g /= 2;
-                    color.b /= 2;
-
-                    Fang_FillRect(framebuf, &face, &color);
-                }
-            }
-        }
-    }
-}
-
-static void
-Fang_MapRender(
-          Fang_Framebuffer * const framebuf,
-    const Fang_Camera      * const camera,
-    const Fang_Ray         * const rays,
-    const size_t                   count)
-{
-    assert(framebuf);
-    assert(camera);
-    assert(rays);
-    assert(count);
-
-    Fang_MapRenderWalls(framebuf, camera, rays, count);
-}
-
-static void
-Fang_MinimapRender(
-          Fang_Framebuffer * const framebuf,
-    const Fang_Camera      * const camera,
-    const Fang_Ray         * const rays,
-    const size_t                   count,
-    const Fang_Rect        * const area)
-{
-    assert(framebuf);
-    assert(camera);
-    assert(rays);
-    assert(count);
-
-    const Fang_Mat3x3 transform_prev = framebuf->transform;
-
-    const Fang_Rect bounds = Fang_FramebufferGetViewport(framebuf);
-
-    Fang_FramebufferSetViewport(framebuf, area);
-
-    Fang_FillRect(framebuf, &bounds, &FANG_BLACK);
-
-    for (int row = 0; row < 8; ++row)
-    {
-        const float rowf = row / 8.0f;
-
-        Fang_DrawHorizontalLine(
-            framebuf, (int)(rowf * framebuf->color.height), &FANG_GREY
-        );
-
-        for (int col = 0; col < 8; ++col)
-        {
-            const float colf = col / 8.0f;
-
-            Fang_DrawVerticalLine(
-                framebuf, (int)(colf * framebuf->color.width), &FANG_GREY
-            );
-
-            const int x = row * FANG_TILE_SIZE;
-            const int y = col * FANG_TILE_SIZE;
-
-            if (!Fang_MapQueryType(x, y))
-                continue;
-
-            const Fang_Color color = Fang_MapQueryColor(x, y);
-
-            Fang_Rect map_tile_bounds = Fang_RectResize(
-                &(Fang_Rect){
-                    .x = (int)(rowf * bounds.w),
-                    .y = (int)(colf * bounds.h),
-                    .w = bounds.w / 8,
-                    .h = bounds.h / 8,
-                },
-                -2,
-                -2
-            );
-
-            Fang_FillRect(framebuf, &map_tile_bounds, &color);
-        }
-    }
-
-    const Fang_Point camera_pos = {
-        .x = (int)(
-            camera->pos.x / (FANG_TILE_SIZE * 8.0f) * bounds.w
-        ),
-        .y = (int)(
-            camera->pos.y / (FANG_TILE_SIZE * 8.0f) * bounds.h
-        ),
-    };
-
-    for (size_t i = 0; i < count; ++i)
-    {
-        const Fang_Ray * const ray = &rays[i];
-
-        const Fang_Vec2 ray_pos = ray->hits[ray->hit_count - 1].front_hit;
-
-        Fang_DrawLine(
-            framebuf,
-            &camera_pos,
-            &(Fang_Point){
-                .x = (int)(
-                    ray_pos.x / (FANG_TILE_SIZE * 8.0f) * bounds.w
-                ),
-                .y = (int)(
-                    ray_pos.y / (FANG_TILE_SIZE * 8.0f) * bounds.h
-                ),
-            },
-            &FANG_BLUE
-        );
-    }
-
-    Fang_FillRect(
-        framebuf,
-        &(Fang_Rect){
-            .x = camera_pos.x - 5,
-            .y = camera_pos.y - 5,
-            .w = 10,
-            .h = 10,
-        },
-        &FANG_RED
-    );
-
-    framebuf->transform = transform_prev;
 }

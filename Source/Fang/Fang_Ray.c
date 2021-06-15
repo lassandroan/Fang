@@ -13,8 +13,6 @@
 // You should have received a copy of the GNU General Public License along
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-static inline Fang_TileType Fang_MapQueryType(int, int);
-
 enum {
     FANG_RAY_MAX_STEPS = 64,
 };
@@ -42,10 +40,12 @@ typedef struct Fang_Ray {
 
 static inline void
 Fang_RayCast(
+    const Fang_Map    * const map,
     const Fang_Camera * const camera,
           Fang_Ray    * const rays,
     const size_t              count)
 {
+    assert(map);
     assert(camera);
     assert(rays);
     assert(count);
@@ -54,8 +54,8 @@ Fang_RayCast(
     const Fang_Vec3 * const cam = &camera->cam;
 
     const Fang_Vec2 norm_pos = {
-        .x = camera->pos.x / FANG_TILE_SIZE,
-        .y = camera->pos.y / FANG_TILE_SIZE,
+        .x = camera->pos.x / map->tile_size,
+        .y = camera->pos.y / map->tile_size,
     };
 
     memset(rays, 0, sizeof(Fang_Ray) * count);
@@ -151,12 +151,12 @@ Fang_RayCast(
             }
 
             const Fang_Point tile_pos = {
-                .x = (int)(floor_norm.x * FANG_TILE_SIZE),
-                .y = (int)(floor_norm.y * FANG_TILE_SIZE),
+                .x = (int)(floor_norm.x * map->tile_size),
+                .y = (int)(floor_norm.y * map->tile_size),
             };
 
             const Fang_TileType wall_type = Fang_MapQueryType(
-                tile_pos.x, tile_pos.y
+                map, tile_pos.x, tile_pos.y
             );
 
             if (wall_type)
@@ -185,9 +185,9 @@ Fang_RayCast(
 
                 hit->front_hit = (Fang_Vec2){
                     .x = camera->pos.x + (hit->front_dist * cam_ray.x)
-                       * FANG_TILE_SIZE,
+                       * map->tile_size,
                     .y = camera->pos.y + (hit->front_dist * cam_ray.y)
-                       * FANG_TILE_SIZE,
+                       * map->tile_size,
                 };
 
                 const Fang_Vec2 old_floor_norm = floor_norm;
@@ -247,9 +247,9 @@ Fang_RayCast(
 
                     hit->back_hit = (Fang_Vec2){
                         .x = camera->pos.x + (hit->back_dist * cam_ray.x)
-                           * FANG_TILE_SIZE,
+                           * map->tile_size,
                         .y = camera->pos.y + (hit->back_dist * cam_ray.y)
-                           * FANG_TILE_SIZE,
+                           * map->tile_size,
                     };
                 }
 

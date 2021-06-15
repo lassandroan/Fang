@@ -14,8 +14,7 @@
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 enum {
-  FANG_WINDOW_SIZE = 512,
-  FANG_TILE_SIZE   = 32,
+  FANG_WINDOW_SIZE = 256,
 };
 
 #include "Platform/Fang_SDL.c"

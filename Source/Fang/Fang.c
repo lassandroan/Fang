@@ -47,12 +47,12 @@
 #include "Fang_TGA.c"
 #include "Fang_Font.c"
 #include "Fang_Framebuffer.c"
-#include "Fang_Render.c"
-#include "Fang_Interface.c"
 #include "Fang_Camera.c"
 #include "Fang_Tile.c"
-#include "Fang_Ray.c"
 #include "Fang_Map.c"
+#include "Fang_Ray.c"
+#include "Fang_Render.c"
+#include "Fang_Interface.c"
 
 Fang_Interface interface = (Fang_Interface){
     .theme = (Fang_InterfaceTheme){
@@ -70,9 +70,9 @@ Fang_Ray raycast[FANG_WINDOW_SIZE];
 
 Fang_Camera camera = (Fang_Camera){
     .pos = {
-        .x = FANG_TILE_SIZE * 2,
-        .y = FANG_TILE_SIZE * 2,
-        .z = FANG_TILE_SIZE / 2,
+        .x = 32 * 2,
+        .y = 32 * 2,
+        .z = 32 / 2,
     },
     .dir = {.x = -1.0f},
     .cam = {.y =  0.5f},
@@ -94,33 +94,36 @@ Fang_UpdateAndRender(
 
     Fang_CameraRotate(
         &camera,
-        0.025f,
+        0.015f,
         0
     );
 
     Fang_RayCast(
+        &temp_map,
         &camera,
         raycast,
         (size_t)FANG_WINDOW_SIZE
     );
 
-    Fang_MapRender(
+    Fang_DrawMap(
+        &temp_map,
         framebuf,
         &camera,
         raycast,
         (size_t)FANG_WINDOW_SIZE
     );
 
-    Fang_MinimapRender(
+    Fang_DrawMinimap(
+        &temp_map,
         framebuf,
         &camera,
         raycast,
         (size_t)FANG_WINDOW_SIZE,
         &(Fang_Rect){
-            .x = FANG_WINDOW_SIZE - 64,
-            .y = FANG_WINDOW_SIZE - 64,
-            .w = 64,
-            .h = 64,
+            .x = FANG_WINDOW_SIZE - 32,
+            .y = FANG_WINDOW_SIZE - 32,
+            .w = 32,
+            .h = 32,
         }
     );
 

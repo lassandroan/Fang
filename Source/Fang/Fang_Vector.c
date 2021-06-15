@@ -20,3 +20,27 @@ typedef struct Fang_Vec2 {
 typedef struct Fang_Vec3 {
     float x, y, z;
 } Fang_Vec3;
+
+static inline float
+Fang_Vec2Dot(
+    const Fang_Vec2 a,
+    const Fang_Vec2 b)
+{
+    return (a.x * b.x) + (a.y * b.y);
+}
+
+static inline float
+Fang_Vec2Determ(
+    const Fang_Vec2 a,
+    const Fang_Vec2 b)
+{
+    return (a.x * b.y) - (a.y * b.x);
+}
+
+static inline float
+Fang_Vec2Angle(
+    const Fang_Vec2 a,
+    const Fang_Vec2 b)
+{
+    return atan2f(Fang_Vec2Dot(a, b), Fang_Vec2Determ(a, b));
+}

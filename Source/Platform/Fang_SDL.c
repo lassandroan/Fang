@@ -121,6 +121,40 @@ FangSDL_DestroyFonts(void)
 }
 
 static inline void
+FangSDL_LoadMap(void)
+{
+    {
+        Fang_Buffer file = FangSDL_LoadResource("Maps/test/skybox.tga");
+
+        if (file.data)
+        {
+            temp_map.skybox = Fang_TGALoad(&file);
+            if (!temp_map.skybox.pixels)
+                puts("Invalid skybox.tga");
+        }
+        else
+        {
+            puts("Could not load skybox_new.tga");
+        }
+    }
+
+    {
+        Fang_Buffer file = FangSDL_LoadResource("Maps/test/floor.tga");
+
+        if (file.data)
+        {
+            temp_map.floor = Fang_TGALoad(&file);
+            if (!temp_map.floor.pixels)
+                puts("Invalid floor.tga");
+        }
+        else
+        {
+            puts("Could not load floor.tga");
+        }
+    }
+}
+
+static inline void
 FangSDL_ConnectController(
     SDL_GameController ** const controller)
 {
@@ -180,8 +214,8 @@ int Fang_Main(int argc, char** argv)
         FANG_TITLE,
         SDL_WINDOWPOS_UNDEFINED,
         SDL_WINDOWPOS_UNDEFINED,
-        FANG_WINDOW_SIZE,
-        FANG_WINDOW_SIZE,
+        FANG_WINDOW_SIZE * 2,
+        FANG_WINDOW_SIZE * 2,
         SDL_WINDOW_SHOWN
             | SDL_WINDOW_ALLOW_HIGHDPI
             | SDL_WINDOW_INPUT_FOCUS
@@ -213,6 +247,8 @@ int Fang_Main(int argc, char** argv)
 
     if (FangSDL_CreateFonts())
         goto Error_Fonts;
+
+    FangSDL_LoadMap();
 
     SDL_GameController * controller = NULL;
     FangSDL_ConnectController(&controller);
