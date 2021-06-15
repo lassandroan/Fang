@@ -171,13 +171,17 @@ Fang_FillRect(
  * If the sizes of the source and destination rectangles do not match, the image
  * will be scaled to fit the destination rectangle. This scaling is linear, no
  * resampling is performed.
+ *
+ * The source image may be flipped in the X or Y direction when being drawn.
 **/
 static void
-Fang_DrawImage(
+Fang_DrawImageEx(
           Fang_Framebuffer * const framebuf,
     const Fang_Image       * const image,
     const Fang_Rect        * const source,
-    const Fang_Rect        * const dest)
+    const Fang_Rect        * const dest,
+    const bool flip_x,
+    const bool flip_y)
 {
     assert(framebuf);
     assert(image);
@@ -226,6 +230,12 @@ Fang_DrawImage(
             r_x = max(min(r_x, 1.0f), 0.0f);
             r_y = max(min(r_y, 1.0f), 0.0f);
 
+            if (flip_x)
+                r_x = 1.0f - r_x;
+
+            if (flip_y)
+                r_y = 1.0f - r_y;
+
             const int t_x = (int)((r_x * source_area.w) + source_area.x);
             const int t_y = (int)((r_y * source_area.h) + source_area.y);
 
@@ -260,6 +270,18 @@ Fang_DrawImage(
     }
 }
 
+/**
+ * Shortcut function for Fang_DrawImageEx() without flipping the source image.
+**/
+static inline void
+Fang_DrawImage(
+          Fang_Framebuffer * const framebuf,
+    const Fang_Image       * const image,
+    const Fang_Rect        * const source,
+    const Fang_Rect        * const dest)
+{
+    Fang_DrawImageEx(framebuf, image, source, dest, false, false);
+}
 
 /**
  * Draws a line of text into the framebuffer using the given font type.
@@ -335,6 +357,22 @@ Fang_DrawMapSkybox(
         .w = viewport.w * 4,
         .h = viewport.h / 2 + pitch,
     };
+
+    for (int i = 1; i >= -1; i -= 2)
+    {
+        Fang_DrawImageEx(
+            framebuf,
+            &map->skybox,
+            NULL,
+            &(Fang_Rect){
+                .x = dest.x + (dest.w * i),
+                .w = dest.w,
+                .h = dest.h,
+            },
+            true,
+            false
+        );
+    }
 
     Fang_DrawImage(
         framebuf,
