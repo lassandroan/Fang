@@ -552,7 +552,7 @@ Fang_DrawMapTiles(
                     };
                 }
                 /* Draw bottom */
-                else if (wall_size.height > camera->pos.z)
+                else if (wall_size.height >= camera->pos.z)
                 {
                     const int face_diff = ( back_face.y +  back_face.h)
                                         - (front_face.y + front_face.h);
