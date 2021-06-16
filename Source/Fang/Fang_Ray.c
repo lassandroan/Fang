@@ -257,14 +257,6 @@ Fang_RayCast(
                 side_dist = old_side_dist;
 
                 hit_count++;
-
-                const Fang_TileSize wall_size = Fang_MapQuerySize(
-                    map, tile_pos.x, tile_pos.y
-                );
-
-                if (camera->pos.z > wall_size.height
-                &&  camera->pos.z <= wall_size.height + wall_size.size)
-                    break;
             }
         }
 
