@@ -180,8 +180,8 @@ Fang_DrawImageEx(
     const Fang_Image       * const image,
     const Fang_Rect        * const source,
     const Fang_Rect        * const dest,
-    const bool flip_x,
-    const bool flip_y)
+    const bool                     flip_x,
+    const bool                     flip_y)
 {
     assert(framebuf);
     assert(image);
@@ -195,21 +195,20 @@ Fang_DrawImageEx(
 
     assert(framebuf->color.stride == 4);
 
-    Fang_Rect source_area = (source)
-        ? *source
-        : (Fang_Rect){.w = image->width, .h = image->height};
+    const Fang_Rect image_area = {.w = image->width, .h = image->height};
 
-    source_area = Fang_RectClip(
-        &source_area,
-        &(Fang_Rect){
-            .w = image->width,
-            .h = image->height,
-        }
-    );
+    const Fang_Rect source_area = (source)
+        ? Fang_RectClip(source, &image_area)
+        : image_area;
 
-    Fang_Rect dest_area = (dest)
+    const Fang_Rect framebuf_area = {
+        .w = framebuf->color.width,
+        .h = framebuf->color.height,
+    };
+
+    const Fang_Rect dest_area = (dest)
         ? *dest
-        : (Fang_Rect){.w = framebuf->color.width, .h = framebuf->color.height};
+        : framebuf_area;
 
     for (int x = dest_area.x; x < dest_area.x + dest_area.w; ++x)
     {
@@ -221,11 +220,8 @@ Fang_DrawImageEx(
             if (y < 0 || y >= framebuf->color.height)
                 continue;
 
-            float r_x = (float)(x - dest_area.x)
-                      / (float)(dest_area.x + dest_area.w - dest_area.x);
-
-            float r_y = (float)(y - dest_area.y)
-                      / (float)(dest_area.y + dest_area.h - dest_area.y);
+            float r_x = (float)(x - dest_area.x) / (float)dest_area.w;
+            float r_y = (float)(y - dest_area.y) / (float)dest_area.h;
 
             r_x = max(min(r_x, 1.0f), 0.0f);
             r_y = max(min(r_y, 1.0f), 0.0f);
@@ -236,8 +232,13 @@ Fang_DrawImageEx(
             if (flip_y)
                 r_y = 1.0f - r_y;
 
-            const int t_x = (int)((r_x * source_area.w) + source_area.x);
-            const int t_y = (int)((r_y * source_area.h) + source_area.y);
+            const int t_x = (flip_x)
+                ? (int)(r_x * (source_area.w - 1)) + source_area.x
+                : (int)(r_x * (source_area.w - 0)) + source_area.x;
+
+            const int t_y = (flip_y)
+                ? (int)(r_y * (source_area.h - 1)) + source_area.y
+                : (int)(r_y * (source_area.h - 0)) + source_area.y;
 
             uint32_t pixel = 0;
 
@@ -366,6 +367,7 @@ Fang_DrawMapSkybox(
             NULL,
             &(Fang_Rect){
                 .x = dest.x + (dest.w * i),
+                .y = dest.y,
                 .w = dest.w,
                 .h = dest.h,
             },
