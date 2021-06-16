@@ -22,6 +22,7 @@ typedef struct Fang_Map {
     Fang_TileType * tiles;
     Fang_TileSize * sizes;
     Fang_Color    * colors;
+    Fang_Image    * textures;
 
     Fang_Image skybox;
     Fang_Image floor;
@@ -119,4 +120,17 @@ Fang_MapQueryColor(
         default:
             return FANG_TRANSPARENT;
     }
+}
+
+static inline Fang_Image
+Fang_MapQueryTexture(
+    const Fang_Map * const map,
+    const int x,
+    const int y)
+{
+    assert(map);
+    (void)x;
+    (void)y;
+
+    return Fang_TileTextures[0];
 }

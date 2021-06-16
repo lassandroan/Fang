@@ -528,11 +528,34 @@ Fang_DrawMapTiles(
                 if (k == 1)
                     continue;
 
-                const Fang_Color color = Fang_MapQueryColor(
-                    map, hit->tile_pos.x, hit->tile_pos.y
-                );
+                const Fang_Vec2 face_hit = (k == 0)
+                    ? hit->front_hit
+                    : hit->back_hit;
 
-                Fang_FillRect(framebuf, &surface, &color);
+                const Fang_Direction dir = hit->norm_dir;
+
+                float tex_x =
+                    (dir == FANG_DIRECTION_NORTH || dir == FANG_DIRECTION_SOUTH)
+                        ? fmodf(face_hit.x, map->tile_size) / map->tile_size
+                        : fmodf(face_hit.y, map->tile_size) / map->tile_size;
+
+                tex_x = clamp(tex_x, 0.0f, 1.0f);
+
+                if (dir == FANG_DIRECTION_EAST || dir == FANG_DIRECTION_NORTH)
+                    tex_x = 1.0f - tex_x;
+
+                Fang_DrawImage(
+                    framebuf,
+                    &Fang_TileTextures[0],
+                    &(Fang_Rect){
+                        .x = (int)floorf(tex_x * FANG_TILEAREA_WIDTH)
+                           + ((int)dir * FANG_TILEAREA_WIDTH),
+                        .y = 0,
+                        .w = 1,
+                        .h = FANG_TILEAREA_HEIGHT,
+                    },
+                    &surface
+                );
             }
 
             /* Draw top or bottom of tile based on front/back faces */

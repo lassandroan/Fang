@@ -120,6 +120,48 @@ FangSDL_DestroyFonts(void)
     }
 }
 
+static inline int
+FangSDL_CreateTextures(void)
+{
+    for (int i = 0; i < FANG_NUM_TILETEXTURE; ++i)
+    {
+        const char * const path = Fang_TileTexturePaths[i];
+
+        Fang_Buffer file = FangSDL_LoadResource(path);
+
+        if (!file.data)
+        {
+            breakpoint();
+            return 1;
+        }
+
+        Fang_Image * const texture = &Fang_TileTextures[i];
+
+        *texture = Fang_TGALoad(&file);
+
+        if (!texture->pixels)
+        {
+            breakpoint();
+            SDL_SetError("Unable to load texture %s", path);
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+static inline void
+FangSDL_DestroyTextures(void)
+{
+    for (int i = 0; i < FANG_NUM_TILETEXTURE; ++i)
+    {
+        assert(Fang_TileTextures[i].pixels);
+
+        SDL_free(Fang_TileTextures[i].pixels);
+        SDL_memset(&Fang_TileTextures[i], 0, sizeof(Fang_Image));
+    }
+}
+
 static inline void
 FangSDL_LoadMap(void)
 {
@@ -243,10 +285,13 @@ int Fang_Main(int argc, char** argv)
     );
 
     if (!texture)
-        goto Error_Texture;
+        goto Error_Framebuffer;
 
     if (FangSDL_CreateFonts())
         goto Error_Fonts;
+
+    if (FangSDL_CreateTextures())
+        goto Error_Textures;
 
     FangSDL_LoadMap();
 
@@ -487,10 +532,13 @@ int Fang_Main(int argc, char** argv)
 
     FangSDL_DisconnectController(&controller);
 
+Error_Textures:
+    FangSDL_DestroyTextures();
+
 Error_Fonts:
     FangSDL_DestroyFonts();
 
-Error_Texture:
+Error_Framebuffer:
     SDL_DestroyTexture(texture);
 
 Error_Renderer:

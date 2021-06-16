@@ -18,10 +18,10 @@ enum {
 };
 
 typedef enum Fang_Direction {
-    FANG_DIRECTION_NORTH,
-    FANG_DIRECTION_SOUTH,
-    FANG_DIRECTION_EAST,
-    FANG_DIRECTION_WEST,
+    FANG_DIRECTION_NORTH = 0,
+    FANG_DIRECTION_SOUTH = 1,
+    FANG_DIRECTION_EAST  = 2,
+    FANG_DIRECTION_WEST  = 3,
 } Fang_Direction;
 
 typedef struct Fang_RayHit {
