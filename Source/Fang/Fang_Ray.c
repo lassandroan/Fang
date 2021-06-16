@@ -53,7 +53,7 @@ Fang_RayCast(
     const Fang_Vec3 * const dir = &camera->dir;
     const Fang_Vec3 * const cam = &camera->cam;
 
-    const Fang_Vec2 norm_pos = {
+    const Fang_Vec2 cam_pos = {
         .x = camera->pos.x / map->tile_size,
         .y = camera->pos.y / map->tile_size,
     };
@@ -80,9 +80,9 @@ Fang_RayCast(
                 : (cam_ray.y == 0.0f) ? 0.0f : fabsf(1.0f / cam_ray.y),
         };
 
-        Fang_Vec2 floor_norm = {
-            .x = floorf(norm_pos.x),
-            .y = floorf(norm_pos.y),
+        Fang_Vec2 trunc_pos = {
+            .x = floorf(cam_pos.x),
+            .y = floorf(cam_pos.y),
         };
 
         Fang_Vec2 step_dist;
@@ -93,26 +93,26 @@ Fang_RayCast(
         if (cam_ray.x < 0.0f)
         {
             step_dist.x = -1.0f;
-            side_dist.x = (norm_pos.x - floor_norm.x) * delta_dist.x;
+            side_dist.x = (cam_pos.x - trunc_pos.x) * delta_dist.x;
             side_dir_x  = FANG_DIRECTION_EAST;
         }
         else
         {
             step_dist.x = 1.0f;
-            side_dist.x = (floor_norm.x + 1.0f - norm_pos.x) * delta_dist.x;
+            side_dist.x = (trunc_pos.x + 1.0f - cam_pos.x) * delta_dist.x;
             side_dir_x  = FANG_DIRECTION_WEST;
         }
 
         if (cam_ray.y < 0.0f)
         {
             step_dist.y = -1.0f;
-            side_dist.y = (norm_pos.y - floor_norm.y) * delta_dist.y;
+            side_dist.y = (cam_pos.y - trunc_pos.y) * delta_dist.y;
             side_dir_y  = FANG_DIRECTION_SOUTH;
         }
         else
         {
             step_dist.y = 1.0f;
-            side_dist.y = (floor_norm.y + 1.0f - norm_pos.y) * delta_dist.y;
+            side_dist.y = (trunc_pos.y + 1.0f - cam_pos.y) * delta_dist.y;
             side_dir_y  = FANG_DIRECTION_NORTH;
         }
 
@@ -124,13 +124,13 @@ Fang_RayCast(
 
             if (side_dist.x < side_dist.y)
             {
-                floor_norm.x += step_dist.x;
+                trunc_pos.x  += step_dist.x;
                 side_dist.x  += delta_dist.x;
                 hit->norm_dir = side_dir_x;
             }
             else if (side_dist.x > side_dist.y)
             {
-                floor_norm.y += step_dist.y;
+                trunc_pos.y  += step_dist.y;
                 side_dist.y  += delta_dist.y;
                 hit->norm_dir = side_dir_y;
             }
@@ -138,21 +138,21 @@ Fang_RayCast(
             {
                 if (step_dist.x < step_dist.y)
                 {
-                    floor_norm.x += step_dist.x;
+                    trunc_pos.x  += step_dist.x;
                     side_dist.x  += delta_dist.x;
                     hit->norm_dir = side_dir_x;
                 }
                 else
                 {
-                    floor_norm.y += step_dist.y;
+                    trunc_pos.y  += step_dist.y;
                     side_dist.y  += delta_dist.y;
                     hit->norm_dir = side_dir_y;
                 }
             }
 
             const Fang_Point tile_pos = {
-                .x = (int)(floor_norm.x * map->tile_size),
-                .y = (int)(floor_norm.y * map->tile_size),
+                .x = (int)(trunc_pos.x * map->tile_size),
+                .y = (int)(trunc_pos.y * map->tile_size),
             };
 
             const Fang_TileType wall_type = Fang_MapQueryType(
@@ -165,7 +165,7 @@ Fang_RayCast(
                 if (hit->norm_dir == side_dir_x)
                 {
                     hit->front_dist = (
-                        floor_norm.x - norm_pos.x + (1.0f - step_dist.x) / 2.0f
+                        trunc_pos.x - cam_pos.x + (1.0f - step_dist.x) / 2.0f
                     );
 
                     if (cam_ray.x != 0.0f)
@@ -174,7 +174,7 @@ Fang_RayCast(
                 else if (hit->norm_dir == side_dir_y)
                 {
                     hit->front_dist = (
-                        floor_norm.y - norm_pos.y + (1.0f - step_dist.y) / 2.0f
+                        trunc_pos.y - cam_pos.y + (1.0f - step_dist.y) / 2.0f
                     );
 
                     if (cam_ray.y != 0.0f)
@@ -190,8 +190,8 @@ Fang_RayCast(
                        * map->tile_size,
                 };
 
-                const Fang_Vec2 old_floor_norm = floor_norm;
-                const Fang_Vec2 old_side_dist  = side_dist;
+                const Fang_Vec2 old_trunc_pos = trunc_pos;
+                const Fang_Vec2 old_side_dist = side_dist;
 
                 /* Run an additional increment to calculate the back face hit */
                 {
@@ -199,28 +199,28 @@ Fang_RayCast(
 
                     if (side_dist.x < side_dist.y)
                     {
-                        floor_norm.x += step_dist.x;
-                        side_dist.x  += delta_dist.x;
+                        trunc_pos.x += step_dist.x;
+                        side_dist.x += delta_dist.x;
                         dir = side_dir_x;
                     }
                     else if (side_dist.x > side_dist.y)
                     {
-                        floor_norm.y += step_dist.y;
-                        side_dist.y  += delta_dist.y;
+                        trunc_pos.y += step_dist.y;
+                        side_dist.y += delta_dist.y;
                         dir = side_dir_y;
                     }
                     else /* 0 case */
                     {
                         if (step_dist.x < step_dist.y)
                         {
-                            floor_norm.x += step_dist.x;
-                            side_dist.x  += delta_dist.x;
+                            trunc_pos.x += step_dist.x;
+                            side_dist.x += delta_dist.x;
                             dir = side_dir_x;
                         }
                         else
                         {
-                            floor_norm.y += step_dist.y;
-                            side_dist.y  += delta_dist.y;
+                            trunc_pos.y += step_dist.y;
+                            side_dist.y += delta_dist.y;
                             dir = side_dir_y;
                         }
                     }
@@ -229,7 +229,7 @@ Fang_RayCast(
                     if (dir == side_dir_x)
                     {
                         hit->back_dist = (
-                            floor_norm.x - norm_pos.x + (1.0f - step_dist.x) / 2.0f
+                            trunc_pos.x - cam_pos.x + (1.0f - step_dist.x) / 2.0f
                         );
 
                         if (cam_ray.x != 0.0f)
@@ -238,7 +238,7 @@ Fang_RayCast(
                     else if (dir == side_dir_y)
                     {
                         hit->back_dist = (
-                            floor_norm.y - norm_pos.y + (1.0f - step_dist.y) / 2.0f
+                            trunc_pos.y - cam_pos.y + (1.0f - step_dist.y) / 2.0f
                         );
 
                         if (cam_ray.y != 0.0f)
@@ -253,10 +253,18 @@ Fang_RayCast(
                     };
                 }
 
-                floor_norm = old_floor_norm;
-                side_dist  = old_side_dist;
+                trunc_pos = old_trunc_pos;
+                side_dist = old_side_dist;
 
                 hit_count++;
+
+                const Fang_TileSize wall_size = Fang_MapQuerySize(
+                    map, tile_pos.x, tile_pos.y
+                );
+
+                if (camera->pos.z > wall_size.height
+                &&  camera->pos.z <= wall_size.height + wall_size.size)
+                    break;
             }
         }
 

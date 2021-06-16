@@ -522,7 +522,7 @@ Fang_DrawMapTiles(
                 if (k == 0)
                     front_face = surface;
                 else
-                    back_face = surface;
+                    back_face  = surface;
 
                 /* NOTE: Cull backfaces until transparent texture support */
                 if (k == 1)
