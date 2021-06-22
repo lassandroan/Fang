@@ -571,9 +571,6 @@ Fang_DrawMapTiles(
                     &surface
                 );
 
-                const bool enable_depth_prev = framebuf->state.enable_depth;
-                framebuf->state.enable_depth = false;
-
                 Fang_FillRect(
                     framebuf,
                     &surface,
@@ -587,8 +584,6 @@ Fang_DrawMapTiles(
                         ),
                     }
                 );
-
-                framebuf->state.enable_depth = enable_depth_prev;
             }
 
             /* Draw top or bottom of tile based on front/back faces */
