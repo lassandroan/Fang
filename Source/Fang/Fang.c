@@ -129,6 +129,7 @@ Fang_UpdateAndRender(
     }
 
     framebuf->state.current_depth = 0.0f;
+    framebuf->state.enable_depth  = true;
 
     Fang_CameraRotate(
         &camera,
@@ -143,7 +144,6 @@ Fang_UpdateAndRender(
         (size_t)FANG_WINDOW_SIZE
     );
 
-    framebuf->state.enable_depth = true;
     Fang_DrawMap(
         &temp_map,
         framebuf,
@@ -153,23 +153,33 @@ Fang_UpdateAndRender(
     );
 
     Fang_DrawEntities(framebuf, &camera, entities, FANG_NUM_ENTITIES);
-    framebuf->state.enable_depth = false;
 
-    Fang_DrawMinimap(
-        &temp_map,
-        framebuf,
-        &camera,
-        raycast,
-        (size_t)FANG_WINDOW_SIZE,
-        &(Fang_Rect){
-            .x = FANG_WINDOW_SIZE - 32,
-            .y = FANG_WINDOW_SIZE - 32,
-            .w = 32,
-            .h = 32,
-        }
-    );
+    {
+        const Fang_FrameState state = Fang_FramebufferSetViewport(
+            framebuf,
+            &(Fang_Rect){
+                .x = FANG_WINDOW_SIZE - 32,
+                .y = FANG_WINDOW_SIZE - 32,
+                .w = 32,
+                .h = 32,
+            }
+        );
 
-    framebuf->state.enable_depth = false;
+        framebuf->state.enable_depth = false;
+
+        Fang_DrawMinimap(
+            &temp_map,
+            framebuf,
+            &camera,
+            raycast,
+            (size_t)FANG_WINDOW_SIZE
+        );
+
+        framebuf->state = state;
+    }
+
+    framebuf->state.current_depth = 0.0f;
+
     Fang_DrawText(
         framebuf,
         "FANG",

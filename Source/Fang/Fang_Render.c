@@ -423,6 +423,8 @@ Fang_DrawMapFloor(
             .y = (camera->pos.y / map->tile_size) + row_dist * ray_start.y,
         };
 
+        framebuf->state.current_depth = row_dist;
+
         for (int x = 0; x < viewport.w; ++x)
         {
             const Fang_Point tex_pos = {
@@ -728,16 +730,13 @@ Fang_DrawMap(
     assert(rays);
     assert(count);
 
-    const bool enable_depth_prev = framebuf->state.enable_depth;
-    framebuf->state.enable_depth = false;
+    framebuf->state.current_depth = FLT_MAX;
 
     if (map->skybox.pixels)
         Fang_DrawMapSkybox(map, framebuf, camera);
 
     if (map->floor.pixels)
         Fang_DrawMapFloor(map, framebuf, camera);
-
-    framebuf->state.enable_depth = enable_depth_prev;
 
     Fang_DrawMapTiles(map, framebuf, camera, rays, count);
 }
@@ -753,8 +752,7 @@ Fang_DrawMinimap(
           Fang_Framebuffer * const framebuf,
     const Fang_Camera      * const camera,
     const Fang_Ray         * const rays,
-    const size_t                   count,
-    const Fang_Rect        * const area)
+    const size_t                   count)
 {
     assert(map);
     assert(framebuf);
@@ -762,10 +760,7 @@ Fang_DrawMinimap(
     assert(rays);
     assert(count);
 
-    const Fang_Rect       bounds = Fang_FramebufferGetViewport(framebuf);
-    const Fang_FrameState state  = Fang_FramebufferSetViewport(framebuf, area);
-
-    framebuf->state.enable_depth = false;
+    const Fang_Rect bounds = Fang_FramebufferGetViewport(framebuf);
 
     Fang_FillRect(framebuf, &bounds, &FANG_BLACK);
 
@@ -848,8 +843,6 @@ Fang_DrawMinimap(
         },
         &FANG_RED
     );
-
-    framebuf->state = state;
 }
 
 

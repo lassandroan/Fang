@@ -130,6 +130,9 @@ Fang_FramebufferGetViewport(
  *
  * Because this is a viewport transform and not a clip region, the framebuffer
  * will still attempt to draw all contents within the new area.
+ *
+ * This returns the previous state of the framebuffer, so that it can easily be
+ * restored later.
 **/
 static inline Fang_FrameState
 Fang_FramebufferSetViewport(
