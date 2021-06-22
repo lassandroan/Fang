@@ -554,7 +554,7 @@ Fang_DrawMapTiles(
                 if (face == FANG_FACE_EAST || face == FANG_FACE_NORTH)
                     tex_x = 1.0f - tex_x;
 
-                framebuf->current_depth = face_dist;
+                framebuf->state.current_depth = face_dist;
 
                 Fang_DrawImage(
                     framebuf,
@@ -569,8 +569,8 @@ Fang_DrawMapTiles(
                     &surface
                 );
 
-                const bool enable_depth_prev = framebuf->enable_depth;
-                framebuf->enable_depth = false;
+                const bool enable_depth_prev = framebuf->state.enable_depth;
+                framebuf->state.enable_depth = false;
 
                 Fang_FillRect(
                     framebuf,
@@ -586,7 +586,7 @@ Fang_DrawMapTiles(
                     }
                 );
 
-                framebuf->enable_depth = enable_depth_prev;
+                framebuf->state.enable_depth = enable_depth_prev;
             }
 
             /* Draw top or bottom of tile based on front/back faces */
@@ -690,7 +690,7 @@ Fang_DrawMapTiles(
                         &dest_color
                     );
 
-                    framebuf->current_depth = dist;
+                    framebuf->state.current_depth = dist;
 
                     Fang_FramebufferPutPixel(
                         framebuf,
@@ -728,8 +728,8 @@ Fang_DrawMap(
     assert(rays);
     assert(count);
 
-    const bool enable_depth_prev = framebuf->enable_depth;
-    framebuf->enable_depth = false;
+    const bool enable_depth_prev = framebuf->state.enable_depth;
+    framebuf->state.enable_depth = false;
 
     if (map->skybox.pixels)
         Fang_DrawMapSkybox(map, framebuf, camera);
@@ -737,7 +737,7 @@ Fang_DrawMap(
     if (map->floor.pixels)
         Fang_DrawMapFloor(map, framebuf, camera);
 
-    framebuf->enable_depth = enable_depth_prev;
+    framebuf->state.enable_depth = enable_depth_prev;
 
     Fang_DrawMapTiles(map, framebuf, camera, rays, count);
 }
@@ -762,14 +762,10 @@ Fang_DrawMinimap(
     assert(rays);
     assert(count);
 
-    const bool enable_depth_prev = framebuf->enable_depth;
-    framebuf->enable_depth = false;
+    const Fang_Rect       bounds = Fang_FramebufferGetViewport(framebuf);
+    const Fang_FrameState state  = Fang_FramebufferSetViewport(framebuf, area);
 
-    const Fang_Mat3x3 transform_prev = framebuf->transform;
-
-    const Fang_Rect bounds = Fang_FramebufferGetViewport(framebuf);
-
-    Fang_FramebufferSetViewport(framebuf, area);
+    framebuf->state.enable_depth = false;
 
     Fang_FillRect(framebuf, &bounds, &FANG_BLACK);
 
@@ -853,8 +849,7 @@ Fang_DrawMinimap(
         &FANG_RED
     );
 
-    framebuf->transform    = transform_prev;
-    framebuf->enable_depth = enable_depth_prev;
+    framebuf->state = state;
 }
 
 
@@ -876,7 +871,10 @@ Fang_DrawEntities(
         const Fang_Entity * const entity = &entities[i];
 
         const Fang_Rect surface = Fang_CameraProjectBody(
-            camera, &entity->body, &viewport, &framebuf->current_depth
+            camera,
+            &entity->body,
+            &viewport,
+            &framebuf->state.current_depth
         );
 
         if (surface.h <= 0)
@@ -888,7 +886,7 @@ Fang_DrawEntities(
         if (surface.y + surface.h <= 0 || surface.y > viewport.h)
             continue;
 
-        framebuf->current_depth /= 16.0f;
+        framebuf->state.current_depth /= 16.0f;
 
         Fang_FillRect(
             framebuf,

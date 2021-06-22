@@ -13,6 +13,12 @@
 // You should have received a copy of the GNU General Public License along
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+typedef struct Fang_FrameState {
+    bool        enable_depth;
+    float       current_depth;
+    Fang_Mat3x3 transform;
+} Fang_FrameState;
+
 /**
  * A structure used for rendering to the screen.
  *
@@ -24,11 +30,9 @@
 **/
 typedef struct Fang_Framebuffer
 {
-    Fang_Image  color;
-    Fang_Image  depth;
-    bool        enable_depth;
-    float       current_depth;
-    Fang_Mat3x3 transform;
+    Fang_Image      color;
+    Fang_Image      depth;
+    Fang_FrameState state;
 } Fang_Framebuffer;
 
 /**
@@ -55,7 +59,9 @@ Fang_FramebufferPutPixel(
     assert(framebuf->color.pixels);
     assert(framebuf->color.stride == 4);
 
-    const Fang_Point trans_point = Fang_MatMult(framebuf->transform, *point);
+    const Fang_Point trans_point = Fang_MatMult(
+        framebuf->state.transform, *point
+    );
 
     if (trans_point.x < 0 || trans_point.x >= framebuf->color.width)
         return false;
@@ -65,7 +71,7 @@ Fang_FramebufferPutPixel(
 
     bool write = true;
 
-    if (framebuf->enable_depth)
+    if (framebuf->state.enable_depth)
     {
         assert(framebuf->depth.pixels);
         assert(framebuf->depth.width  == framebuf->color.width);
@@ -78,10 +84,10 @@ Fang_FramebufferPutPixel(
           + trans_point.x * framebuf->depth.stride
         );
 
-        if (*dst < framebuf->current_depth)
+        if (*dst < framebuf->state.current_depth)
             write = false;
         else
-            *dst = framebuf->current_depth;
+            *dst = framebuf->state.current_depth;
     }
 
     if (write)
@@ -125,7 +131,7 @@ Fang_FramebufferGetViewport(
  * Because this is a viewport transform and not a clip region, the framebuffer
  * will still attempt to draw all contents within the new area.
 **/
-static inline void
+static inline Fang_FrameState
 Fang_FramebufferSetViewport(
           Fang_Framebuffer * const framebuf,
     const Fang_Rect        * const viewport)
@@ -133,24 +139,29 @@ Fang_FramebufferSetViewport(
     assert(framebuf);
     assert(viewport);
 
+    Fang_FrameState state = framebuf->state;
+
     if (viewport->w == 0 || viewport->h == 0)
     {
-        memset(&framebuf->transform, 0, sizeof(Fang_Mat3x3));
-        return;
+        assert(0);
+        memset(&framebuf->state.transform, 0, sizeof(Fang_Mat3x3));
+        return state;
     }
 
     const Fang_Rect bounds = Fang_FramebufferGetViewport(framebuf);
 
     const Fang_Mat3x3 translate = Fang_MatMult(
-        framebuf->transform,
+        framebuf->state.transform,
         Fang_Mat3x3Translate(viewport->x, viewport->y)
     );
 
-    framebuf->transform = Fang_MatMult(
+    framebuf->state.transform = Fang_MatMult(
         translate,
         Fang_Mat3x3Scale(
             (float)viewport->w / (float)bounds.w,
             (float)viewport->h / (float)bounds.h
         )
     );
+
+    return state;
 }

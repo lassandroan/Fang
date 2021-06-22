@@ -522,9 +522,10 @@ int Fang_Main(int argc, char** argv)
             framebuf.depth.width   = FANG_WINDOW_SIZE;
             framebuf.depth.height  = FANG_WINDOW_SIZE;
             framebuf.depth.stride  = SDL_BYTESPERPIXEL(SDL_PIXELFORMAT_RGBA8888);
-            framebuf.enable_depth  = true;
-            framebuf.current_depth = 0.0f;
-            framebuf.transform = Fang_Mat3x3Identity();
+
+            framebuf.state.enable_depth  = true;
+            framebuf.state.current_depth = 0.0f;
+            framebuf.state.transform     = Fang_Mat3x3Identity();
 
             int error = SDL_LockTexture(
                 texture,

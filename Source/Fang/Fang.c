@@ -141,7 +141,7 @@ Fang_UpdateAndRender(
         (size_t)FANG_WINDOW_SIZE
     );
 
-    framebuf->enable_depth = true;
+    framebuf->state.enable_depth = true;
     Fang_DrawMap(
         &temp_map,
         framebuf,
@@ -151,7 +151,7 @@ Fang_UpdateAndRender(
     );
 
     Fang_DrawEntities(framebuf, &camera, entities, FANG_NUM_ENTITIES);
-    framebuf->enable_depth = false;
+    framebuf->state.enable_depth = false;
 
     Fang_DrawMinimap(
         &temp_map,
@@ -167,7 +167,7 @@ Fang_UpdateAndRender(
         }
     );
 
-    framebuf->enable_depth = false;
+    framebuf->state.enable_depth = false;
     Fang_DrawText(
         framebuf,
         "FANG",
