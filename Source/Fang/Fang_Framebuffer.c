@@ -145,6 +145,11 @@ Fang_FramebufferClear(
         Fang_ImageClear(&framebuf->stencil);
 }
 
+/**
+ * Get the rectangle representing the framebuffer's viewport (0, 0, w, h).
+ *
+ * This does not take the framebuffer's transform into account.
+**/
 static inline Fang_Rect
 Fang_FramebufferGetViewport(
     Fang_Framebuffer * const framebuf)
@@ -159,6 +164,12 @@ Fang_FramebufferGetViewport(
     };
 }
 
+/**
+ * Sets the bounds with which the viewport should draw into.
+ *
+ * Because this is a viewport transform and not a clip region, the framebuffer
+ * will still attempt to draw all contents within the new area.
+**/
 static inline void
 Fang_FramebufferSetViewport(
           Fang_Framebuffer * const framebuf,
