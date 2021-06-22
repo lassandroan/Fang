@@ -47,6 +47,7 @@ Fang_CameraProjectSurface(
     const Fang_Camera * const camera,
     const Fang_Rect   * const surface,
     const float               dist,
+    const int                 tile_size,
     const Fang_Rect   * const viewport)
 {
     assert(camera);
@@ -54,8 +55,8 @@ Fang_CameraProjectSurface(
     assert(viewport);
 
     const float ratio  = viewport->h / dist;
-    const float height = (surface->y / (float)FANG_TILE_SIZE) * ratio;
-    const float size   = (surface->h / (float)FANG_TILE_SIZE) * ratio - ratio;
+    const float height = (surface->y / (float)tile_size) * ratio;
+    const float size   = (surface->h / (float)tile_size) * ratio - ratio;
 
     return (Fang_Rect){
         .x = surface->x,

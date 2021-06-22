@@ -120,6 +120,82 @@ FangSDL_DestroyFonts(void)
     }
 }
 
+static inline int
+FangSDL_CreateTextures(void)
+{
+    for (int i = 0; i < FANG_NUM_TILETEXTURE; ++i)
+    {
+        const char * const path = Fang_TileTexturePaths[i];
+
+        Fang_Buffer file = FangSDL_LoadResource(path);
+
+        if (!file.data)
+        {
+            breakpoint();
+            return 1;
+        }
+
+        Fang_Image * const texture = &Fang_TileTextures[i];
+
+        *texture = Fang_TGALoad(&file);
+
+        if (!texture->pixels)
+        {
+            breakpoint();
+            SDL_SetError("Unable to load texture %s", path);
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+static inline void
+FangSDL_DestroyTextures(void)
+{
+    for (int i = 0; i < FANG_NUM_TILETEXTURE; ++i)
+    {
+        assert(Fang_TileTextures[i].pixels);
+
+        SDL_free(Fang_TileTextures[i].pixels);
+        SDL_memset(&Fang_TileTextures[i], 0, sizeof(Fang_Image));
+    }
+}
+
+static inline void
+FangSDL_LoadMap(void)
+{
+    {
+        Fang_Buffer file = FangSDL_LoadResource("Maps/test/skybox.tga");
+
+        if (file.data)
+        {
+            temp_map.skybox = Fang_TGALoad(&file);
+            if (!temp_map.skybox.pixels)
+                puts("Invalid skybox.tga");
+        }
+        else
+        {
+            puts("Could not load skybox_new.tga");
+        }
+    }
+
+    {
+        Fang_Buffer file = FangSDL_LoadResource("Maps/test/floor.tga");
+
+        if (file.data)
+        {
+            temp_map.floor = Fang_TGALoad(&file);
+            if (!temp_map.floor.pixels)
+                puts("Invalid floor.tga");
+        }
+        else
+        {
+            puts("Could not load floor.tga");
+        }
+    }
+}
+
 static inline void
 FangSDL_ConnectController(
     SDL_GameController ** const controller)
@@ -180,8 +256,8 @@ int Fang_Main(int argc, char** argv)
         FANG_TITLE,
         SDL_WINDOWPOS_UNDEFINED,
         SDL_WINDOWPOS_UNDEFINED,
-        FANG_WINDOW_SIZE,
-        FANG_WINDOW_SIZE,
+        FANG_WINDOW_SIZE * 2,
+        FANG_WINDOW_SIZE * 2,
         SDL_WINDOW_SHOWN
             | SDL_WINDOW_ALLOW_HIGHDPI
             | SDL_WINDOW_INPUT_FOCUS
@@ -209,10 +285,15 @@ int Fang_Main(int argc, char** argv)
     );
 
     if (!texture)
-        goto Error_Texture;
+        goto Error_Framebuffer;
 
     if (FangSDL_CreateFonts())
         goto Error_Fonts;
+
+    if (FangSDL_CreateTextures())
+        goto Error_Textures;
+
+    FangSDL_LoadMap();
 
     SDL_GameController * controller = NULL;
     FangSDL_ConnectController(&controller);
@@ -451,10 +532,13 @@ int Fang_Main(int argc, char** argv)
 
     FangSDL_DisconnectController(&controller);
 
+Error_Textures:
+    FangSDL_DestroyTextures();
+
 Error_Fonts:
     FangSDL_DestroyFonts();
 
-Error_Texture:
+Error_Framebuffer:
     SDL_DestroyTexture(texture);
 
 Error_Renderer:
