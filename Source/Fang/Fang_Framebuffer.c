@@ -78,29 +78,29 @@ Fang_FramebufferPutPixel(
         assert(framebuf->depth.height == framebuf->color.height);
         assert(framebuf->depth.stride == 4);
 
-        float * const dst = (float*)(
+        float * const dest = (float*)(
             framebuf->depth.pixels
           + trans_point.y * framebuf->depth.pitch
           + trans_point.x * framebuf->depth.stride
         );
 
-        if (*dst < framebuf->state.current_depth)
+        if (*dest < framebuf->state.current_depth)
             write = false;
         else
-            *dst = framebuf->state.current_depth;
+            *dest = framebuf->state.current_depth;
     }
 
     if (write)
     {
-        uint32_t * dst = (uint32_t*)(
+        uint32_t * const dest = (uint32_t*)(
             framebuf->color.pixels
           + (trans_point.y * framebuf->color.pitch
           +  trans_point.x * framebuf->color.stride)
         );
 
-        Fang_Color dst_color     = Fang_ColorFromRGBA(*dst);
-        Fang_Color blended_color = Fang_ColorBlend(color, &dst_color);
-        *dst = Fang_ColorToRGBA(&blended_color);
+        Fang_Color dest_color    = Fang_ColorFromRGBA(*dest);
+        Fang_Color blended_color = Fang_ColorBlend(color, &dest_color);
+        *dest = Fang_ColorToRGBA(&blended_color);
     }
 
     return write;
