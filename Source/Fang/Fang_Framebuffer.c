@@ -18,29 +18,30 @@
  *
  * Framebuffers consist of two images:
  * - An RGBA color image whose result is drawn to the screen
- * - A stencil buffer used internally to discard pixels
+ * - A depth buffer used internally to discard pixels
  *
  * @see Fang_FramebufferPutPixel()
 **/
 typedef struct Fang_Framebuffer
 {
     Fang_Image  color;
-    Fang_Image  stencil;
-    bool        enable_stencil;
+    Fang_Image  depth;
+    bool        enable_depth;
+    float       current_depth;
     Fang_Mat3x3 transform;
 } Fang_Framebuffer;
 
 /**
  * Writes a pixel of a given color to the framebuffer.
  *
- * This routine utilizes the framebuffer's stencil when placing pixels. If the
- * stencil is enabled, its buffer is checked to see if a value has already been
- * written in this position.
+ * This routine utilizes the framebuffer's depth when placing pixels. If the
+ * depth buffer is enabled, its buffer is checked to see if a value has already
+ * been written in this position.
  *
- * If a value has been written, we do not write the new pixel into the color
- * image. If a value has not been written then the stencil is written to and the
- * color is written into the color image. If the point lies outside the
- * framebuffer bounds this function does nothing.
+ * If a value has been written *and* is lower than our supplied depth, we do not
+ * write the new pixel into the color image. If a value has not been written
+ * then the depth is written to and the color is written into the color image.
+ * If the point lies outside the framebuffer bounds this function does nothing.
  *
  * The framebuffer must have a color image.
 **/
@@ -64,23 +65,23 @@ Fang_FramebufferPutPixel(
 
     bool write = true;
 
-    if (framebuf->enable_stencil)
+    if (framebuf->enable_depth)
     {
-        assert(framebuf->stencil.pixels);
-        assert(framebuf->stencil.width  == framebuf->color.width);
-        assert(framebuf->stencil.height == framebuf->color.height);
-        assert(framebuf->stencil.stride == 1);
+        assert(framebuf->depth.pixels);
+        assert(framebuf->depth.width  == framebuf->color.width);
+        assert(framebuf->depth.height == framebuf->color.height);
+        assert(framebuf->depth.stride == 4);
 
-        const uint8_t pixel  = UINT8_MAX;
-        const int     offset = (
-            trans_point.y * framebuf->stencil.pitch
-          + trans_point.x * framebuf->stencil.stride
+        float * const dst = (float*)(
+            framebuf->depth.pixels
+          + trans_point.y * framebuf->depth.pitch
+          + trans_point.x * framebuf->depth.stride
         );
 
-        if (*(framebuf->stencil.pixels + offset))
+        if (*dst < framebuf->current_depth)
             write = false;
         else
-            *(framebuf->stencil.pixels + offset) = pixel;
+            *dst = framebuf->current_depth;
     }
 
     if (write)
@@ -97,25 +98,6 @@ Fang_FramebufferPutPixel(
     }
 
     return write;
-}
-
-/**
- * Clear's the framebuffer's color and stencil images.
- *
- * If the framebuffer does not have a stencil image, only the color is cleared.
- * The framebuffer must have a color image.
-**/
-static inline void
-Fang_FramebufferClear(
-    Fang_Framebuffer * const framebuf)
-{
-    assert(framebuf);
-    assert(framebuf->color.pixels);
-
-    Fang_ImageClear(&framebuf->color);
-
-    if (framebuf->stencil.pixels)
-        Fang_ImageClear(&framebuf->stencil);
 }
 
 /**

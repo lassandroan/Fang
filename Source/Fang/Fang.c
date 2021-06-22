@@ -14,6 +14,7 @@
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <assert.h>
+#include <float.h>
 #include <math.h>
 #include <signal.h>
 #include <stdbool.h>
@@ -47,10 +48,12 @@
 #include "Fang_TGA.c"
 #include "Fang_Font.c"
 #include "Fang_Framebuffer.c"
+#include "Fang_Body.c"
 #include "Fang_Camera.c"
 #include "Fang_Tile.c"
 #include "Fang_Map.c"
 #include "Fang_Ray.c"
+#include "Fang_Entity.c"
 #include "Fang_Render.c"
 #include "Fang_Interface.c"
 
@@ -78,6 +81,25 @@ Fang_Camera camera = (Fang_Camera){
     .cam = {.y =  0.5f},
 };
 
+enum {
+    FANG_NUM_ENTITIES = 2,
+};
+
+Fang_Entity entities[FANG_NUM_ENTITIES] = {
+    [0] = (Fang_Entity){
+        (Fang_Body){
+            .pos  = (Fang_Vec2){.x = 32, .y = 32},
+            .size = 16,
+        },
+    },
+    [1] = (Fang_Entity){
+        (Fang_Body){
+            .pos  = (Fang_Vec2){.x = 96, .y = 84},
+            .size = 16,
+        },
+    },
+};
+
 static inline void
 Fang_UpdateAndRender(
     const Fang_Input       * const input,
@@ -90,11 +112,25 @@ Fang_UpdateAndRender(
     interface.framebuf = framebuf;
     Fang_InterfaceUpdate(&interface);
 
-    Fang_FramebufferClear(framebuf);
+    Fang_ImageClear(&framebuf->color);
+
+    for (int x = 0; x < framebuf->depth.width; ++x)
+    {
+        for (int y = 0; y < framebuf->depth.height; ++y)
+        {
+            float * const depth = (float*)(
+                framebuf->depth.pixels
+              + (x * framebuf->depth.stride)
+              + (y * framebuf->depth.pitch)
+            );
+
+            *depth = FLT_MAX;
+        }
+    }
 
     Fang_CameraRotate(
         &camera,
-        0.015f,
+        0.0075f,
         0
     );
 
@@ -105,6 +141,7 @@ Fang_UpdateAndRender(
         (size_t)FANG_WINDOW_SIZE
     );
 
+    framebuf->enable_depth = true;
     Fang_DrawMap(
         &temp_map,
         framebuf,
@@ -112,6 +149,9 @@ Fang_UpdateAndRender(
         raycast,
         (size_t)FANG_WINDOW_SIZE
     );
+
+    Fang_DrawEntities(framebuf, &camera, entities, FANG_NUM_ENTITIES);
+    framebuf->enable_depth = false;
 
     Fang_DrawMinimap(
         &temp_map,
@@ -127,6 +167,7 @@ Fang_UpdateAndRender(
         }
     );
 
+    framebuf->enable_depth = false;
     Fang_DrawText(
         framebuf,
         "FANG",
