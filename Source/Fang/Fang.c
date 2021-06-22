@@ -128,6 +128,8 @@ Fang_UpdateAndRender(
         }
     }
 
+    framebuf->state.current_depth = 0.0f;
+
     Fang_CameraRotate(
         &camera,
         0.0075f,
