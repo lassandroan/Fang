@@ -91,36 +91,9 @@ Fang_FramebufferPutPixel(
           +  trans_point.x * framebuf->color.stride)
         );
 
-        Fang_Color dst_color = Fang_ColorFromRGBA(*dst);
-
-        const float src_r = color->r / 255.0f,
-                    src_g = color->g / 255.0f,
-                    src_b = color->b / 255.0f,
-                    src_a = color->a / 255.0f;
-
-        float dst_r = dst_color.r / 255.0f,
-              dst_g = dst_color.g / 255.0f,
-              dst_b = dst_color.b / 255.0f,
-              dst_a = dst_color.a / 255.0f;
-
-        dst_r = (src_r * src_a) + (dst_r * (1.0f - src_a));
-        dst_g = (src_g * src_a) + (dst_g * (1.0f - src_a));
-        dst_b = (src_b * src_a) + (dst_b * (1.0f - src_a));
-        dst_a = src_a + (dst_a * (1.0f - src_a));
-
-        dst_r = min(max(dst_r, 0.0f), 1.0f);
-        dst_g = min(max(dst_g, 0.0f), 1.0f);
-        dst_b = min(max(dst_b, 0.0f), 1.0f);
-        dst_a = min(max(dst_a, 0.0f), 1.0f);
-
-        *dst = Fang_ColorToRGBA(
-            &(Fang_Color){
-                .r = (uint8_t)(dst_r * 255.0f),
-                .g = (uint8_t)(dst_g * 255.0f),
-                .b = (uint8_t)(dst_b * 255.0f),
-                .a = (uint8_t)(dst_a * 255.0f),
-            }
-        );
+        Fang_Color dst_color     = Fang_ColorFromRGBA(*dst);
+        Fang_Color blended_color = Fang_ColorBlend(color, &dst_color);
+        *dst = Fang_ColorToRGBA(&blended_color);
     }
 
     return write;

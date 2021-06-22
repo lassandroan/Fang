@@ -440,12 +440,25 @@ Fang_DrawMapFloor(
               + (tex_pos.x * map->floor.stride)
             ];
 
-            const Fang_Color color = Fang_ColorFromRGBA(pixel);
+            Fang_Color dest_color = Fang_ColorFromRGBA(pixel);
+
+            dest_color = Fang_ColorBlend(
+                &(Fang_Color){
+                    .r = map->fog.r,
+                    .g = map->fog.g,
+                    .b = map->fog.b,
+                    .a = (uint8_t)(
+                        clamp(row_dist / map->fog_distance, 0.0f, 1.0f)
+                        * 255.0f
+                    ),
+                },
+                &dest_color
+            );
 
             Fang_FramebufferPutPixel(
                 framebuf,
                 &(Fang_Point){x, y},
-                &color
+                &dest_color
             );
         }
     }
@@ -553,6 +566,20 @@ Fang_DrawMapTiles(
                     },
                     &surface
                 );
+
+                Fang_FillRect(
+                    framebuf,
+                    &surface,
+                    &(Fang_Color){
+                        .r = map->fog.r,
+                        .g = map->fog.g,
+                        .b = map->fog.b,
+                        .a = (uint8_t)(
+                            clamp(face_dist / map->fog_distance, 0.0f, 1.0f)
+                            * 255.0f
+                        ),
+                    }
+                );
             }
 
             /* Draw top or bottom of tile based on front/back faces */
@@ -563,6 +590,9 @@ Fang_DrawMapTiles(
                 Fang_Vec2 hit_start,
                           hit_end;
 
+                float dist_start,
+                      dist_end;
+
                 Fang_Face face;
 
                 /* Draw top */
@@ -570,6 +600,9 @@ Fang_DrawMapTiles(
                 {
                     hit_start = hit->back_hit;
                     hit_end   = hit->front_hit;
+
+                    dist_start = hit->back_dist;
+                    dist_end   = hit->front_dist;
 
                     start_y = back_face.y;
                     end_y   = front_face.y;
@@ -582,6 +615,9 @@ Fang_DrawMapTiles(
                 {
                     hit_start = hit->front_hit;
                     hit_end   = hit->back_hit;
+
+                    dist_start = hit->front_dist;
+                    dist_end   = hit->back_dist;
 
                     start_y = front_face.y + front_face.h;
                     end_y   = back_face.y + back_face.h;
@@ -629,6 +665,22 @@ Fang_DrawMapTiles(
 
                     Fang_Color dest_color = Fang_ImageQuery(
                         &wall_tex, &tex_pos
+                    );
+
+                    const float dist = ((1.0f - r_y) * dist_start)
+                                     + (r_y * dist_end);
+
+                    dest_color = Fang_ColorBlend(
+                        &(Fang_Color){
+                            .r = map->fog.r,
+                            .g = map->fog.g,
+                            .b = map->fog.b,
+                            .a = (uint8_t)(
+                                clamp(dist / map->fog_distance, 0.0f, 1.0f)
+                                * 255.0f
+                            ),
+                        },
+                        &dest_color
                     );
 
                     Fang_FramebufferPutPixel(

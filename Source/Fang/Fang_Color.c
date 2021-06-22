@@ -59,3 +59,42 @@ Fang_ColorFromRGBA(
     result.r = color & 0x000000FF;
     return result;
 }
+
+/**
+ * Performs alpha blending on two colors.
+**/
+static inline Fang_Color
+Fang_ColorBlend(
+    const Fang_Color * const src,
+    const Fang_Color * const dst)
+{
+    assert(src);
+    assert(dst);
+
+    const float src_r = src->r / 255.0f,
+                src_g = src->g / 255.0f,
+                src_b = src->b / 255.0f,
+                src_a = src->a / 255.0f;
+
+    float dst_r = dst->r / 255.0f,
+          dst_g = dst->g / 255.0f,
+          dst_b = dst->b / 255.0f,
+          dst_a = dst->a / 255.0f;
+
+    dst_r = (src_r * src_a) + (dst_r * (1.0f - src_a));
+    dst_g = (src_g * src_a) + (dst_g * (1.0f - src_a));
+    dst_b = (src_b * src_a) + (dst_b * (1.0f - src_a));
+    dst_a = src_a + (dst_a * (1.0f - src_a));
+
+    dst_r = min(max(dst_r, 0.0f), 1.0f);
+    dst_g = min(max(dst_g, 0.0f), 1.0f);
+    dst_b = min(max(dst_b, 0.0f), 1.0f);
+    dst_a = min(max(dst_a, 0.0f), 1.0f);
+
+    return (Fang_Color){
+        .r = (uint8_t)(dst_r * 255.0f),
+        .g = (uint8_t)(dst_g * 255.0f),
+        .b = (uint8_t)(dst_b * 255.0f),
+        .a = (uint8_t)(dst_a * 255.0f),
+    };
+}

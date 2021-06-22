@@ -26,6 +26,9 @@ typedef struct Fang_Map {
 
     Fang_Image skybox;
     Fang_Image floor;
+
+    Fang_Color fog;
+    float      fog_distance;
 } Fang_Map;
 
 enum {
@@ -49,6 +52,8 @@ Fang_Map temp_map = {
     .width = temp_map_width,
     .height = temp_map_height,
     .tile_size = 16,
+    .fog = FANG_BLACK,
+    .fog_distance = 4,
 };
 
 static inline Fang_TileType
