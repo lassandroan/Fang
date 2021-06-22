@@ -38,7 +38,7 @@ Fang_TileType temp_map_map[temp_map_width][temp_map_height] = {
     {1, 0, 0, 0, 0, 0, 2, 1},
     {1, 0, 0, 0, 0, 0, 0, 1},
     {1, 0, 0, 0, 0, 0, 0, 1},
-    {1, 0, 0, 0, 0, 0, 0, 1},
+    {1, 2, 0, 0, 0, 0, 0, 1},
     {1, 0, 0, 0, 0, 2, 0, 1},
     {1, 1, 0, 0, 0, 0, 0, 1},
     {1, 1, 1, 1, 1, 1, 1, 1},
@@ -87,7 +87,7 @@ Fang_MapQuerySize(
             return (Fang_TileSize){0, map->tile_size};
 
         case FANG_TILETYPE_FLOATING:
-            return (Fang_TileSize){map->tile_size * 2, map->tile_size};
+            return (Fang_TileSize){map->tile_size + 3, map->tile_size};
 
         default:
             return (Fang_TileSize){0, 0};

@@ -17,20 +17,22 @@ enum {
     FANG_RAY_MAX_STEPS = 64,
 };
 
-typedef enum Fang_Direction {
-    FANG_DIRECTION_NORTH = 0,
-    FANG_DIRECTION_SOUTH = 1,
-    FANG_DIRECTION_EAST  = 2,
-    FANG_DIRECTION_WEST  = 3,
-} Fang_Direction;
+typedef enum Fang_Face {
+    FANG_FACE_NORTH  = 0,
+    FANG_FACE_SOUTH  = 1,
+    FANG_FACE_EAST   = 2,
+    FANG_FACE_WEST   = 3,
+    FANG_FACE_TOP    = 4,
+    FANG_FACE_BOTTOM = 5,
+} Fang_Face;
 
 typedef struct Fang_RayHit {
-    Fang_Vec2      front_hit;
-    float          front_dist;
-    Fang_Vec2      back_hit;
-    float          back_dist;
-    Fang_Point     tile_pos;
-    Fang_Direction norm_dir;
+    Fang_Vec2  front_hit;
+    float      front_dist;
+    Fang_Vec2  back_hit;
+    float      back_dist;
+    Fang_Point tile_pos;
+    Fang_Face  norm_dir;
 } Fang_RayHit;
 
 typedef struct Fang_Ray {
@@ -87,33 +89,33 @@ Fang_RayCast(
 
         Fang_Vec2 step_dist;
         Fang_Vec2 side_dist;
-        Fang_Direction side_dir_x;
-        Fang_Direction side_dir_y;
+        Fang_Face side_face_x;
+        Fang_Face side_face_y;
 
         if (cam_ray.x < 0.0f)
         {
             step_dist.x = -1.0f;
             side_dist.x = (cam_pos.x - trunc_pos.x) * delta_dist.x;
-            side_dir_x  = FANG_DIRECTION_EAST;
+            side_face_x  = FANG_FACE_EAST;
         }
         else
         {
             step_dist.x = 1.0f;
             side_dist.x = (trunc_pos.x + 1.0f - cam_pos.x) * delta_dist.x;
-            side_dir_x  = FANG_DIRECTION_WEST;
+            side_face_x  = FANG_FACE_WEST;
         }
 
         if (cam_ray.y < 0.0f)
         {
             step_dist.y = -1.0f;
             side_dist.y = (cam_pos.y - trunc_pos.y) * delta_dist.y;
-            side_dir_y  = FANG_DIRECTION_SOUTH;
+            side_face_y  = FANG_FACE_SOUTH;
         }
         else
         {
             step_dist.y = 1.0f;
             side_dist.y = (trunc_pos.y + 1.0f - cam_pos.y) * delta_dist.y;
-            side_dir_y  = FANG_DIRECTION_NORTH;
+            side_face_y  = FANG_FACE_NORTH;
         }
 
         size_t hit_count = 0;
@@ -126,13 +128,13 @@ Fang_RayCast(
             {
                 trunc_pos.x  += step_dist.x;
                 side_dist.x  += delta_dist.x;
-                hit->norm_dir = side_dir_x;
+                hit->norm_dir = side_face_x;
             }
             else if (side_dist.x > side_dist.y)
             {
                 trunc_pos.y  += step_dist.y;
                 side_dist.y  += delta_dist.y;
-                hit->norm_dir = side_dir_y;
+                hit->norm_dir = side_face_y;
             }
             else /* 0 case */
             {
@@ -140,13 +142,13 @@ Fang_RayCast(
                 {
                     trunc_pos.x  += step_dist.x;
                     side_dist.x  += delta_dist.x;
-                    hit->norm_dir = side_dir_x;
+                    hit->norm_dir = side_face_x;
                 }
                 else
                 {
                     trunc_pos.y  += step_dist.y;
                     side_dist.y  += delta_dist.y;
-                    hit->norm_dir = side_dir_y;
+                    hit->norm_dir = side_face_y;
                 }
             }
 
@@ -162,7 +164,7 @@ Fang_RayCast(
             if (wall_type)
             {
                 /* Check the axis of collision */
-                if (hit->norm_dir == side_dir_x)
+                if (hit->norm_dir == side_face_x)
                 {
                     hit->front_dist = (
                         trunc_pos.x - cam_pos.x + (1.0f - step_dist.x) / 2.0f
@@ -171,7 +173,7 @@ Fang_RayCast(
                     if (cam_ray.x != 0.0f)
                         hit->front_dist /= cam_ray.x;
                 }
-                else if (hit->norm_dir == side_dir_y)
+                else if (hit->norm_dir == side_face_y)
                 {
                     hit->front_dist = (
                         trunc_pos.y - cam_pos.y + (1.0f - step_dist.y) / 2.0f
@@ -195,19 +197,19 @@ Fang_RayCast(
 
                 /* Run an additional increment to calculate the back face hit */
                 {
-                    Fang_Direction dir = hit->norm_dir;
+                    Fang_Face face = hit->norm_dir;
 
                     if (side_dist.x < side_dist.y)
                     {
                         trunc_pos.x += step_dist.x;
                         side_dist.x += delta_dist.x;
-                        dir = side_dir_x;
+                        face = side_face_x;
                     }
                     else if (side_dist.x > side_dist.y)
                     {
                         trunc_pos.y += step_dist.y;
                         side_dist.y += delta_dist.y;
-                        dir = side_dir_y;
+                        face = side_face_y;
                     }
                     else /* 0 case */
                     {
@@ -215,18 +217,18 @@ Fang_RayCast(
                         {
                             trunc_pos.x += step_dist.x;
                             side_dist.x += delta_dist.x;
-                            dir = side_dir_x;
+                            face = side_face_x;
                         }
                         else
                         {
                             trunc_pos.y += step_dist.y;
                             side_dist.y += delta_dist.y;
-                            dir = side_dir_y;
+                            face = side_face_y;
                         }
                     }
 
                     /* Check the axis of collision */
-                    if (dir == side_dir_x)
+                    if (face == side_face_x)
                     {
                         hit->back_dist = (
                             trunc_pos.x - cam_pos.x + (1.0f - step_dist.x) / 2.0f
@@ -235,7 +237,7 @@ Fang_RayCast(
                         if (cam_ray.x != 0.0f)
                             hit->back_dist /= cam_ray.x;
                     }
-                    else if (dir == side_dir_y)
+                    else if (face == side_face_y)
                     {
                         hit->back_dist = (
                             trunc_pos.y - cam_pos.y + (1.0f - step_dist.y) / 2.0f

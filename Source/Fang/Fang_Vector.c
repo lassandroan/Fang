@@ -21,6 +21,14 @@ typedef struct Fang_Vec3 {
     float x, y, z;
 } Fang_Vec3;
 
+static inline Fang_Vec2
+Fang_Vec2Divf(
+    const Fang_Vec2 a,
+    const float     b)
+{
+    return (Fang_Vec2){a.x / b, a.y / b};
+}
+
 static inline float
 Fang_Vec2Dot(
     const Fang_Vec2 a,

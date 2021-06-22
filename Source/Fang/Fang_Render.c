@@ -438,7 +438,7 @@ Fang_DrawMapFloor(
 
         for (int x = 0; x < viewport.w; ++x)
         {
-            const Fang_Point texture_pos = {
+            const Fang_Point tex_pos = {
                 .x = (int)(map->floor.width  * (floor_pos.x - (int)floor_pos.x))
                    & (map->floor.width  - 1),
                 .y = (int)(map->floor.height * (floor_pos.y - (int)floor_pos.y))
@@ -449,8 +449,8 @@ Fang_DrawMapFloor(
             floor_pos.y += floor_step.y;
 
             const uint32_t pixel = *(uint32_t*)&map->floor.pixels[
-                (map->floor.pitch * texture_pos.y)
-              + (texture_pos.x * map->floor.stride)
+                (map->floor.pitch * tex_pos.y)
+              + (tex_pos.x * map->floor.stride)
             ];
 
             const Fang_Color color = Fang_ColorFromRGBA(pixel);
@@ -496,6 +496,8 @@ Fang_DrawMapTiles(
                 map, hit->tile_pos.x, hit->tile_pos.y
             );
 
+            const Fang_Image wall_tex = Fang_TileTextures[0];
+
             Fang_Rect front_face;
             Fang_Rect  back_face;
 
@@ -532,24 +534,24 @@ Fang_DrawMapTiles(
                     ? hit->front_hit
                     : hit->back_hit;
 
-                const Fang_Direction dir = hit->norm_dir;
+                const Fang_Face face = hit->norm_dir;
 
                 float tex_x =
-                    (dir == FANG_DIRECTION_NORTH || dir == FANG_DIRECTION_SOUTH)
+                    (face == FANG_FACE_NORTH || face == FANG_FACE_SOUTH)
                         ? fmodf(face_hit.x, map->tile_size) / map->tile_size
                         : fmodf(face_hit.y, map->tile_size) / map->tile_size;
 
                 tex_x = clamp(tex_x, 0.0f, 1.0f);
 
-                if (dir == FANG_DIRECTION_EAST || dir == FANG_DIRECTION_NORTH)
+                if (face == FANG_FACE_EAST || face == FANG_FACE_NORTH)
                     tex_x = 1.0f - tex_x;
 
                 Fang_DrawImage(
                     framebuf,
-                    &Fang_TileTextures[0],
+                    &wall_tex,
                     &(Fang_Rect){
                         .x = (int)floorf(tex_x * FANG_TILEAREA_WIDTH)
-                           + ((int)dir * FANG_TILEAREA_WIDTH),
+                           + ((int)face * FANG_TILEAREA_WIDTH),
                         .y = 0,
                         .w = 1,
                         .h = FANG_TILEAREA_HEIGHT,
@@ -560,45 +562,106 @@ Fang_DrawMapTiles(
 
             /* Draw top or bottom of tile based on front/back faces */
             {
-                Fang_Rect face = {.x = 0};
+                int start_y,
+                    end_y;
+
+                Fang_Vec2 hit_start,
+                          hit_end;
+
+                Fang_Face face;
 
                 /* Draw top */
-                if (wall_size.height + wall_size.size < camera->pos.z)
+                if (front_face.y > back_face.y)
                 {
-                    const int face_diff = front_face.y - back_face.y;
+                    hit_start = hit->back_hit;
+                    hit_end   = hit->front_hit;
 
-                    face = (Fang_Rect){
-                        .x = (int)i,
-                        .y = back_face.y,
-                        .w = 1,
-                        .h = face_diff,
-                    };
+                    start_y = back_face.y;
+                    end_y   = front_face.y;
+
+                    face = FANG_FACE_TOP;
                 }
                 /* Draw bottom */
-                else if (wall_size.height >= camera->pos.z)
+                else if (front_face.y + front_face.h
+                     <=   back_face.y +  back_face.h)
                 {
-                    const int face_diff = ( back_face.y +  back_face.h)
-                                        - (front_face.y + front_face.h);
+                    hit_start = hit->front_hit;
+                    hit_end   = hit->back_hit;
 
-                    face = (Fang_Rect){
-                        .x = (int)i,
-                        .y = front_face.y + front_face.h,
-                        .w = 1,
-                        .h = face_diff,
-                    };
+                    start_y = front_face.y + front_face.h;
+                    end_y   = back_face.y + back_face.h;
+
+                    face = FANG_FACE_BOTTOM;
+                }
+                else
+                {
+                    continue;
                 }
 
-                if (face.h)
+                for (int y = start_y; y < end_y; ++y)
                 {
-                    Fang_Color color = Fang_MapQueryColor(
-                        map, hit->tile_pos.x, hit->tile_pos.y
+                    const float r_y = (float)(y - start_y)
+                                    / (float)(end_y - start_y);
+
+                    Fang_Point tex_pos;
+                    {
+                        Fang_Vec2 norm_hit_start = Fang_Vec2Divf(
+                            hit_start, map->tile_size
+                        );
+
+                        Fang_Vec2 norm_hit_end = Fang_Vec2Divf(
+                            hit_end, map->tile_size
+                        );
+
+                        float u = ((1.0f - r_y) * norm_hit_start.x)
+                                + (r_y * norm_hit_end.x);
+
+                        float v = ((1.0f - r_y) * norm_hit_start.y)
+                                + (r_y * norm_hit_end.y);
+
+                        float integral;
+                        u = clamp(modff(u, &integral), 0.0f, 1.0f);
+                        v = clamp(modff(v, &integral), 0.0f, 1.0f);
+
+                        if (y == start_y)
+                            u = 1.0f;
+
+                        tex_pos.x = (int)(u * FANG_TILEAREA_WIDTH);
+                        tex_pos.y = (int)(v * FANG_TILEAREA_HEIGHT);
+                    }
+
+                    tex_pos.x += (int)face * FANG_TILEAREA_WIDTH;
+
+                    uint32_t pixel = 0;
+
+                    for (int p = 0; p < wall_tex.stride; ++p)
+                    {
+                        pixel |= *(
+                            wall_tex.pixels + p
+                          + (tex_pos.x * wall_tex.stride)
+                          + (tex_pos.y * wall_tex.pitch)
+                        );
+
+                        if (p < wall_tex.stride - 1)
+                            pixel <<= 8;
+                    }
+
+                    for (int p = wall_tex.stride; p < 4; ++p)
+                    {
+                        pixel <<= 8;
+                        pixel |= 0x000000FF;
+                    }
+
+                    Fang_Color dest_color = Fang_ColorFromRGBA(pixel);
+
+                    Fang_FramebufferPutPixel(
+                        framebuf,
+                        &(Fang_Point){
+                            .x = (int)i,
+                            .y = y,
+                        },
+                        &dest_color
                     );
-
-                    color.r /= 2;
-                    color.g /= 2;
-                    color.b /= 2;
-
-                    Fang_FillRect(framebuf, &face, &color);
                 }
             }
         }
