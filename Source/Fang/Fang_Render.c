@@ -232,35 +232,16 @@ Fang_DrawImageEx(
             if (flip_y)
                 r_y = 1.0f - r_y;
 
-            const int t_x = (flip_x)
-                ? (int)(r_x * (source_area.w - 1)) + source_area.x
-                : (int)(r_x * (source_area.w - 0)) + source_area.x;
+            const Fang_Point tex_pos = {
+                .x = (flip_x)
+                    ? (int)(r_x * (source_area.w - 1)) + source_area.x
+                    : (int)(r_x * (source_area.w - 0)) + source_area.x,
+                .y = (flip_y)
+                    ? (int)(r_y * (source_area.h - 1)) + source_area.y
+                    : (int)(r_y * (source_area.h - 0)) + source_area.y,
+            };
 
-            const int t_y = (flip_y)
-                ? (int)(r_y * (source_area.h - 1)) + source_area.y
-                : (int)(r_y * (source_area.h - 0)) + source_area.y;
-
-            uint32_t pixel = 0;
-
-            for (int p = 0; p < image->stride; ++p)
-            {
-                pixel |= *(
-                    image->pixels + p
-                  + (t_x * image->stride)
-                  + (t_y * image->pitch)
-                );
-
-                if (p < image->stride - 1)
-                    pixel <<= 8;
-            }
-
-            for (int p = image->stride; p < 4; ++p)
-            {
-                pixel <<= 8;
-                pixel |= 0x000000FF;
-            }
-
-            const Fang_Color dest_color = Fang_ColorFromRGBA(pixel);
+            const Fang_Color dest_color = Fang_ImageQuery(image, &tex_pos);
 
             Fang_FramebufferPutPixel(
                 framebuf,
@@ -330,7 +311,9 @@ Fang_DrawText(
     }
 }
 
-
+/**
+ * Draws the skybox of a given map, translated based on the camera's rotation.
+**/
 static void
 Fang_DrawMapSkybox(
           Fang_Map         * const map,
@@ -384,6 +367,10 @@ Fang_DrawMapSkybox(
     );
 }
 
+/**
+ * Draws the skybox of a given map, translated based on the camera's position
+ * and rotation.
+**/
 static void
 Fang_DrawMapFloor(
           Fang_Map         * const map,
@@ -464,6 +451,12 @@ Fang_DrawMapFloor(
     }
 }
 
+/**
+ * Draws the results of a raycast against map tiles.
+ *
+ * The provided camera should be the starting point of the rays, and is used to
+ * project the viewable map tiles into the framebuffer viewport.
+**/
 static void
 Fang_DrawMapTiles(
           Fang_Map         * const map,
@@ -477,6 +470,8 @@ Fang_DrawMapTiles(
     assert(camera);
     assert(rays);
     assert(count);
+
+    const Fang_Rect viewport = Fang_FramebufferGetViewport(framebuf);
 
     for (size_t i = 0; i < count; ++i)
     {
@@ -518,7 +513,7 @@ Fang_DrawMapTiles(
                     },
                     face_dist,
                     map->tile_size,
-                    &(Fang_Rect){0, 0, FANG_WINDOW_SIZE, FANG_WINDOW_SIZE}
+                    &viewport
                 );
 
                 if (k == 0)
@@ -550,8 +545,8 @@ Fang_DrawMapTiles(
                     framebuf,
                     &wall_tex,
                     &(Fang_Rect){
-                        .x = (int)floorf(tex_x * FANG_TILEAREA_WIDTH)
-                           + ((int)face * FANG_TILEAREA_WIDTH),
+                        .x = (int)floorf(tex_x * (FANG_TILEAREA_WIDTH - 1))
+                           + ((int)face * (FANG_TILEAREA_WIDTH - 1)),
                         .y = 0,
                         .w = 1,
                         .h = FANG_TILEAREA_HEIGHT,
@@ -626,33 +621,15 @@ Fang_DrawMapTiles(
                         if (y == start_y)
                             u = 1.0f;
 
-                        tex_pos.x = (int)(u * FANG_TILEAREA_WIDTH);
-                        tex_pos.y = (int)(v * FANG_TILEAREA_HEIGHT);
+                        tex_pos.x = (int)(u * (FANG_TILEAREA_WIDTH - 1));
+                        tex_pos.y = (int)(v * (FANG_TILEAREA_HEIGHT - 1));
                     }
 
                     tex_pos.x += (int)face * FANG_TILEAREA_WIDTH;
 
-                    uint32_t pixel = 0;
-
-                    for (int p = 0; p < wall_tex.stride; ++p)
-                    {
-                        pixel |= *(
-                            wall_tex.pixels + p
-                          + (tex_pos.x * wall_tex.stride)
-                          + (tex_pos.y * wall_tex.pitch)
-                        );
-
-                        if (p < wall_tex.stride - 1)
-                            pixel <<= 8;
-                    }
-
-                    for (int p = wall_tex.stride; p < 4; ++p)
-                    {
-                        pixel <<= 8;
-                        pixel |= 0x000000FF;
-                    }
-
-                    Fang_Color dest_color = Fang_ColorFromRGBA(pixel);
+                    Fang_Color dest_color = Fang_ImageQuery(
+                        &wall_tex, &tex_pos
+                    );
 
                     Fang_FramebufferPutPixel(
                         framebuf,
@@ -668,6 +645,14 @@ Fang_DrawMapTiles(
     }
 }
 
+/**
+ * Renders a first-person view of the provided map.
+ *
+ * The map is rendered in order of:
+ * - Skybox
+ * - Floor
+ * - Tiles
+**/
 static void
 Fang_DrawMap(
           Fang_Map         * const map,

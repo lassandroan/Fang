@@ -45,3 +45,43 @@ Fang_ImageClear(
         (size_t)(image->pitch * image->height)
     );
 }
+
+/**
+ * Query an image for a 32-bit color value.
+ *
+ * If the image depth is less than 32 bits, the missing channels are defaulted
+ * to 255.
+**/
+static inline Fang_Color
+Fang_ImageQuery(
+    const Fang_Image * const image,
+    const Fang_Point * const point)
+{
+    assert(image);
+    assert(image->pixels);
+    assert(point);
+    assert(point->x >= 0 && point->x < image->width);
+    assert(point->y >= 0 && point->y < image->height);
+
+    uint32_t pixel = 0;
+
+    for (int p = 0; p < image->stride; ++p)
+    {
+        pixel |= *(
+            image->pixels + p
+          + (point->x * image->stride)
+          + (point->y * image->pitch)
+        );
+
+        if (p < image->stride - 1)
+            pixel <<= 8;
+    }
+
+    for (int p = image->stride; p < 4; ++p)
+    {
+        pixel <<= 8;
+        pixel |= 0x000000FF;
+    }
+
+    return Fang_ColorFromRGBA(pixel);
+}
