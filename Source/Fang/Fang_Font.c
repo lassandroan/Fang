@@ -36,7 +36,7 @@ typedef enum Fang_FontType {
 /**
  * Holds the path that each font is located at.
  *
- * This is used by the platform layer to find fonts within the compiled game's
+ * This is used by the game to find fonts within the compiled game's
  * resource folder.
 **/
 const char * const Fang_FontPaths[FANG_NUM_FONT] = {
@@ -46,9 +46,45 @@ const char * const Fang_FontPaths[FANG_NUM_FONT] = {
 /**
  * Static storage for the font textures.
  *
- * The entries here are filled by the platform layer at startup.
+ * The entries here are filled by the game at startup.
 **/
 Fang_Image Fang_Fonts[FANG_NUM_FONT];
+
+static inline bool
+Fang_CreateFonts(void)
+{
+    for (int i = 0; i < FANG_NUM_FONT; ++i)
+    {
+        const char * const path = Fang_FontPaths[i];
+
+        Fang_File file = {.data = NULL};
+        if (Fang_LoadFile(path, &file) != 0)
+            return 1;
+
+        Fang_Image * const font = &Fang_Fonts[i];
+
+        *font = Fang_TGALoad(&file);
+
+        Fang_FreeFile(&file);
+
+        if (!font->pixels)
+            return 1;
+    }
+
+    return 0;
+}
+
+static inline void
+Fang_DestroyFonts(void)
+{
+    for (int i = 0; i < FANG_NUM_FONT; ++i)
+    {
+        assert(Fang_Fonts[i].pixels);
+
+        free(Fang_Fonts[i].pixels);
+        memset(&Fang_Fonts[i], 0, sizeof(Fang_Image));
+    }
+}
 
 /**
  * Helper function for grabbing the right Fang_Image* by font type ID.
@@ -78,9 +114,6 @@ static inline Fang_Rect
 Fang_FontGetCharPosition(
     const char text)
 {
-    if (text < '!')
-        printf("fuck this: %c %d\n", text, text);
-
     assert(text >= '!');
 
     if (text < '!')

@@ -56,6 +56,61 @@ Fang_Map temp_map = {
     .fog_distance = 4,
 };
 
+static inline int
+Fang_LoadMap(void)
+{
+    {
+        assert(!temp_map.skybox.pixels);
+
+        Fang_File file = {.data = NULL};
+        if (!Fang_LoadFile("Maps/test/skybox.tga", &file))
+        {
+            temp_map.skybox = Fang_TGALoad(&file);
+            if (!temp_map.skybox.pixels)
+                puts("Invalid skybox.tga");
+
+            Fang_FreeFile(&file);
+        }
+        else
+        {
+            puts("Could not load skybox_new.tga");
+        }
+    }
+
+    {
+        assert(!temp_map.floor.pixels);
+
+        Fang_File file = {.data = NULL};
+        if (!Fang_LoadFile("Maps/test/floor.tga", &file))
+        {
+            temp_map.floor = Fang_TGALoad(&file);
+            if (!temp_map.floor.pixels)
+                puts("Invalid floor.tga");
+
+            Fang_FreeFile(&file);
+        }
+        else
+        {
+            puts("Could not load floor.tga");
+        }
+    }
+
+    return 0;
+}
+
+static inline void
+Fang_DestroyMap(void)
+{
+    assert(temp_map.skybox.pixels);
+    assert(temp_map.floor.pixels);
+
+    free(temp_map.skybox.pixels);
+    memset(&temp_map.skybox, 0, sizeof(Fang_Image));
+
+    free(temp_map.floor.pixels);
+    memset(&temp_map.floor, 0, sizeof(Fang_Image));
+}
+
 static inline Fang_TileType
 Fang_MapQueryType(
     const Fang_Map * const map,

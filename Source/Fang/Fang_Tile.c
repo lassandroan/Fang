@@ -43,6 +43,42 @@ const char * const Fang_TileTexturePaths[FANG_NUM_TILETEXTURE] = {
 
 Fang_Image Fang_TileTextures[FANG_NUM_TILETEXTURE];
 
+static inline int
+Fang_CreateTextures(void)
+{
+    for (int i = 0; i < FANG_NUM_TILETEXTURE; ++i)
+    {
+        const char * const path = Fang_TileTexturePaths[i];
+
+        Fang_File file = {.data = NULL};
+        if (Fang_LoadFile(path, &file) != 0)
+            return 1;
+
+        Fang_Image * const texture = &Fang_TileTextures[i];
+
+        *texture = Fang_TGALoad(&file);
+
+        Fang_FreeFile(&file);
+
+        if (!texture->pixels)
+            return 1;
+    }
+
+    return 0;
+}
+
+static inline void
+Fang_DestroyTextures(void)
+{
+    for (int i = 0; i < FANG_NUM_TILETEXTURE; ++i)
+    {
+        assert(Fang_TileTextures[i].pixels);
+
+        free(Fang_TileTextures[i].pixels);
+        memset(&Fang_TileTextures[i], 0, sizeof(Fang_Image));
+    }
+}
+
 static inline Fang_Image*
 Fang_TileTextureGet(
     const Fang_TileTextureType type)

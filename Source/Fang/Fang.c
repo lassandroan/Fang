@@ -86,6 +86,29 @@ Fang_Entity entities[FANG_NUM_ENTITIES] = {
     },
 };
 
+static inline int
+Fang_Initialize(void)
+{
+    if (Fang_CreateFonts())
+        return 1;
+
+    if (Fang_CreateTextures())
+        return 1;
+
+    if (Fang_LoadMap())
+        return 1;
+
+    return 0;
+}
+
+static inline void
+Fang_Quit(void)
+{
+    Fang_DestroyTextures();
+    Fang_DestroyFonts();
+    Fang_DestroyMap();
+}
+
 static inline void
 Fang_UpdateAndRender(
     const Fang_Input       * const input,
