@@ -24,6 +24,11 @@ typedef enum Fang_TextureType {
     FANG_NUM_TEXTURETYPE,
 } Fang_TextureType;
 
+enum {
+    FANG_TEXTURE_HEIGHT = 128,
+    FANG_TEXTURE_WIDTH  = 128,
+};
+
 static const char * const Fang_TexturePaths[FANG_NUM_TEXTURETYPE] = {
     [FANG_TEXTURETYPE_TILE] = "Maps/test/tile.tga"
 };

@@ -25,8 +25,3 @@ typedef struct Fang_TileSize {
     int height;
     int size;
 } Fang_TileSize;
-
-enum {
-    FANG_TILEAREA_HEIGHT = 128,
-    FANG_TILEAREA_WIDTH  = 128,
-};
