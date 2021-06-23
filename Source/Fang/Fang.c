@@ -36,7 +36,7 @@
 #include "Fang_Body.c"
 #include "Fang_Camera.c"
 #include "Fang_Tile.c"
-#include "Fang_Texture.c"
+#include "Fang_Textures.c"
 #include "Fang_Map.c"
 #include "Fang_Ray.c"
 #include "Fang_Entity.c"
