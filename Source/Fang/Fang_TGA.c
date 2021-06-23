@@ -25,11 +25,11 @@
 **/
 static Fang_Image
 Fang_TGALoad(
-    Fang_Buffer * const buffer)
+    Fang_File * const file)
 {
-    assert(buffer);
+    assert(file);
 
-    const uint8_t * file = buffer->data;
+    const uint8_t * data = file->data;
 
     enum {
         TGA_IMAGE_NONE    =  0, /* Empty                           */
@@ -67,18 +67,18 @@ Fang_TGALoad(
         uint8_t  image_descriptor;
     } header;
 
-    memcpy(&header.id_len,           file, sizeof( uint8_t)); file += sizeof( uint8_t);
-    memcpy(&header.map_included,     file, sizeof( uint8_t)); file += sizeof( uint8_t);
-    memcpy(&header.image_type,       file, sizeof( uint8_t)); file += sizeof( uint8_t);
-    memcpy(&header.map_origin,       file, sizeof(uint16_t)); file += sizeof(uint16_t);
-    memcpy(&header.map_length,       file, sizeof(uint16_t)); file += sizeof(uint16_t);
-    memcpy(&header.map_depth,        file, sizeof( uint8_t)); file += sizeof( uint8_t);
-    memcpy(&header.image_x,          file, sizeof(uint16_t)); file += sizeof(uint16_t);
-    memcpy(&header.image_y,          file, sizeof(uint16_t)); file += sizeof(uint16_t);
-    memcpy(&header.image_width,      file, sizeof(uint16_t)); file += sizeof(uint16_t);
-    memcpy(&header.image_height,     file, sizeof(uint16_t)); file += sizeof(uint16_t);
-    memcpy(&header.image_depth,      file, sizeof( uint8_t)); file += sizeof( uint8_t);
-    memcpy(&header.image_descriptor, file, sizeof( uint8_t)); file += sizeof( uint8_t);
+    memcpy(&header.id_len,           data, sizeof( uint8_t)); data += sizeof( uint8_t);
+    memcpy(&header.map_included,     data, sizeof( uint8_t)); data += sizeof( uint8_t);
+    memcpy(&header.image_type,       data, sizeof( uint8_t)); data += sizeof( uint8_t);
+    memcpy(&header.map_origin,       data, sizeof(uint16_t)); data += sizeof(uint16_t);
+    memcpy(&header.map_length,       data, sizeof(uint16_t)); data += sizeof(uint16_t);
+    memcpy(&header.map_depth,        data, sizeof( uint8_t)); data += sizeof( uint8_t);
+    memcpy(&header.image_x,          data, sizeof(uint16_t)); data += sizeof(uint16_t);
+    memcpy(&header.image_y,          data, sizeof(uint16_t)); data += sizeof(uint16_t);
+    memcpy(&header.image_width,      data, sizeof(uint16_t)); data += sizeof(uint16_t);
+    memcpy(&header.image_height,     data, sizeof(uint16_t)); data += sizeof(uint16_t);
+    memcpy(&header.image_depth,      data, sizeof( uint8_t)); data += sizeof( uint8_t);
+    memcpy(&header.image_descriptor, data, sizeof( uint8_t)); data += sizeof( uint8_t);
 
     Fang_Image result = {.pixels = NULL};
 
@@ -131,8 +131,8 @@ Fang_TGALoad(
         goto Error_Allocation;
 
     /* Image ID and color map unused */
-    file += header.id_len;
-    file += header.map_length;
+    data += header.id_len;
+    data += header.map_length;
 
     if (rle)
     {
@@ -157,11 +157,11 @@ Fang_TGALoad(
 
                     memcpy(
                         dest + x * result.stride,
-                        file,
+                        data,
                         (size_t)(n * result.stride)
                     );
 
-                    file += n * result.stride;
+                    data += n * result.stride;
 
                     count -= n;
                     x     += n;
@@ -189,12 +189,12 @@ Fang_TGALoad(
                         break;
                 }
 
-                const uint8_t val = *file++;
+                const uint8_t val = *data++;
                 if (val & 0x80)
                 {
-                    memcpy(pixel, file, (size_t)result.stride);
+                    memcpy(pixel, data, (size_t)result.stride);
 
-                    file += result.stride;
+                    data += result.stride;
                     rep   = (val & 0x7F) + 1;
                 }
                 else
@@ -214,9 +214,9 @@ Fang_TGALoad(
 
         for (int h = 0; h < result.height; ++h)
         {
-            memcpy(dest, file, (size_t)result.pitch);
+            memcpy(dest, data, (size_t)result.pitch);
             dest += result.pitch;
-            file += result.pitch;
+            data += result.pitch;
         }
     }
 
