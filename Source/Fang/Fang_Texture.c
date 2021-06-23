@@ -21,32 +21,45 @@ enum {
 };
 
 /**
+ * All fonts should be 8x9 in size, with a 1px barrier in between each
+ * character.
+**/
+enum {
+    FANG_FONT_HEIGHT = 9,
+    FANG_FONT_WIDTH  = 8,
+};
+
+/**
  * The textures available to the game.
  *
  * Each one of these corresponds to a texture file in the resource folder.
 **/
 typedef enum Fang_Texture {
+    /* Map Textures */
     FANG_TEXTURE_SKYBOX,
     FANG_TEXTURE_FLOOR,
     FANG_TEXTURE_TILE,
+
+    /* Fonts */
+    FANG_TEXTURE_FORMULA,
 
     FANG_NUM_TEXTURES,
 } Fang_Texture;
 
 /**
- * This structure is used for managing loaded textures in-game.
+ * This structure is used for managing textures and fonts.
 **/
-typedef struct Fang_TextureAtlas {
+typedef struct Fang_Atlas {
     Fang_Image textures[FANG_NUM_TEXTURES];
-} Fang_TextureAtlas;
+} Fang_Atlas;
 
 /**
  * Frees a previously loaded texture.
 **/
 static inline void
-Fang_TextureAtlasUnload(
-          Fang_TextureAtlas * const atlas,
-    const Fang_Texture              id)
+Fang_AtlasUnload(
+          Fang_Atlas   * const atlas,
+    const Fang_Texture         id)
 {
     assert(atlas);
     assert(id < FANG_NUM_TEXTURES);
@@ -66,9 +79,9 @@ Fang_TextureAtlasUnload(
  * may be checked for validation.
 **/
 static inline int
-Fang_TextureAtlasLoad(
-          Fang_TextureAtlas * const atlas,
-    const Fang_Texture              id)
+Fang_AtlasLoad(
+          Fang_Atlas   * const atlas,
+    const Fang_Texture         id)
 {
     assert(atlas);
     assert(id < FANG_NUM_TEXTURES);
@@ -76,9 +89,10 @@ Fang_TextureAtlasLoad(
     Fang_Image * const result = &atlas->textures[id];
 
     if (result->pixels)
-        Fang_TextureAtlasUnload(atlas, id);
+        Fang_AtlasUnload(atlas, id);
 
     typedef enum {
+        FONT_TEXTURE,
         TILE_TEXTURE,
         OTHER_TEXTURE,
     } Type;
@@ -89,6 +103,7 @@ Fang_TextureAtlasLoad(
     } Info;
 
     static const Info texture_info[FANG_NUM_TEXTURES] = {
+        /* Map Textures */
         [FANG_TEXTURE_SKYBOX] = (Info){
             .path = "Textures/skybox.tga",
             .type = OTHER_TEXTURE,
@@ -100,6 +115,12 @@ Fang_TextureAtlasLoad(
         [FANG_TEXTURE_TILE] = (Info){
             .path = "Textures/tile.tga",
             .type = TILE_TEXTURE,
+        },
+
+        /* Fonts */
+        [FANG_TEXTURE_FORMULA] = (Info){
+            .path = "Fonts/Formula.tga",
+            .type = FONT_TEXTURE,
         },
     };
 
@@ -114,6 +135,9 @@ Fang_TextureAtlasLoad(
             assert(result->height == FANG_FACE_SIZE);
             break;
 
+        case FONT_TEXTURE:
+            break;
+
         default:
             break;
     }
@@ -125,23 +149,23 @@ Fang_TextureAtlasLoad(
  * Unloads all textures currently loaded in the atlas.
 **/
 static inline void
-Fang_TextureAtlasFree(
-    Fang_TextureAtlas * const atlas)
+Fang_AtlasFree(
+    Fang_Atlas * const atlas)
 {
     assert(atlas);
 
     for (Fang_Texture i = 0; i < FANG_NUM_TEXTURES; ++i)
         if (atlas->textures[i].pixels)
-            Fang_TextureAtlasUnload(atlas, i);
+            Fang_AtlasUnload(atlas, i);
 }
 
-static inline Fang_Image
-Fang_TextureAtlasQuery(
-    const Fang_TextureAtlas * const atlas,
-    const Fang_Texture              id)
+static inline const Fang_Image*
+Fang_AtlasQuery(
+    const Fang_Atlas   * const atlas,
+    const Fang_Texture         id)
 {
     assert(atlas);
     assert(id < FANG_NUM_TEXTURES);
 
-    return atlas->textures[id];
+    return &atlas->textures[id];
 }

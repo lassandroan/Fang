@@ -32,7 +32,6 @@
 #include "Fang_Input.c"
 #include "Fang_Image.c"
 #include "Fang_TGA.c"
-#include "Fang_Font.c"
 #include "Fang_Framebuffer.c"
 #include "Fang_Body.c"
 #include "Fang_Camera.c"
@@ -46,7 +45,7 @@
 
 Fang_Interface interface = (Fang_Interface){
     .theme = (Fang_InterfaceTheme){
-        .font = FANG_FONT_FORMULA,
+        .font = FANG_TEXTURE_FORMULA,
         .colors = (Fang_InterfaceColors){
             .background = FANG_TRANSPARENT,
             .foreground = FANG_RED,
@@ -90,9 +89,6 @@ Fang_Entity entities[FANG_NUM_ENTITIES] = {
 static inline int
 Fang_Initialize(void)
 {
-    if (Fang_CreateFonts())
-        return 1;
-
     if (Fang_LoadMap())
         return 1;
 
@@ -102,7 +98,6 @@ Fang_Initialize(void)
 static inline void
 Fang_Quit(void)
 {
-    Fang_DestroyFonts();
     Fang_DestroyMap();
 }
 
@@ -195,8 +190,8 @@ Fang_UpdateAndRender(
     Fang_DrawText(
         framebuf,
         "FANG",
-        FANG_FONT_FORMULA,
-        FANG_FONTAREA_HEIGHT,
+        Fang_AtlasQuery(&temp_map.textures, FANG_TEXTURE_FORMULA),
+        FANG_FONT_HEIGHT,
         &(Fang_Point){.x = 5, .y = 3}
     );
 }

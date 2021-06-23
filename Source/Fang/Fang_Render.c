@@ -272,42 +272,60 @@ static void
 Fang_DrawText(
           Fang_Framebuffer * const framebuf,
     const char             *       text,
-    const Fang_FontType            type,
+    const Fang_Image       * const font,
     const int                      fontheight,
     const Fang_Point       * const origin)
 {
     assert(framebuf);
     assert(text);
+    assert(font);
 
     Fang_Point position = (origin) ? *origin : (Fang_Point){0, 0};
 
-    const float ratio = (float)fontheight / (float)FANG_FONTAREA_HEIGHT;
+    const float ratio = (float)fontheight / (float)FANG_FONT_HEIGHT;
 
     while (*text)
     {
-        if (*text == ' ')
+        char character = *text;
+
+        if (character == ' ')
         {
             text++;
-            position.x += (int)((FANG_FONTAREA_WIDTH + 1) * ratio);
+            position.x += (int)((FANG_FONT_WIDTH + 1) * ratio);
             continue;
         }
 
-        const Fang_Rect character = Fang_FontGetCharPosition(*text);
+        if (character < '!')
+            character = '?';
+
+        Fang_Rect target_area = {0, 0, 0, 0};
+        {
+            const float pos = (character - (float)'!') / (127.0f - (float)'!');
+
+            const int total_width = (127 - '!') * (FANG_FONT_WIDTH + 1);
+
+            target_area = (Fang_Rect){
+                .x = (int)(total_width * pos) + 1,
+                .y = 0,
+                .w = FANG_FONT_WIDTH,
+                .h = FANG_FONT_HEIGHT,
+            };
+        }
 
         Fang_DrawImage(
             framebuf,
-            Fang_FontGet(type),
-            &character,
+            font,
+            &target_area,
             &(Fang_Rect){
                 .x = position.x,
                 .y = position.y,
-                .w = (int)(character.w * ratio),
-                .h = (int)(character.h * ratio),
+                .w = (int)(target_area.w * ratio),
+                .h = (int)(target_area.h * ratio),
             }
         );
 
         text++;
-        position.x += (int)((FANG_FONTAREA_WIDTH + 1) * ratio);
+        position.x += (int)((FANG_FONT_WIDTH + 1) * ratio);
     }
 }
 
@@ -506,7 +524,7 @@ Fang_DrawMapTiles(
                 map, hit->tile_pos.x, hit->tile_pos.y
             );
 
-            const Fang_Image wall_tex = Fang_MapQueryTexture(
+            const Fang_Image * const wall_tex = Fang_MapQueryTexture(
                 map, hit->tile_pos.x, hit->tile_pos.y
             );
 
@@ -562,7 +580,7 @@ Fang_DrawMapTiles(
 
                 Fang_DrawImage(
                     framebuf,
-                    &wall_tex,
+                    wall_tex,
                     &(Fang_Rect){
                         .x = (int)floorf(tex_x * (FANG_FACE_SIZE - 1))
                            + (int)      (face  * (FANG_FACE_SIZE - 1)),
@@ -670,7 +688,7 @@ Fang_DrawMapTiles(
                     tex_pos.x += (int)face * FANG_FACE_SIZE;
 
                     Fang_Color dest_color = Fang_ImageQuery(
-                        &wall_tex, &tex_pos
+                        wall_tex, &tex_pos
                     );
 
                     const float dist = ((1.0f - r_y) * dist_start)

@@ -19,7 +19,7 @@ typedef struct Fang_Map {
 
     int tile_size;
 
-    Fang_TextureAtlas textures;
+    Fang_Atlas textures;
 
     Fang_TileType * tiles;
     Fang_TileSize * sizes;
@@ -63,13 +63,13 @@ Fang_LoadMap(void)
     assert(!temp_map.floor.pixels);
 
     for (Fang_Texture i = 0; i < FANG_NUM_TEXTURES; ++i)
-        Fang_TextureAtlasLoad(&temp_map.textures, i);
+        Fang_AtlasLoad(&temp_map.textures, i);
 
-    temp_map.skybox = Fang_TextureAtlasQuery(
+    temp_map.skybox = *Fang_AtlasQuery(
         &temp_map.textures, FANG_TEXTURE_SKYBOX
     );
 
-    temp_map.floor = Fang_TextureAtlasQuery(
+    temp_map.floor = *Fang_AtlasQuery(
         &temp_map.textures, FANG_TEXTURE_FLOOR
     );
 
@@ -79,7 +79,7 @@ Fang_LoadMap(void)
 static inline void
 Fang_DestroyMap(void)
 {
-    Fang_TextureAtlasFree(&temp_map.textures);
+    Fang_AtlasFree(&temp_map.textures);
 }
 
 static inline Fang_TileType
@@ -125,7 +125,7 @@ Fang_MapQuerySize(
     }
 }
 
-static inline Fang_Image
+static inline const Fang_Image*
 Fang_MapQueryTexture(
     const Fang_Map * const map,
     const int x,
@@ -136,5 +136,5 @@ Fang_MapQueryTexture(
     (void)x;
     (void)y;
 
-    return Fang_TextureAtlasQuery(&map->textures, FANG_TEXTURE_TILE);
+    return Fang_AtlasQuery(&map->textures, FANG_TEXTURE_TILE);
 }
