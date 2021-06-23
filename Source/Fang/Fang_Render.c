@@ -316,12 +316,12 @@ Fang_DrawText(
 **/
 static void
 Fang_DrawMapSkybox(
-          Fang_Map         * const map,
           Fang_Framebuffer * const framebuf,
+          Fang_Map         * const map,
     const Fang_Camera      * const camera)
 {
-    assert(map);
     assert(framebuf);
+    assert(map);
     assert(camera);
 
     const Fang_Rect viewport = Fang_FramebufferGetViewport(framebuf);
@@ -373,12 +373,12 @@ Fang_DrawMapSkybox(
 **/
 static void
 Fang_DrawMapFloor(
-          Fang_Map         * const map,
           Fang_Framebuffer * const framebuf,
+          Fang_Map         * const map,
     const Fang_Camera      * const camera)
 {
-    assert(map);
     assert(framebuf);
+    assert(map);
     assert(camera);
 
     assert(map->floor.pixels);
@@ -474,14 +474,14 @@ Fang_DrawMapFloor(
 **/
 static void
 Fang_DrawMapTiles(
-          Fang_Map         * const map,
           Fang_Framebuffer * const framebuf,
+          Fang_Map         * const map,
     const Fang_Camera      * const camera,
     const Fang_Ray         * const rays,
     const size_t                   count)
 {
-    assert(map);
     assert(framebuf);
+    assert(map);
     assert(camera);
     assert(rays);
     assert(count);
@@ -713,14 +713,14 @@ Fang_DrawMapTiles(
 **/
 static void
 Fang_DrawMap(
-          Fang_Map         * const map,
           Fang_Framebuffer * const framebuf,
+          Fang_Map         * const map,
     const Fang_Camera      * const camera,
     const Fang_Ray         * const rays,
     const size_t                   count)
 {
-    assert(map);
     assert(framebuf);
+    assert(map);
     assert(camera);
     assert(rays);
     assert(count);
@@ -728,12 +728,12 @@ Fang_DrawMap(
     framebuf->state.current_depth = FLT_MAX;
 
     if (map->skybox.pixels)
-        Fang_DrawMapSkybox(map, framebuf, camera);
+        Fang_DrawMapSkybox(framebuf, map, camera);
 
     if (map->floor.pixels)
-        Fang_DrawMapFloor(map, framebuf, camera);
+        Fang_DrawMapFloor(framebuf, map, camera);
 
-    Fang_DrawMapTiles(map, framebuf, camera, rays, count);
+    Fang_DrawMapTiles(framebuf, map, camera, rays, count);
 }
 
 /**
@@ -743,14 +743,14 @@ Fang_DrawMap(
 **/
 static void
 Fang_DrawMinimap(
-    const Fang_Map         * const map,
           Fang_Framebuffer * const framebuf,
+    const Fang_Map         * const map,
     const Fang_Camera      * const camera,
     const Fang_Ray         * const rays,
     const size_t                   count)
 {
-    assert(map);
     assert(framebuf);
+    assert(map);
     assert(camera);
     assert(rays);
     assert(count);
@@ -844,11 +844,13 @@ Fang_DrawMinimap(
 static void
 Fang_DrawEntities(
           Fang_Framebuffer * const framebuf,
+          Fang_Map         * const map,
     const Fang_Camera      * const camera,
     const Fang_Entity      * const entities,
     const size_t                   count)
 {
     assert(framebuf);
+    assert(map);
     assert(camera);
     assert(entities);
 
@@ -874,7 +876,7 @@ Fang_DrawEntities(
         if (surface.y + surface.h <= 0 || surface.y > viewport.h)
             continue;
 
-        framebuf->state.current_depth /= 16.0f;
+        framebuf->state.current_depth /= map->tile_size;
 
         Fang_FillRect(
             framebuf,

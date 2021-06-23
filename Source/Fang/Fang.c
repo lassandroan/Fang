@@ -145,14 +145,20 @@ Fang_UpdateAndRender(
     );
 
     Fang_DrawMap(
-        &temp_map,
         framebuf,
+        &temp_map,
         &camera,
         raycast,
         (size_t)FANG_WINDOW_SIZE
     );
 
-    Fang_DrawEntities(framebuf, &camera, entities, FANG_NUM_ENTITIES);
+    Fang_DrawEntities(
+        framebuf,
+        &temp_map,
+        &camera,
+        entities,
+        FANG_NUM_ENTITIES
+    );
 
     {
         const Fang_FrameState state = Fang_FramebufferSetViewport(
@@ -168,8 +174,8 @@ Fang_UpdateAndRender(
         framebuf->state.enable_depth = false;
 
         Fang_DrawMinimap(
-            &temp_map,
             framebuf,
+            &temp_map,
             &camera,
             raycast,
             (size_t)FANG_WINDOW_SIZE
