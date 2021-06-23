@@ -455,12 +455,7 @@ Fang_DrawMapFloor(
             floor_pos.x += floor_step.x;
             floor_pos.y += floor_step.y;
 
-            const uint32_t pixel = *(uint32_t*)&map->floor.pixels[
-                (map->floor.pitch * tex_pos.y)
-              + (tex_pos.x * map->floor.stride)
-            ];
-
-            Fang_Color dest_color = Fang_ColorFromRGBA(pixel);
+            Fang_Color dest_color = Fang_ImageQuery(&map->floor, &tex_pos);
 
             dest_color = Fang_ColorBlend(
                 &(Fang_Color){
