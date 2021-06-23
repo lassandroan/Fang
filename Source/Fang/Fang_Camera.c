@@ -72,3 +72,50 @@ Fang_CameraProjectSurface(
         .h = (int)(ratio + size),
     };
 }
+
+static inline Fang_Rect
+Fang_CameraProjectBody(
+    const Fang_Camera * const camera,
+    const Fang_Body   * const body,
+    const Fang_Rect   * const viewport,
+          float       * const out_dist)
+{
+    assert(camera);
+    assert(body);
+    assert(viewport);
+
+    const float inv_det = {
+        1.0f / (camera->cam.x * camera->dir.y - camera->dir.x * camera->cam.y)
+    };
+
+    const Fang_Vec2 dist = {
+        .x = body->pos.x - camera->pos.x,
+        .y = body->pos.y - camera->pos.y,
+    };
+
+    const Fang_Vec2 transform = {
+        .x = inv_det * ( camera->dir.y * dist.x - camera->dir.x * dist.y),
+        .y = inv_det * (-camera->cam.y * dist.x + camera->cam.x * dist.y),
+    };
+
+    *out_dist = transform.y;
+
+    if (transform.y <= 0.0f)
+        return (Fang_Rect){.h = 0};
+
+    const float size = (viewport->h / transform.y) * body->size;
+
+    return (Fang_Rect){
+        .x = (int)(
+            (viewport->w / 2.0f) * (1.0f - transform.x / transform.y)
+          - (size / 2.0f)
+        ),
+        .y = (int)(
+            (viewport->h / 2.0f) - (size / 2.0f)
+          + (camera->cam.z * viewport->h)
+          + (camera->pos.z / transform.y)
+        ),
+        .w = (int)size,
+        .h = (int)size,
+    };
+}

@@ -287,6 +287,17 @@ int Fang_Main(int argc, char** argv)
     if (!texture)
         goto Error_Framebuffer;
 
+    SDL_Texture * const depth = SDL_CreateTexture(
+        renderer,
+        SDL_PIXELFORMAT_RGBA8888,
+        SDL_TEXTUREACCESS_STREAMING,
+        FANG_WINDOW_SIZE,
+        FANG_WINDOW_SIZE
+    );
+
+    if (!depth)
+        goto Error_Depthbuffer;
+
     if (FangSDL_CreateFonts())
         goto Error_Fonts;
 
@@ -505,23 +516,37 @@ int Fang_Main(int argc, char** argv)
 
         {
             Fang_Framebuffer framebuf;
-            framebuf.color.width  = FANG_WINDOW_SIZE;
-            framebuf.color.height = FANG_WINDOW_SIZE;
-            framebuf.color.stride = SDL_BYTESPERPIXEL(SDL_PIXELFORMAT_RGBA8888);
-            framebuf.enable_stencil = false;
-            framebuf.transform = Fang_Mat3x3Identity();
+            framebuf.color.width   = FANG_WINDOW_SIZE;
+            framebuf.color.height  = FANG_WINDOW_SIZE;
+            framebuf.color.stride  = SDL_BYTESPERPIXEL(SDL_PIXELFORMAT_RGBA8888);
+            framebuf.depth.width   = FANG_WINDOW_SIZE;
+            framebuf.depth.height  = FANG_WINDOW_SIZE;
+            framebuf.depth.stride  = SDL_BYTESPERPIXEL(SDL_PIXELFORMAT_RGBA8888);
 
-            const int error = SDL_LockTexture(
+            framebuf.state.enable_depth  = true;
+            framebuf.state.current_depth = 0.0f;
+            framebuf.state.transform     = Fang_Mat3x3Identity();
+
+            int error = SDL_LockTexture(
                 texture,
                 NULL,
                 (void**)&framebuf.color.pixels,
                 &framebuf.color.pitch
             );
 
+            error |= SDL_LockTexture(
+                depth,
+                NULL,
+                (void**)&framebuf.depth.pixels,
+                &framebuf.depth.pitch
+            );
+
             if (error)
                 break;
 
             Fang_UpdateAndRender(&input, &framebuf);
+
+            SDL_UnlockTexture(depth);
             SDL_UnlockTexture(texture);
         }
 
@@ -537,6 +562,9 @@ Error_Textures:
 
 Error_Fonts:
     FangSDL_DestroyFonts();
+
+Error_Depthbuffer:
+    SDL_DestroyTexture(depth);
 
 Error_Framebuffer:
     SDL_DestroyTexture(texture);

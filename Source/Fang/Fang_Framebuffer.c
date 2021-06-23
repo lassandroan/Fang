@@ -13,34 +13,39 @@
 // You should have received a copy of the GNU General Public License along
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+typedef struct Fang_FrameState {
+    bool        enable_depth;
+    float       current_depth;
+    Fang_Mat3x3 transform;
+} Fang_FrameState;
+
 /**
  * A structure used for rendering to the screen.
  *
  * Framebuffers consist of two images:
  * - An RGBA color image whose result is drawn to the screen
- * - A stencil buffer used internally to discard pixels
+ * - A depth buffer used internally to discard pixels
  *
  * @see Fang_FramebufferPutPixel()
 **/
 typedef struct Fang_Framebuffer
 {
-    Fang_Image  color;
-    Fang_Image  stencil;
-    bool        enable_stencil;
-    Fang_Mat3x3 transform;
+    Fang_Image      color;
+    Fang_Image      depth;
+    Fang_FrameState state;
 } Fang_Framebuffer;
 
 /**
  * Writes a pixel of a given color to the framebuffer.
  *
- * This routine utilizes the framebuffer's stencil when placing pixels. If the
- * stencil is enabled, its buffer is checked to see if a value has already been
- * written in this position.
+ * This routine utilizes the framebuffer's depth when placing pixels. If the
+ * depth buffer is enabled, its buffer is checked to see if a value has already
+ * been written in this position.
  *
- * If a value has been written, we do not write the new pixel into the color
- * image. If a value has not been written then the stencil is written to and the
- * color is written into the color image. If the point lies outside the
- * framebuffer bounds this function does nothing.
+ * If a value has been written *and* is lower than our supplied depth, we do not
+ * write the new pixel into the color image. If a value has not been written
+ * then the depth is written to and the color is written into the color image.
+ * If the point lies outside the framebuffer bounds this function does nothing.
  *
  * The framebuffer must have a color image.
 **/
@@ -54,7 +59,9 @@ Fang_FramebufferPutPixel(
     assert(framebuf->color.pixels);
     assert(framebuf->color.stride == 4);
 
-    const Fang_Point trans_point = Fang_MatMult(framebuf->transform, *point);
+    const Fang_Point trans_point = Fang_MatMult(
+        framebuf->state.transform, *point
+    );
 
     if (trans_point.x < 0 || trans_point.x >= framebuf->color.width)
         return false;
@@ -64,58 +71,39 @@ Fang_FramebufferPutPixel(
 
     bool write = true;
 
-    if (framebuf->enable_stencil)
+    if (framebuf->state.enable_depth)
     {
-        assert(framebuf->stencil.pixels);
-        assert(framebuf->stencil.width  == framebuf->color.width);
-        assert(framebuf->stencil.height == framebuf->color.height);
-        assert(framebuf->stencil.stride == 1);
+        assert(framebuf->depth.pixels);
+        assert(framebuf->depth.width  == framebuf->color.width);
+        assert(framebuf->depth.height == framebuf->color.height);
+        assert(framebuf->depth.stride == 4);
 
-        const uint8_t pixel  = UINT8_MAX;
-        const int     offset = (
-            trans_point.y * framebuf->stencil.pitch
-          + trans_point.x * framebuf->stencil.stride
+        float * const dest = (float*)(
+            framebuf->depth.pixels
+          + trans_point.y * framebuf->depth.pitch
+          + trans_point.x * framebuf->depth.stride
         );
 
-        if (*(framebuf->stencil.pixels + offset))
+        if (*dest < framebuf->state.current_depth)
             write = false;
         else
-            *(framebuf->stencil.pixels + offset) = pixel;
+            *dest = framebuf->state.current_depth;
     }
 
     if (write)
     {
-        uint32_t * dst = (uint32_t*)(
+        uint32_t * const dest = (uint32_t*)(
             framebuf->color.pixels
           + (trans_point.y * framebuf->color.pitch
           +  trans_point.x * framebuf->color.stride)
         );
 
-        Fang_Color dst_color     = Fang_ColorFromRGBA(*dst);
-        Fang_Color blended_color = Fang_ColorBlend(color, &dst_color);
-        *dst = Fang_ColorToRGBA(&blended_color);
+        Fang_Color dest_color    = Fang_ColorFromRGBA(*dest);
+        Fang_Color blended_color = Fang_ColorBlend(color, &dest_color);
+        *dest = Fang_ColorToRGBA(&blended_color);
     }
 
     return write;
-}
-
-/**
- * Clear's the framebuffer's color and stencil images.
- *
- * If the framebuffer does not have a stencil image, only the color is cleared.
- * The framebuffer must have a color image.
-**/
-static inline void
-Fang_FramebufferClear(
-    Fang_Framebuffer * const framebuf)
-{
-    assert(framebuf);
-    assert(framebuf->color.pixels);
-
-    Fang_ImageClear(&framebuf->color);
-
-    if (framebuf->stencil.pixels)
-        Fang_ImageClear(&framebuf->stencil);
 }
 
 /**
@@ -142,8 +130,11 @@ Fang_FramebufferGetViewport(
  *
  * Because this is a viewport transform and not a clip region, the framebuffer
  * will still attempt to draw all contents within the new area.
+ *
+ * This returns the previous state of the framebuffer, so that it can easily be
+ * restored later.
 **/
-static inline void
+static inline Fang_FrameState
 Fang_FramebufferSetViewport(
           Fang_Framebuffer * const framebuf,
     const Fang_Rect        * const viewport)
@@ -151,24 +142,29 @@ Fang_FramebufferSetViewport(
     assert(framebuf);
     assert(viewport);
 
+    Fang_FrameState state = framebuf->state;
+
     if (viewport->w == 0 || viewport->h == 0)
     {
-        memset(&framebuf->transform, 0, sizeof(Fang_Mat3x3));
-        return;
+        assert(0);
+        memset(&framebuf->state.transform, 0, sizeof(Fang_Mat3x3));
+        return state;
     }
 
     const Fang_Rect bounds = Fang_FramebufferGetViewport(framebuf);
 
     const Fang_Mat3x3 translate = Fang_MatMult(
-        framebuf->transform,
+        framebuf->state.transform,
         Fang_Mat3x3Translate(viewport->x, viewport->y)
     );
 
-    framebuf->transform = Fang_MatMult(
+    framebuf->state.transform = Fang_MatMult(
         translate,
         Fang_Mat3x3Scale(
             (float)viewport->w / (float)bounds.w,
             (float)viewport->h / (float)bounds.h
         )
     );
+
+    return state;
 }
