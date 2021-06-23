@@ -22,23 +22,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifndef min
-  #define min(x, y) (x < y ? x : y)
-#endif
-
-#ifndef max
-  #define max(x, y) (x > y ? x : y)
-#endif
-
-#ifndef clamp
-  #define clamp(x, low, high) (max(min(x, high), low))
-#endif
-
-#ifndef breakpoint
-  #define breakpoint() raise(SIGTRAP)
-#endif
-
-#include "Fang_Memory.c"
+#include "Fang_Defines.c"
+#include "Fang_Macros.c"
+#include "Fang_File.c"
 #include "Fang_Color.c"
 #include "Fang_Rect.c"
 #include "Fang_Vector.c"

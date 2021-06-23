@@ -14,73 +14,10 @@
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "../Fang/Fang.c"
+
 #include <SDL2/SDL.h>
 
-static inline char *
-FangSDL_GetResourcePath(
-    const char * const filename)
-{
-    SDL_assert(filename);
-
-    char * const base_path = SDL_GetBasePath();
-    const size_t full_len  = SDL_strlen(base_path) + SDL_strlen(filename);
-    char * const full_path = SDL_malloc(sizeof(char) * full_len + 1);
-    full_path[full_len] = '\0';
-
-    SDL_strlcpy(full_path, base_path, full_len + 1);
-    SDL_strlcat(full_path,  filename, full_len + 1);
-
-    SDL_free(base_path);
-    return full_path;
-}
-
-static inline Fang_Buffer
-FangSDL_LoadResource(
-    const char * const filename)
-{
-    SDL_assert(filename);
-
-    Fang_Buffer result = {.data = NULL};
-
-    char * const full_path = FangSDL_GetResourcePath(filename);
-    if (!full_path)
-        goto Error;
-
-    SDL_RWops * const file = SDL_RWFromFile(full_path, "rb");
-    if (!file)
-        goto Error;
-
-    const int64_t size = SDL_RWsize(file);
-    if (size < 0)
-        goto Error;
-
-    result.data = SDL_malloc((size_t)size);
-    result.size = (size_t)size;
-
-    if (!result.data)
-        goto Error;
-
-    const size_t num_read = SDL_RWread(
-        file,
-        result.data,
-        sizeof(uint8_t),
-        (size_t)size
-    );
-
-    if (num_read / sizeof(uint8_t) != (size_t)size)
-        goto Error;
-
-    SDL_RWclose(file);
-    SDL_free(full_path);
-    return result;
-
-Error:
-    SDL_free(result.data);
-    SDL_free(full_path);
-    result.data = NULL;
-    result.size = 0;
-    return result;
-}
+#include "FangSDL_File.c"
 
 static inline int
 FangSDL_CreateFonts(void)
@@ -89,18 +26,22 @@ FangSDL_CreateFonts(void)
     {
         const char * const path = Fang_FontPaths[i];
 
-        Fang_Buffer file = FangSDL_LoadResource(path);
-
-        if (!file.data)
+        Fang_File file = {.data = NULL};
+        if (Fang_LoadFile(path, &file) != 0)
+        {
+            SDL_SetError("Unable to load font %s", path);
             return 1;
+        }
 
         Fang_Image * const font = &Fang_Fonts[i];
 
         *font = Fang_TGALoad(&file);
 
+        Fang_FreeFile(&file);
+
         if (!font->pixels)
         {
-            SDL_SetError("Unable to load font %s", path);
+            SDL_SetError("Unable to parse font %s", path);
             return 1;
         }
     }
@@ -127,11 +68,10 @@ FangSDL_CreateTextures(void)
     {
         const char * const path = Fang_TileTexturePaths[i];
 
-        Fang_Buffer file = FangSDL_LoadResource(path);
-
-        if (!file.data)
+        Fang_File file = {.data = NULL};
+        if (Fang_LoadFile(path, &file) != 0)
         {
-            breakpoint();
+            SDL_SetError("Unable to load texture %s", path);
             return 1;
         }
 
@@ -139,10 +79,11 @@ FangSDL_CreateTextures(void)
 
         *texture = Fang_TGALoad(&file);
 
+        Fang_FreeFile(&file);
+
         if (!texture->pixels)
         {
-            breakpoint();
-            SDL_SetError("Unable to load texture %s", path);
+            SDL_SetError("Unable to parse texture %s", path);
             return 1;
         }
     }
@@ -166,13 +107,14 @@ static inline void
 FangSDL_LoadMap(void)
 {
     {
-        Fang_Buffer file = FangSDL_LoadResource("Maps/test/skybox.tga");
-
-        if (file.data)
+        Fang_File file = {.data = NULL};
+        if (!Fang_LoadFile("Maps/test/skybox.tga", &file))
         {
             temp_map.skybox = Fang_TGALoad(&file);
             if (!temp_map.skybox.pixels)
                 puts("Invalid skybox.tga");
+
+            Fang_FreeFile(&file);
         }
         else
         {
@@ -181,13 +123,14 @@ FangSDL_LoadMap(void)
     }
 
     {
-        Fang_Buffer file = FangSDL_LoadResource("Maps/test/floor.tga");
-
-        if (file.data)
+        Fang_File file = {.data = NULL};
+        if (!Fang_LoadFile("Maps/test/floor.tga", &file))
         {
             temp_map.floor = Fang_TGALoad(&file);
             if (!temp_map.floor.pixels)
                 puts("Invalid floor.tga");
+
+            Fang_FreeFile(&file);
         }
         else
         {

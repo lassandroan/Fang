@@ -14,9 +14,7 @@
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * A container for arbitrary data with a length (in bytes).
+ * Function declarations that should be fulfilled by the platform layer should
+ * be prepended with this definition (no-op) for clarity.
 **/
-typedef struct Fang_Buffer {
-    void   * data;
-    size_t   size;
-} Fang_Buffer;
+#define FANG_PLATFORM_CALL

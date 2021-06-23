@@ -13,19 +13,18 @@
 // You should have received a copy of the GNU General Public License along
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-enum {
-  FANG_WINDOW_SIZE = 256,
-};
+#ifndef min
+  #define min(x, y) (x < y ? x : y)
+#endif
 
-#include "Platform/FangSDL.c"
+#ifndef max
+  #define max(x, y) (x > y ? x : y)
+#endif
 
-int main(int argc, char **argv)
-{
-    // NOTE: When building with Sublime the output panel doesn't seem to update
-    //       properly without an unbuffered stdout
-    #ifdef FANG_UNBUFFERED_STDOUT
-      setbuf(stdout, NULL);
-    #endif
+#ifndef clamp
+  #define clamp(x, low, high) (max(min(x, high), low))
+#endif
 
-    return Fang_Main(argc, argv);
-}
+#ifndef breakpoint
+  #define breakpoint() raise(SIGTRAP)
+#endif
