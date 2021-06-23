@@ -195,7 +195,7 @@ Fang_DrawImageEx(
     */
     const Fang_Rect image_area = (image->pixels)
         ? (Fang_Rect){.w = image->width, .h = image->height}
-        : (Fang_Rect){.w = 0, .h = FANG_TEXTURE_HEIGHT};
+        : (Fang_Rect){.w = 0, .h = FANG_FACE_SIZE};
 
     const Fang_Rect source_area = (source)
         ? Fang_RectClip(source, &image_area)
@@ -564,11 +564,11 @@ Fang_DrawMapTiles(
                     framebuf,
                     &wall_tex,
                     &(Fang_Rect){
-                        .x = (int)floorf(tex_x * (FANG_TEXTURE_WIDTH - 1))
-                           + (int)      (face  * (FANG_TEXTURE_WIDTH - 1)),
+                        .x = (int)floorf(tex_x * (FANG_FACE_SIZE - 1))
+                           + (int)      (face  * (FANG_FACE_SIZE - 1)),
                         .y = 0,
                         .w = 1,
-                        .h = FANG_TEXTURE_HEIGHT,
+                        .h = FANG_FACE_SIZE,
                     },
                     &surface
                 );
@@ -663,11 +663,11 @@ Fang_DrawMapTiles(
                         if (y == start_y)
                             u = 1.0f;
 
-                        tex_pos.x = (int)(u * (FANG_TEXTURE_WIDTH  - 1));
-                        tex_pos.y = (int)(v * (FANG_TEXTURE_HEIGHT - 1));
+                        tex_pos.x = (int)(u * (FANG_FACE_SIZE  - 1));
+                        tex_pos.y = (int)(v * (FANG_FACE_SIZE - 1));
                     }
 
-                    tex_pos.x += (int)face * FANG_TEXTURE_WIDTH;
+                    tex_pos.x += (int)face * FANG_FACE_SIZE;
 
                     Fang_Color dest_color = Fang_ImageQuery(
                         &wall_tex, &tex_pos

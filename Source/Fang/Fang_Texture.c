@@ -14,30 +14,30 @@
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * The texture types available to the game.
+ * A constant representing the width|height of a face in a tile-type texture.
+**/
+enum {
+    FANG_FACE_SIZE = 128,
+};
+
+/**
+ * The textures available to the game.
  *
  * Each one of these corresponds to a texture file in the resource folder.
 **/
-typedef enum Fang_TextureType {
-    FANG_TEXTURETYPE_TILE,
+typedef enum Fang_Texture {
+    FANG_TEXTURE_SKYBOX,
+    FANG_TEXTURE_FLOOR,
+    FANG_TEXTURE_TILE,
 
-    FANG_NUM_TEXTURETYPE,
-} Fang_TextureType;
-
-enum {
-    FANG_TEXTURE_HEIGHT = 128,
-    FANG_TEXTURE_WIDTH  = 128,
-};
-
-static const char * const Fang_TexturePaths[FANG_NUM_TEXTURETYPE] = {
-    [FANG_TEXTURETYPE_TILE] = "Maps/test/tile.tga"
-};
+    FANG_NUM_TEXTURES,
+} Fang_Texture;
 
 /**
  * This structure is used for managing loaded textures in-game.
 **/
 typedef struct Fang_TextureAtlas {
-    Fang_Image textures[FANG_NUM_TEXTURETYPE];
+    Fang_Image textures[FANG_NUM_TEXTURES];
 } Fang_TextureAtlas;
 
 /**
@@ -46,10 +46,10 @@ typedef struct Fang_TextureAtlas {
 static inline void
 Fang_TextureAtlasUnload(
           Fang_TextureAtlas * const atlas,
-    const size_t                    id)
+    const Fang_Texture              id)
 {
     assert(atlas);
-    assert(id < FANG_NUM_TEXTURETYPE);
+    assert(id < FANG_NUM_TEXTURES);
     assert(atlas->textures[id].pixels);
 
     free(atlas->textures[id].pixels);
@@ -61,20 +61,64 @@ Fang_TextureAtlasUnload(
  *
  * If the texture has already been loaded, it is unloaded and then loaded again.
  * This can be used for refreshing textures that may have changed on disk.
+ *
+ * When a texture is loaded, its attributes such as width, height, stride, etc.
+ * may be checked for validation.
 **/
 static inline int
 Fang_TextureAtlasLoad(
           Fang_TextureAtlas * const atlas,
-    const size_t                    id)
+    const Fang_Texture              id)
 {
     assert(atlas);
-    assert(id < FANG_NUM_TEXTURETYPE);
+    assert(id < FANG_NUM_TEXTURES);
 
-    if (atlas->textures[id].pixels)
+    Fang_Image * const result = &atlas->textures[id];
+
+    if (result->pixels)
         Fang_TextureAtlasUnload(atlas, id);
 
-    atlas->textures[id] = Fang_TGALoad(Fang_TexturePaths[id]);
-    return atlas->textures[id].pixels != NULL;
+    typedef enum {
+        TILE_TEXTURE,
+        OTHER_TEXTURE,
+    } Type;
+
+    typedef struct {
+        const char * const path;
+        const Type         type;
+    } Info;
+
+    static const Info texture_info[FANG_NUM_TEXTURES] = {
+        [FANG_TEXTURE_SKYBOX] = (Info){
+            .path = "Textures/skybox.tga",
+            .type = OTHER_TEXTURE,
+        },
+        [FANG_TEXTURE_FLOOR] = (Info){
+            .path = "Textures/floor.tga",
+            .type = OTHER_TEXTURE,
+        },
+        [FANG_TEXTURE_TILE] = (Info){
+            .path = "Textures/tile.tga",
+            .type = TILE_TEXTURE,
+        },
+    };
+
+    *result = Fang_TGALoad(texture_info[id].path);
+    if (!result->pixels)
+        return 1;
+
+    switch (texture_info[id].type)
+    {
+        case TILE_TEXTURE:
+            assert(result->width  == FANG_FACE_SIZE * 6);
+            assert(result->height == FANG_FACE_SIZE);
+            break;
+
+        default:
+            break;
+    }
+
+    return 0;
 }
 
 /**
@@ -86,7 +130,7 @@ Fang_TextureAtlasFree(
 {
     assert(atlas);
 
-    for (size_t i = 0; i < FANG_NUM_TEXTURETYPE; ++i)
+    for (Fang_Texture i = 0; i < FANG_NUM_TEXTURES; ++i)
         if (atlas->textures[i].pixels)
             Fang_TextureAtlasUnload(atlas, i);
 }
@@ -94,10 +138,10 @@ Fang_TextureAtlasFree(
 static inline Fang_Image
 Fang_TextureAtlasQuery(
     const Fang_TextureAtlas * const atlas,
-    const size_t                    id)
+    const Fang_Texture              id)
 {
     assert(atlas);
-    assert(id < FANG_NUM_TEXTURETYPE);
+    assert(id < FANG_NUM_TEXTURES);
 
     return atlas->textures[id];
 }

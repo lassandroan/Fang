@@ -62,16 +62,16 @@ Fang_LoadMap(void)
     assert(!temp_map.skybox.pixels);
     assert(!temp_map.floor.pixels);
 
-    temp_map.skybox = Fang_TGALoad("Maps/test/skybox.tga");
-    if (!temp_map.skybox.pixels)
-        puts("Couldn't load skybox.tga");
-
-    temp_map.floor = Fang_TGALoad("Maps/test/floor.tga");
-    if (!temp_map.floor.pixels)
-        puts("Couldn't load floor.tga");
-
-    for (size_t i = 0; i < FANG_NUM_TEXTURETYPE; ++i)
+    for (Fang_Texture i = 0; i < FANG_NUM_TEXTURES; ++i)
         Fang_TextureAtlasLoad(&temp_map.textures, i);
+
+    temp_map.skybox = Fang_TextureAtlasQuery(
+        &temp_map.textures, FANG_TEXTURE_SKYBOX
+    );
+
+    temp_map.floor = Fang_TextureAtlasQuery(
+        &temp_map.textures, FANG_TEXTURE_FLOOR
+    );
 
     return 0;
 }
@@ -79,15 +79,6 @@ Fang_LoadMap(void)
 static inline void
 Fang_DestroyMap(void)
 {
-    assert(temp_map.skybox.pixels);
-    assert(temp_map.floor.pixels);
-
-    free(temp_map.skybox.pixels);
-    memset(&temp_map.skybox, 0, sizeof(Fang_Image));
-
-    free(temp_map.floor.pixels);
-    memset(&temp_map.floor, 0, sizeof(Fang_Image));
-
     Fang_TextureAtlasFree(&temp_map.textures);
 }
 
@@ -145,5 +136,5 @@ Fang_MapQueryTexture(
     (void)x;
     (void)y;
 
-    return Fang_TextureAtlasQuery(&map->textures, FANG_TEXTURETYPE_TILE);
+    return Fang_TextureAtlasQuery(&map->textures, FANG_TEXTURE_TILE);
 }
