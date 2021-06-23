@@ -184,18 +184,18 @@ Fang_DrawImageEx(
     const bool                     flip_y)
 {
     assert(framebuf);
-    assert(image);
-    assert(image->pixels);
-
-    assert(
-        image->stride == 1
-     || image->stride == 3
-     || image->stride == 4
-    );
-
     assert(framebuf->color.stride == 4);
+    assert(image);
 
-    const Fang_Rect image_area = {.w = image->width, .h = image->height};
+    /* If the image is invalid we will supply a default size for
+       Fang_ImageQuery() to use in creating the 'XOR Texture'.
+
+       Note that any smaller height value will cause the XOR texture to warp on
+       walls.
+    */
+    const Fang_Rect image_area = (image->pixels)
+        ? (Fang_Rect){.w = image->width, .h = image->height}
+        : (Fang_Rect){.w = 0, .h = FANG_TEXTURE_HEIGHT};
 
     const Fang_Rect source_area = (source)
         ? Fang_RectClip(source, &image_area)

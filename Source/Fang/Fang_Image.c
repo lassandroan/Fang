@@ -58,8 +58,15 @@ Fang_ImageQuery(
     const Fang_Point * const point)
 {
     assert(image);
-    assert(image->pixels);
     assert(point);
+
+    /* The 'XOR Texture' serves as the default 'missing' texture. */
+    if (!image->pixels)
+    {
+        const uint8_t value = (uint8_t)point->x ^ (uint8_t)point->y;
+        return (Fang_Color){value, value, value, 255};
+    }
+
     assert(point->x >= 0 && point->x < image->width);
     assert(point->y >= 0 && point->y < image->height);
 
