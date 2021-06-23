@@ -506,7 +506,9 @@ Fang_DrawMapTiles(
                 map, hit->tile_pos.x, hit->tile_pos.y
             );
 
-            const Fang_Image wall_tex = Fang_TileTextures[0];
+            const Fang_Image wall_tex = Fang_MapQueryTexture(
+                map, hit->tile_pos.x, hit->tile_pos.y
+            );
 
             Fang_Rect front_face;
             Fang_Rect  back_face;
@@ -781,8 +783,6 @@ Fang_DrawMinimap(
             if (!Fang_MapQueryType(map, x, y))
                 continue;
 
-            const Fang_Color color = Fang_MapQueryColor(map, x, y);
-
             Fang_Rect map_tile_bounds = Fang_RectResize(
                 &(Fang_Rect){
                     .x = (int)(rowf * bounds.w),
@@ -794,7 +794,7 @@ Fang_DrawMinimap(
                 -2
             );
 
-            Fang_FillRect(framebuf, &map_tile_bounds, &color);
+            Fang_FillRect(framebuf, &map_tile_bounds, &FANG_WHITE);
         }
     }
 

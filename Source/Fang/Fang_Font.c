@@ -55,18 +55,8 @@ Fang_CreateFonts(void)
 {
     for (int i = 0; i < FANG_NUM_FONT; ++i)
     {
-        const char * const path = Fang_FontPaths[i];
-
-        Fang_File file = {.data = NULL};
-        if (Fang_LoadFile(path, &file) != 0)
-            return 1;
-
         Fang_Image * const font = &Fang_Fonts[i];
-
-        *font = Fang_TGALoad(&file);
-
-        Fang_FreeFile(&file);
-
+        *font = Fang_TGALoad(Fang_FontPaths[i]);
         if (!font->pixels)
             return 1;
     }

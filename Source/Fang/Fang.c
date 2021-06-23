@@ -37,6 +37,7 @@
 #include "Fang_Body.c"
 #include "Fang_Camera.c"
 #include "Fang_Tile.c"
+#include "Fang_Texture.c"
 #include "Fang_Map.c"
 #include "Fang_Ray.c"
 #include "Fang_Entity.c"
@@ -92,9 +93,6 @@ Fang_Initialize(void)
     if (Fang_CreateFonts())
         return 1;
 
-    if (Fang_CreateTextures())
-        return 1;
-
     if (Fang_LoadMap())
         return 1;
 
@@ -104,7 +102,6 @@ Fang_Initialize(void)
 static inline void
 Fang_Quit(void)
 {
-    Fang_DestroyTextures();
     Fang_DestroyFonts();
     Fang_DestroyMap();
 }

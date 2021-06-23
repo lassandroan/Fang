@@ -19,10 +19,10 @@ typedef struct Fang_Map {
 
     int tile_size;
 
+    Fang_TextureAtlas textures;
+
     Fang_TileType * tiles;
     Fang_TileSize * sizes;
-    Fang_Color    * colors;
-    Fang_Image    * textures;
 
     Fang_Image skybox;
     Fang_Image floor;
@@ -59,41 +59,19 @@ Fang_Map temp_map = {
 static inline int
 Fang_LoadMap(void)
 {
-    {
-        assert(!temp_map.skybox.pixels);
+    assert(!temp_map.skybox.pixels);
+    assert(!temp_map.floor.pixels);
 
-        Fang_File file = {.data = NULL};
-        if (!Fang_LoadFile("Maps/test/skybox.tga", &file))
-        {
-            temp_map.skybox = Fang_TGALoad(&file);
-            if (!temp_map.skybox.pixels)
-                puts("Invalid skybox.tga");
+    temp_map.skybox = Fang_TGALoad("Maps/test/skybox.tga");
+    if (!temp_map.skybox.pixels)
+        puts("Couldn't load skybox.tga");
 
-            Fang_FreeFile(&file);
-        }
-        else
-        {
-            puts("Could not load skybox_new.tga");
-        }
-    }
+    temp_map.floor = Fang_TGALoad("Maps/test/floor.tga");
+    if (!temp_map.floor.pixels)
+        puts("Couldn't load floor.tga");
 
-    {
-        assert(!temp_map.floor.pixels);
-
-        Fang_File file = {.data = NULL};
-        if (!Fang_LoadFile("Maps/test/floor.tga", &file))
-        {
-            temp_map.floor = Fang_TGALoad(&file);
-            if (!temp_map.floor.pixels)
-                puts("Invalid floor.tga");
-
-            Fang_FreeFile(&file);
-        }
-        else
-        {
-            puts("Could not load floor.tga");
-        }
-    }
+    for (size_t i = 0; i < FANG_NUM_TEXTURETYPE; ++i)
+        Fang_TextureAtlasLoad(&temp_map.textures, i);
 
     return 0;
 }
@@ -109,6 +87,8 @@ Fang_DestroyMap(void)
 
     free(temp_map.floor.pixels);
     memset(&temp_map.floor, 0, sizeof(Fang_Image));
+
+    Fang_TextureAtlasFree(&temp_map.textures);
 }
 
 static inline Fang_TileType
@@ -154,34 +134,6 @@ Fang_MapQuerySize(
     }
 }
 
-static inline Fang_Color
-Fang_MapQueryColor(
-    const Fang_Map * const map,
-    const int x,
-    const int y)
-{
-    assert(map);
-
-    const Fang_TileType type = Fang_MapQueryType(map, x, y);
-
-    switch (type)
-    {
-        case FANG_TILETYPE_SOLID:
-            return (Fang_Color){
-                .r = 255,
-                .g = 255,
-                .b = 255,
-                .a = 128,
-            };
-
-        case FANG_TILETYPE_FLOATING:
-            return FANG_GREY;
-
-        default:
-            return FANG_TRANSPARENT;
-    }
-}
-
 static inline Fang_Image
 Fang_MapQueryTexture(
     const Fang_Map * const map,
@@ -189,8 +141,9 @@ Fang_MapQueryTexture(
     const int y)
 {
     assert(map);
+
     (void)x;
     (void)y;
 
-    return Fang_TileTextures[0];
+    return Fang_TextureAtlasQuery(&map->textures, FANG_TEXTURETYPE_TILE);
 }
