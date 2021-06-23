@@ -105,15 +105,15 @@ Fang_AtlasLoad(
     static const Info texture_info[FANG_NUM_TEXTURES] = {
         /* Map Textures */
         [FANG_TEXTURE_SKYBOX] = (Info){
-            .path = "Textures/skybox.tga",
+            .path = "Textures/Skybox.tga",
             .type = OTHER_TEXTURE,
         },
         [FANG_TEXTURE_FLOOR] = (Info){
-            .path = "Textures/floor.tga",
+            .path = "Textures/Floor.tga",
             .type = OTHER_TEXTURE,
         },
         [FANG_TEXTURE_TILE] = (Info){
-            .path = "Textures/tile.tga",
+            .path = "Textures/Tile.tga",
             .type = TILE_TEXTURE,
         },
 
