@@ -87,7 +87,7 @@ Fang_Entity entities[FANG_NUM_ENTITIES] = {
 };
 
 static inline int
-Fang_Initialize(void)
+Fang_Init(void)
 {
     if (Fang_LoadMap())
         return 1;
@@ -96,13 +96,7 @@ Fang_Initialize(void)
 }
 
 static inline void
-Fang_Quit(void)
-{
-    Fang_DestroyMap();
-}
-
-static inline void
-Fang_UpdateAndRender(
+Fang_Update(
     const Fang_Input       * const input,
           Fang_Framebuffer * const framebuf)
 {
@@ -194,4 +188,10 @@ Fang_UpdateAndRender(
         FANG_FONT_HEIGHT,
         &(Fang_Point){.x = 5, .y = 3}
     );
+}
+
+static inline void
+Fang_Quit(void)
+{
+    Fang_DestroyMap();
 }

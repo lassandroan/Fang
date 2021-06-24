@@ -136,7 +136,7 @@ int Fang_Main(int argc, char** argv)
     Fang_Input input;
     SDL_memset(&input, 0, sizeof(Fang_Input));
 
-    if (Fang_Initialize() != 0)
+    if (Fang_Init() != 0)
         goto Error_GameInit;
 
     bool quit = false;
