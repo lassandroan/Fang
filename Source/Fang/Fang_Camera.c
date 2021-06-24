@@ -40,6 +40,12 @@ Fang_CameraRotate(
     cam->x = cam->x * rotation.x - cam->y * rotation.y;
     cam->y = cam->x * rotation.y + cam->y * rotation.x;
     cam->z = clamp(cam->z + pitch, -1.0f, 1.0f);
+
+    *(Fang_Vec2*)dir = Fang_Vec2Normalize(*(Fang_Vec2*)dir);
+    *(Fang_Vec2*)cam = Fang_Vec2Normalize(*(Fang_Vec2*)cam);
+
+    cam->x *= 0.5f;
+    cam->y *= 0.5f;
 }
 
 static inline Fang_Rect
