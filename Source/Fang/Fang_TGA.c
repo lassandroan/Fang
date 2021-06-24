@@ -59,26 +59,26 @@ Fang_TGAParse(
         uint16_t map_origin;
         uint16_t map_length;
         uint8_t  map_depth;
-        uint16_t image_x;
-        uint16_t image_y;
-        uint16_t image_width;
-        uint16_t image_height;
-        uint8_t  image_depth;
-        uint8_t  image_descriptor;
+        uint16_t x;
+        uint16_t y;
+        uint16_t width;
+        uint16_t height;
+        uint8_t  depth;
+        uint8_t  descriptor;
     } header;
 
-    memcpy(&header.id_len,           data, sizeof( uint8_t)); data += sizeof( uint8_t);
-    memcpy(&header.map_included,     data, sizeof( uint8_t)); data += sizeof( uint8_t);
-    memcpy(&header.image_type,       data, sizeof( uint8_t)); data += sizeof( uint8_t);
-    memcpy(&header.map_origin,       data, sizeof(uint16_t)); data += sizeof(uint16_t);
-    memcpy(&header.map_length,       data, sizeof(uint16_t)); data += sizeof(uint16_t);
-    memcpy(&header.map_depth,        data, sizeof( uint8_t)); data += sizeof( uint8_t);
-    memcpy(&header.image_x,          data, sizeof(uint16_t)); data += sizeof(uint16_t);
-    memcpy(&header.image_y,          data, sizeof(uint16_t)); data += sizeof(uint16_t);
-    memcpy(&header.image_width,      data, sizeof(uint16_t)); data += sizeof(uint16_t);
-    memcpy(&header.image_height,     data, sizeof(uint16_t)); data += sizeof(uint16_t);
-    memcpy(&header.image_depth,      data, sizeof( uint8_t)); data += sizeof( uint8_t);
-    memcpy(&header.image_descriptor, data, sizeof( uint8_t)); data += sizeof( uint8_t);
+    memcpy(&header.id_len,       data, sizeof( uint8_t)); data += sizeof( uint8_t);
+    memcpy(&header.map_included, data, sizeof( uint8_t)); data += sizeof( uint8_t);
+    memcpy(&header.image_type,   data, sizeof( uint8_t)); data += sizeof( uint8_t);
+    memcpy(&header.map_origin,   data, sizeof(uint16_t)); data += sizeof(uint16_t);
+    memcpy(&header.map_length,   data, sizeof(uint16_t)); data += sizeof(uint16_t);
+    memcpy(&header.map_depth,    data, sizeof( uint8_t)); data += sizeof( uint8_t);
+    memcpy(&header.x,            data, sizeof(uint16_t)); data += sizeof(uint16_t);
+    memcpy(&header.y,            data, sizeof(uint16_t)); data += sizeof(uint16_t);
+    memcpy(&header.width,        data, sizeof(uint16_t)); data += sizeof(uint16_t);
+    memcpy(&header.height,       data, sizeof(uint16_t)); data += sizeof(uint16_t);
+    memcpy(&header.depth,        data, sizeof( uint8_t)); data += sizeof( uint8_t);
+    memcpy(&header.descriptor,   data, sizeof( uint8_t)); data += sizeof( uint8_t);
 
     Fang_Image result = {.pixels = NULL};
 
@@ -95,7 +95,7 @@ Fang_TGAParse(
         case TGA_IMAGE_RLEGREY: /* fallthrough */
             rle = bw = true;
         case TGA_IMAGE_GREY:
-            if (header.image_depth != 8)
+            if (header.depth != 8)
                 goto Error_Unsupported;
 
             break;
@@ -104,30 +104,22 @@ Fang_TGAParse(
             goto Error_Unsupported;
     }
 
-    if (header.image_depth != 8
-    &&  header.image_depth != 24
-    &&  header.image_depth != 32)
+    if (header.depth != 8 && header.depth != 24 && header.depth != 32)
         goto Error_Unsupported;
 
     if (header.map_included)
         goto Error_Unsupported;
 
-    if ((header.image_descriptor & TGA_MASK_INTERLEAVE) != TGA_INTERLEAVE_NONE)
+    if ((header.descriptor & TGA_MASK_INTERLEAVE) != TGA_INTERLEAVE_NONE)
         goto Error_Unsupported;
 
-    if (header.image_descriptor & TGA_ORIGIN_LOWER)
+    if (header.descriptor & TGA_ORIGIN_LOWER)
         goto Error_Unsupported;
 
-    if (header.image_descriptor & TGA_ORIGIN_RIGHT)
+    if (header.descriptor & TGA_ORIGIN_RIGHT)
         goto Error_Unsupported;
 
-    result.width  = (int)header.image_width;
-    result.height = (int)header.image_height;
-    result.stride = (int)((header.image_depth + 7) >> 3);
-    result.pitch  = result.stride * (int)header.image_width;
-    result.pixels = malloc((size_t)(result.pitch * result.height));
-
-    if (!result.pixels)
+    if (Fang_ImageAlloc(&result, header.width, header.height, header.depth))
         goto Error_Allocation;
 
     /* Image ID and color map unused */
@@ -238,14 +230,7 @@ Fang_TGAParse(
 
 Error_Allocation:
 Error_Unsupported:
-    result.width  = 0;
-    result.height = 0;
-    result.stride = 0;
-    result.pitch  = 0;
-
-    free(result.pixels);
-    result.pixels = NULL;
-
+    assert(!result.pixels);
     return result;
 }
 

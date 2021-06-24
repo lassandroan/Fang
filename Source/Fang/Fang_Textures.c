@@ -65,8 +65,7 @@ Fang_AtlasUnload(
     assert(id < FANG_NUM_TEXTURES);
     assert(atlas->textures[id].pixels);
 
-    free(atlas->textures[id].pixels);
-    memset(&atlas->textures[id], 0, sizeof(Fang_Image));
+    Fang_ImageFree(&atlas->textures[id]);
 }
 
 /**
