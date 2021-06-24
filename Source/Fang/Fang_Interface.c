@@ -28,7 +28,7 @@ typedef struct Fang_InterfaceColors {
 **/
 typedef struct Fang_InterfaceTheme {
     Fang_InterfaceColors colors;
-    Fang_FontType        font;
+    Fang_Texture         font;
 } Fang_InterfaceTheme;
 
 /**
@@ -64,8 +64,9 @@ typedef struct Fang_Interface {
 
     Fang_InterfaceTheme theme;
 
-    Fang_Framebuffer * framebuf;
-    const Fang_Input * input;
+          Fang_Framebuffer * framebuf;
+    const Fang_Atlas       * textures;
+    const Fang_Input       * input;
 } Fang_Interface;
 
 /**
@@ -151,7 +152,7 @@ Fang_InterfaceButton(
             Fang_DrawText(
                 framebuf,
                 text,
-                interface->theme.font,
+                Fang_AtlasQuery(interface->textures, interface->theme.font),
                 text_area.h,
                 &(Fang_Point){
                     .x = (
@@ -277,7 +278,7 @@ Fang_InterfaceSlider(
                 Fang_DrawText(
                     framebuf,
                     display_text,
-                    interface->theme.font,
+                    Fang_AtlasQuery(interface->textures, interface->theme.font),
                     text_area.h,
                     &(Fang_Point){
                         .x = (

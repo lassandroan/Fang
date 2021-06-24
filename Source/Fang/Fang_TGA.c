@@ -14,7 +14,7 @@
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Parses and loads a TGA file from memory.
+ * Parses a TGA file in memory.
  *
  * This function does not support the following TGA features:
  * - Bit depths other than 8, 24, or 32
@@ -24,7 +24,7 @@
  * - Images with an origin other than top-left
 **/
 static Fang_Image
-Fang_TGALoad(
+Fang_TGAParse(
     Fang_File * const file)
 {
     assert(file);
@@ -59,26 +59,26 @@ Fang_TGALoad(
         uint16_t map_origin;
         uint16_t map_length;
         uint8_t  map_depth;
-        uint16_t image_x;
-        uint16_t image_y;
-        uint16_t image_width;
-        uint16_t image_height;
-        uint8_t  image_depth;
-        uint8_t  image_descriptor;
+        uint16_t x;
+        uint16_t y;
+        uint16_t width;
+        uint16_t height;
+        uint8_t  depth;
+        uint8_t  descriptor;
     } header;
 
-    memcpy(&header.id_len,           data, sizeof( uint8_t)); data += sizeof( uint8_t);
-    memcpy(&header.map_included,     data, sizeof( uint8_t)); data += sizeof( uint8_t);
-    memcpy(&header.image_type,       data, sizeof( uint8_t)); data += sizeof( uint8_t);
-    memcpy(&header.map_origin,       data, sizeof(uint16_t)); data += sizeof(uint16_t);
-    memcpy(&header.map_length,       data, sizeof(uint16_t)); data += sizeof(uint16_t);
-    memcpy(&header.map_depth,        data, sizeof( uint8_t)); data += sizeof( uint8_t);
-    memcpy(&header.image_x,          data, sizeof(uint16_t)); data += sizeof(uint16_t);
-    memcpy(&header.image_y,          data, sizeof(uint16_t)); data += sizeof(uint16_t);
-    memcpy(&header.image_width,      data, sizeof(uint16_t)); data += sizeof(uint16_t);
-    memcpy(&header.image_height,     data, sizeof(uint16_t)); data += sizeof(uint16_t);
-    memcpy(&header.image_depth,      data, sizeof( uint8_t)); data += sizeof( uint8_t);
-    memcpy(&header.image_descriptor, data, sizeof( uint8_t)); data += sizeof( uint8_t);
+    memcpy(&header.id_len,       data, sizeof( uint8_t)); data += sizeof( uint8_t);
+    memcpy(&header.map_included, data, sizeof( uint8_t)); data += sizeof( uint8_t);
+    memcpy(&header.image_type,   data, sizeof( uint8_t)); data += sizeof( uint8_t);
+    memcpy(&header.map_origin,   data, sizeof(uint16_t)); data += sizeof(uint16_t);
+    memcpy(&header.map_length,   data, sizeof(uint16_t)); data += sizeof(uint16_t);
+    memcpy(&header.map_depth,    data, sizeof( uint8_t)); data += sizeof( uint8_t);
+    memcpy(&header.x,            data, sizeof(uint16_t)); data += sizeof(uint16_t);
+    memcpy(&header.y,            data, sizeof(uint16_t)); data += sizeof(uint16_t);
+    memcpy(&header.width,        data, sizeof(uint16_t)); data += sizeof(uint16_t);
+    memcpy(&header.height,       data, sizeof(uint16_t)); data += sizeof(uint16_t);
+    memcpy(&header.depth,        data, sizeof( uint8_t)); data += sizeof( uint8_t);
+    memcpy(&header.descriptor,   data, sizeof( uint8_t)); data += sizeof( uint8_t);
 
     Fang_Image result = {.pixels = NULL};
 
@@ -95,7 +95,7 @@ Fang_TGALoad(
         case TGA_IMAGE_RLEGREY: /* fallthrough */
             rle = bw = true;
         case TGA_IMAGE_GREY:
-            if (header.image_depth != 8)
+            if (header.depth != 8)
                 goto Error_Unsupported;
 
             break;
@@ -104,30 +104,22 @@ Fang_TGALoad(
             goto Error_Unsupported;
     }
 
-    if (header.image_depth != 8
-    &&  header.image_depth != 24
-    &&  header.image_depth != 32)
+    if (header.depth != 8 && header.depth != 24 && header.depth != 32)
         goto Error_Unsupported;
 
     if (header.map_included)
         goto Error_Unsupported;
 
-    if ((header.image_descriptor & TGA_MASK_INTERLEAVE) != TGA_INTERLEAVE_NONE)
+    if ((header.descriptor & TGA_MASK_INTERLEAVE) != TGA_INTERLEAVE_NONE)
         goto Error_Unsupported;
 
-    if (header.image_descriptor & TGA_ORIGIN_LOWER)
+    if (header.descriptor & TGA_ORIGIN_LOWER)
         goto Error_Unsupported;
 
-    if (header.image_descriptor & TGA_ORIGIN_RIGHT)
+    if (header.descriptor & TGA_ORIGIN_RIGHT)
         goto Error_Unsupported;
 
-    result.width  = (int)header.image_width;
-    result.height = (int)header.image_height;
-    result.stride = (int)((header.image_depth + 7) >> 3);
-    result.pitch  = result.stride * (int)header.image_width;
-    result.pixels = malloc((size_t)(result.pitch * result.height));
-
-    if (!result.pixels)
+    if (Fang_ImageAlloc(&result, header.width, header.height, header.depth))
         goto Error_Allocation;
 
     /* Image ID and color map unused */
@@ -238,13 +230,21 @@ Fang_TGALoad(
 
 Error_Allocation:
 Error_Unsupported:
-    result.width  = 0;
-    result.height = 0;
-    result.stride = 0;
-    result.pitch  = 0;
+    assert(!result.pixels);
+    return result;
+}
 
-    free(result.pixels);
-    result.pixels = NULL;
+static inline Fang_Image
+Fang_TGALoad(
+    const char * const filepath)
+{
+    Fang_Image result = {.pixels = NULL};
 
+    Fang_File file = {.data = NULL};
+    if (Fang_LoadFile(filepath, &file) != 0)
+        return result;
+
+    result = Fang_TGAParse(&file);
+    Fang_FreeFile(&file);
     return result;
 }

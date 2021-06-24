@@ -184,18 +184,18 @@ Fang_DrawImageEx(
     const bool                     flip_y)
 {
     assert(framebuf);
-    assert(image);
-    assert(image->pixels);
-
-    assert(
-        image->stride == 1
-     || image->stride == 3
-     || image->stride == 4
-    );
-
     assert(framebuf->color.stride == 4);
+    assert(image);
 
-    const Fang_Rect image_area = {.w = image->width, .h = image->height};
+    /* If the image is invalid we will supply a default size for
+       Fang_ImageQuery() to use in creating the 'XOR Texture'.
+
+       Note that any smaller height value will cause the XOR texture to warp on
+       walls.
+    */
+    const Fang_Rect image_area = (image->pixels)
+        ? (Fang_Rect){.w = image->width, .h = image->height}
+        : (Fang_Rect){.w = 0, .h = FANG_FACE_SIZE};
 
     const Fang_Rect source_area = (source)
         ? Fang_RectClip(source, &image_area)
@@ -272,42 +272,60 @@ static void
 Fang_DrawText(
           Fang_Framebuffer * const framebuf,
     const char             *       text,
-    const Fang_FontType            type,
+    const Fang_Image       * const font,
     const int                      fontheight,
     const Fang_Point       * const origin)
 {
     assert(framebuf);
     assert(text);
+    assert(font);
 
     Fang_Point position = (origin) ? *origin : (Fang_Point){0, 0};
 
-    const float ratio = (float)fontheight / (float)FANG_FONTAREA_HEIGHT;
+    const float ratio = (float)fontheight / (float)FANG_FONT_HEIGHT;
 
     while (*text)
     {
-        if (*text == ' ')
+        char character = *text;
+
+        if (character == ' ')
         {
             text++;
-            position.x += (int)((FANG_FONTAREA_WIDTH + 1) * ratio);
+            position.x += (int)((FANG_FONT_WIDTH + 1) * ratio);
             continue;
         }
 
-        const Fang_Rect character = Fang_FontGetCharPosition(*text);
+        if (character < '!')
+            character = '?';
+
+        Fang_Rect target_area = {0, 0, 0, 0};
+        {
+            const float pos = (character - (float)'!') / (127.0f - (float)'!');
+
+            const int total_width = (127 - '!') * (FANG_FONT_WIDTH + 1);
+
+            target_area = (Fang_Rect){
+                .x = (int)(total_width * pos) + 1,
+                .y = 0,
+                .w = FANG_FONT_WIDTH,
+                .h = FANG_FONT_HEIGHT,
+            };
+        }
 
         Fang_DrawImage(
             framebuf,
-            Fang_FontGet(type),
-            &character,
+            font,
+            &target_area,
             &(Fang_Rect){
                 .x = position.x,
                 .y = position.y,
-                .w = (int)(character.w * ratio),
-                .h = (int)(character.h * ratio),
+                .w = (int)(target_area.w * ratio),
+                .h = (int)(target_area.h * ratio),
             }
         );
 
         text++;
-        position.x += (int)((FANG_FONTAREA_WIDTH + 1) * ratio);
+        position.x += (int)((FANG_FONT_WIDTH + 1) * ratio);
     }
 }
 
@@ -437,12 +455,7 @@ Fang_DrawMapFloor(
             floor_pos.x += floor_step.x;
             floor_pos.y += floor_step.y;
 
-            const uint32_t pixel = *(uint32_t*)&map->floor.pixels[
-                (map->floor.pitch * tex_pos.y)
-              + (tex_pos.x * map->floor.stride)
-            ];
-
-            Fang_Color dest_color = Fang_ColorFromRGBA(pixel);
+            Fang_Color dest_color = Fang_ImageQuery(&map->floor, &tex_pos);
 
             dest_color = Fang_ColorBlend(
                 &(Fang_Color){
@@ -506,7 +519,9 @@ Fang_DrawMapTiles(
                 map, hit->tile_pos.x, hit->tile_pos.y
             );
 
-            const Fang_Image wall_tex = Fang_TileTextures[0];
+            const Fang_Image * const wall_tex = Fang_MapQueryTexture(
+                map, hit->tile_pos.x, hit->tile_pos.y
+            );
 
             Fang_Rect front_face;
             Fang_Rect  back_face;
@@ -560,13 +575,13 @@ Fang_DrawMapTiles(
 
                 Fang_DrawImage(
                     framebuf,
-                    &wall_tex,
+                    wall_tex,
                     &(Fang_Rect){
-                        .x = (int)floorf(tex_x * (FANG_TILEAREA_WIDTH - 1))
-                           + ((int)face * (FANG_TILEAREA_WIDTH - 1)),
+                        .x = (int)floorf(tex_x * (FANG_FACE_SIZE - 1))
+                           + (int)      (face  * (FANG_FACE_SIZE - 1)),
                         .y = 0,
                         .w = 1,
-                        .h = FANG_TILEAREA_HEIGHT,
+                        .h = FANG_FACE_SIZE,
                     },
                     &surface
                 );
@@ -661,14 +676,14 @@ Fang_DrawMapTiles(
                         if (y == start_y)
                             u = 1.0f;
 
-                        tex_pos.x = (int)(u * (FANG_TILEAREA_WIDTH - 1));
-                        tex_pos.y = (int)(v * (FANG_TILEAREA_HEIGHT - 1));
+                        tex_pos.x = (int)(u * (FANG_FACE_SIZE  - 1));
+                        tex_pos.y = (int)(v * (FANG_FACE_SIZE - 1));
                     }
 
-                    tex_pos.x += (int)face * FANG_TILEAREA_WIDTH;
+                    tex_pos.x += (int)face * FANG_FACE_SIZE;
 
                     Fang_Color dest_color = Fang_ImageQuery(
-                        &wall_tex, &tex_pos
+                        wall_tex, &tex_pos
                     );
 
                     const float dist = ((1.0f - r_y) * dist_start)
@@ -781,8 +796,6 @@ Fang_DrawMinimap(
             if (!Fang_MapQueryType(map, x, y))
                 continue;
 
-            const Fang_Color color = Fang_MapQueryColor(map, x, y);
-
             Fang_Rect map_tile_bounds = Fang_RectResize(
                 &(Fang_Rect){
                     .x = (int)(rowf * bounds.w),
@@ -794,7 +807,7 @@ Fang_DrawMinimap(
                 -2
             );
 
-            Fang_FillRect(framebuf, &map_tile_bounds, &color);
+            Fang_FillRect(framebuf, &map_tile_bounds, &FANG_WHITE);
         }
     }
 

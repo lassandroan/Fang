@@ -19,126 +19,6 @@
 
 #include "FangSDL_File.c"
 
-static inline int
-FangSDL_CreateFonts(void)
-{
-    for (int i = 0; i < FANG_NUM_FONT; ++i)
-    {
-        const char * const path = Fang_FontPaths[i];
-
-        Fang_File file = {.data = NULL};
-        if (Fang_LoadFile(path, &file) != 0)
-        {
-            SDL_SetError("Unable to load font %s", path);
-            return 1;
-        }
-
-        Fang_Image * const font = &Fang_Fonts[i];
-
-        *font = Fang_TGALoad(&file);
-
-        Fang_FreeFile(&file);
-
-        if (!font->pixels)
-        {
-            SDL_SetError("Unable to parse font %s", path);
-            return 1;
-        }
-    }
-
-    return 0;
-}
-
-static inline void
-FangSDL_DestroyFonts(void)
-{
-    for (int i = 0; i < FANG_NUM_FONT; ++i)
-    {
-        assert(Fang_Fonts[i].pixels);
-
-        SDL_free(Fang_Fonts[i].pixels);
-        SDL_memset(&Fang_Fonts[i], 0, sizeof(Fang_Image));
-    }
-}
-
-static inline int
-FangSDL_CreateTextures(void)
-{
-    for (int i = 0; i < FANG_NUM_TILETEXTURE; ++i)
-    {
-        const char * const path = Fang_TileTexturePaths[i];
-
-        Fang_File file = {.data = NULL};
-        if (Fang_LoadFile(path, &file) != 0)
-        {
-            SDL_SetError("Unable to load texture %s", path);
-            return 1;
-        }
-
-        Fang_Image * const texture = &Fang_TileTextures[i];
-
-        *texture = Fang_TGALoad(&file);
-
-        Fang_FreeFile(&file);
-
-        if (!texture->pixels)
-        {
-            SDL_SetError("Unable to parse texture %s", path);
-            return 1;
-        }
-    }
-
-    return 0;
-}
-
-static inline void
-FangSDL_DestroyTextures(void)
-{
-    for (int i = 0; i < FANG_NUM_TILETEXTURE; ++i)
-    {
-        assert(Fang_TileTextures[i].pixels);
-
-        SDL_free(Fang_TileTextures[i].pixels);
-        SDL_memset(&Fang_TileTextures[i], 0, sizeof(Fang_Image));
-    }
-}
-
-static inline void
-FangSDL_LoadMap(void)
-{
-    {
-        Fang_File file = {.data = NULL};
-        if (!Fang_LoadFile("Maps/test/skybox.tga", &file))
-        {
-            temp_map.skybox = Fang_TGALoad(&file);
-            if (!temp_map.skybox.pixels)
-                puts("Invalid skybox.tga");
-
-            Fang_FreeFile(&file);
-        }
-        else
-        {
-            puts("Could not load skybox_new.tga");
-        }
-    }
-
-    {
-        Fang_File file = {.data = NULL};
-        if (!Fang_LoadFile("Maps/test/floor.tga", &file))
-        {
-            temp_map.floor = Fang_TGALoad(&file);
-            if (!temp_map.floor.pixels)
-                puts("Invalid floor.tga");
-
-            Fang_FreeFile(&file);
-        }
-        else
-        {
-            puts("Could not load floor.tga");
-        }
-    }
-}
-
 static inline void
 FangSDL_ConnectController(
     SDL_GameController ** const controller)
@@ -241,14 +121,6 @@ int Fang_Main(int argc, char** argv)
     if (!depth)
         goto Error_Depthbuffer;
 
-    if (FangSDL_CreateFonts())
-        goto Error_Fonts;
-
-    if (FangSDL_CreateTextures())
-        goto Error_Textures;
-
-    FangSDL_LoadMap();
-
     SDL_GameController * controller = NULL;
     FangSDL_ConnectController(&controller);
 
@@ -263,6 +135,9 @@ int Fang_Main(int argc, char** argv)
 
     Fang_Input input;
     SDL_memset(&input, 0, sizeof(Fang_Input));
+
+    if (Fang_Init() != 0)
+        goto Error_GameInit;
 
     bool quit = false;
     while (!quit)
@@ -500,11 +375,8 @@ int Fang_Main(int argc, char** argv)
 
     FangSDL_DisconnectController(&controller);
 
-Error_Textures:
-    FangSDL_DestroyTextures();
-
-Error_Fonts:
-    FangSDL_DestroyFonts();
+Error_GameInit:
+    Fang_Quit();
 
 Error_Depthbuffer:
     SDL_DestroyTexture(depth);

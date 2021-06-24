@@ -25,33 +25,3 @@ typedef struct Fang_TileSize {
     int height;
     int size;
 } Fang_TileSize;
-
-enum {
-    FANG_TILEAREA_HEIGHT = 128,
-    FANG_TILEAREA_WIDTH  = 128,
-};
-
-typedef enum Fang_TileTextureType {
-    FANG_TILETEXTURE_TILE,
-
-    FANG_NUM_TILETEXTURE,
-} Fang_TileTextureType;
-
-const char * const Fang_TileTexturePaths[FANG_NUM_TILETEXTURE] = {
-    [FANG_TILETEXTURE_TILE] = "Maps/test/tile.tga"
-};
-
-Fang_Image Fang_TileTextures[FANG_NUM_TILETEXTURE];
-
-static inline Fang_Image*
-Fang_TileTextureGet(
-    const Fang_TileTextureType type)
-{
-    assert(type >= 0);
-    assert(type <= FANG_NUM_TILETEXTURE);
-
-    if (type == FANG_NUM_TILETEXTURE)
-        return &Fang_TileTextures[type - 1];
-
-    return &Fang_TileTextures[type];
-}
