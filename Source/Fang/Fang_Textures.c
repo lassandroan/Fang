@@ -136,6 +136,9 @@ Fang_AtlasLoad(
             break;
 
         case FONT_TEXTURE:
+            /* Fonts have one pixel barriers between each character */
+            assert(result->width  == (FANG_FONT_WIDTH + 1) * (127 - '!'));
+            assert(result->height == FANG_FONT_HEIGHT);
             break;
 
         default:
