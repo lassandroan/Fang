@@ -52,3 +52,17 @@ Fang_Vec2Angle(
 {
     return atan2f(Fang_Vec2Dot(a, b), Fang_Vec2Determ(a, b));
 }
+
+static inline float
+Fang_Vec2Norm(
+    const Fang_Vec2 a)
+{
+    return sqrtf(a.x * a.x + a.y * a.y);
+}
+
+static inline Fang_Vec2
+Fang_Vec2Normalize(
+    const Fang_Vec2 a)
+{
+    return Fang_Vec2Divf(a, Fang_Vec2Norm(a));
+}
