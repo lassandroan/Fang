@@ -362,7 +362,7 @@ int Fang_Main(int argc, char** argv)
             if (error)
                 break;
 
-            Fang_UpdateAndRender(&input, &framebuf);
+            Fang_Update(&input, &framebuf);
 
             SDL_UnlockTexture(depth);
             SDL_UnlockTexture(texture);
