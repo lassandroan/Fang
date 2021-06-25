@@ -60,10 +60,8 @@ Fang_CameraProjectTile(
     assert(camera);
     assert(viewport);
 
-    /* Camera space to screen space */
     dist = viewport->h / dist;
 
-    /* Calculated positions in screen space */
     const float offset = (tile->y       * FANG_PROJECTION_RATIO) * dist;
     const float size   = (tile->h       * FANG_PROJECTION_RATIO) * dist - dist;
     const float height = (camera->pos.z * FANG_PROJECTION_RATIO) * dist;
@@ -86,36 +84,32 @@ Fang_CameraProjectBody(
     assert(body);
     assert(viewport);
 
-    const float inv_det = {
-        1.0f / (camera->cam.x * camera->dir.y - camera->dir.x * camera->cam.y)
-    };
-
-    const Fang_Vec2 pos = {
+    const Fang_Vec2 diff = {
         .x = body->pos.x - camera->pos.x,
         .y = body->pos.y - camera->pos.y,
     };
 
-    /* Transform sprite with inverse camera matrix */
-    const Fang_Vec2 transform = {
-        .x = inv_det * ( camera->dir.y * pos.x - camera->dir.x * pos.y),
-        .y = inv_det * (-camera->cam.y * pos.x + camera->cam.x * pos.y),
+    const Fang_Vec2 plane_pos = {
+        .x = ( camera->dir.y * diff.x - camera->dir.x * diff.y),
+        .y = (-camera->cam.y * diff.x + camera->cam.x * diff.y),
     };
 
-    if (transform.y <= 0.0f)
+    if (plane_pos.y <= 0.0f)
         return (Fang_Rect){.h = 0};
 
-    *out_depth = 1.0f / transform.y;
+    *out_depth = (plane_pos.y * FANG_PROJECTION_RATIO);
 
-    /* Camera space to screen space */
-    const float dist   = (viewport->h   / transform.y);
-    const float size   = (body->size    * FANG_PROJECTION_RATIO) * dist;
+    const float dist = (viewport->h / plane_pos.y)
+                     * (1.0f / FANG_PROJECTION_RATIO);
+
+    const float size   = (body->size    * FANG_PROJECTION_RATIO) * dist / 2.0f;
     const float offset = (camera->pos.z * FANG_PROJECTION_RATIO) * dist;
     const float pitch  = (camera->cam.z * viewport->h);
 
     return (Fang_Rect){
         .x = (int)(
             (viewport->w / 2.0f)
-          * (1.0f - transform.x / transform.y)
+          * (1.0f - plane_pos.x / plane_pos.y)
           - (size / 2.0f)
         ),
         .y = (int)(
