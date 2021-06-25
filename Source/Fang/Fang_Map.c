@@ -22,7 +22,7 @@ typedef struct Fang_Map {
     Fang_Atlas textures;
 
     Fang_TileType * tiles;
-    Fang_TileSize * sizes;
+    Fang_Tile * sizes;
 
     Fang_Image skybox;
     Fang_Image floor;
@@ -37,7 +37,7 @@ enum {
 };
 
 Fang_TileType temp_map_map[temp_map_width][temp_map_height] = {
-    {1, 1, 1, 1, 1, 1, 1, 1},
+    {1, 1, 1, 0, 0, 0, 1, 1},
     {1, 0, 0, 0, 0, 0, 2, 1},
     {1, 0, 0, 0, 0, 0, 0, 1},
     {1, 0, 0, 0, 0, 0, 0, 1},
@@ -53,7 +53,7 @@ Fang_Map temp_map = {
     .height = temp_map_height,
     .tile_size = 16,
     .fog = FANG_BLACK,
-    .fog_distance = 4,
+    .fog_distance = 16,
 };
 
 static inline int
@@ -102,7 +102,7 @@ Fang_MapQueryType(
     return map->tiles[y * map->width + x];
 }
 
-static inline Fang_TileSize
+static inline Fang_Tile
 Fang_MapQuerySize(
     const Fang_Map * const map,
     const int x,
@@ -115,13 +115,13 @@ Fang_MapQuerySize(
     switch (type)
     {
         case FANG_TILETYPE_SOLID:
-            return (Fang_TileSize){0, map->tile_size};
+            return (Fang_Tile){0, map->tile_size};
 
         case FANG_TILETYPE_FLOATING:
-            return (Fang_TileSize){map->tile_size + 3, map->tile_size};
+            return (Fang_Tile){map->tile_size, map->tile_size};
 
         default:
-            return (Fang_TileSize){0, 0};
+            return (Fang_Tile){0, 0};
     }
 }
 

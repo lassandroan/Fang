@@ -21,7 +21,7 @@ typedef enum Fang_TileType {
     FANG_NUM_TILETYPE,
 } Fang_TileType;
 
-typedef struct Fang_TileSize {
-    int height;
-    int size;
-} Fang_TileSize;
+typedef struct Fang_Tile {
+    int y;
+    int h;
+} Fang_Tile;

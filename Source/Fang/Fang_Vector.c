@@ -29,6 +29,14 @@ Fang_Vec2Divf(
     return (Fang_Vec2){a.x / b, a.y / b};
 }
 
+static inline Fang_Vec2
+Fang_Vec2Multf(
+    const Fang_Vec2 a,
+    const float     b)
+{
+    return (Fang_Vec2){a.x * b, a.y * b};
+}
+
 static inline float
 Fang_Vec2Dot(
     const Fang_Vec2 a,
