@@ -34,8 +34,8 @@
 #include "Fang_TGA.c"
 #include "Fang_Framebuffer.c"
 #include "Fang_Body.c"
-#include "Fang_Camera.c"
 #include "Fang_Tile.c"
+#include "Fang_Camera.c"
 #include "Fang_Textures.c"
 #include "Fang_Map.c"
 #include "Fang_Ray.c"
@@ -44,6 +44,7 @@
 #include "Fang_Interface.c"
 
 Fang_Interface interface = (Fang_Interface){
+    .textures = &temp_map.textures,
     .theme = (Fang_InterfaceTheme){
         .font = FANG_TEXTURE_FORMULA,
         .colors = (Fang_InterfaceColors){
@@ -61,7 +62,7 @@ Fang_Camera camera = (Fang_Camera){
     .pos = {
         .x = 32 * 2,
         .y = 32 * 2,
-        .z = 32 / 2,
+        .z = 0,
     },
     .dir = {.x = -1.0f},
     .cam = {.y =  0.5f},
@@ -126,12 +127,6 @@ Fang_Update(
     framebuf->state.current_depth = 0.0f;
     framebuf->state.enable_depth  = true;
 
-    Fang_CameraRotate(
-        &camera,
-        0.0075f,
-        0
-    );
-
     Fang_RayCast(
         &temp_map,
         &camera,
@@ -188,6 +183,51 @@ Fang_Update(
         FANG_FONT_HEIGHT,
         &(Fang_Point){.x = 5, .y = 3}
     );
+
+    static float height = 0.0f;
+    static float pitch  = 0.0f;
+    static float rotate = 0.0f;
+    static float move   = 0.0f;
+
+    if (Fang_InterfaceSlider(
+        &interface, &height, "height",
+        &(Fang_Rect){.x = 256 - 100, .w = 100, .h = 15}))
+    {
+        camera.pos.z = (height * 2.0f - 1.0f) * (32.0f);
+    }
+
+    if (Fang_InterfaceSlider(
+        &interface, &pitch, "pitch",
+        &(Fang_Rect){.x = 256 - 100, .y = 20, .w = 100, .h = 15}))
+    {
+        camera.cam.z = pitch * 2.0f - 1.0f;
+    }
+
+    if (Fang_InterfaceSlider(
+        &interface, &rotate, "rotate",
+        &(Fang_Rect){.x = 256 - 100, .y = 40, .w = 100, .h = 15}))
+    {
+        Fang_CameraRotate(
+            &camera,
+            (rotate * 2.0f - 1.0f) / 100.0f,
+            0
+        );
+    }
+
+    if (Fang_InterfaceSlider(
+        &interface, &move, "move",
+        &(Fang_Rect){.x = 256 - 100, .y = 60, .w = 100, .h = 15}))
+    {
+        const float vel = (move * 2.0f - 1.0f) * 0.5f;
+
+        Fang_Vec2 * const pos = (Fang_Vec2*)&camera.pos;
+        Fang_Vec3 * const dir = &camera.dir;
+
+        *pos = (Fang_Vec2){
+            .x = pos->x + (dir->x * vel),
+            .y = pos->y + (dir->y * vel),
+        };
+    }
 }
 
 static inline void

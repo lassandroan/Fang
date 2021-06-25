@@ -386,7 +386,7 @@ Fang_DrawMapSkybox(
 }
 
 /**
- * Draws the skybox of a given map, translated based on the camera's position
+ * Draws the floor of a given map, translated based on the camera's position
  * and rotation.
 **/
 static void
@@ -407,7 +407,13 @@ Fang_DrawMapFloor(
     if (camera->pos.z <= viewport.h / -2.0f)
         return;
 
-    const int pitch = (int)roundf(camera->cam.z * viewport.h);
+    /* Calculate vertical offset in screen space */
+    const float pitch  = camera->cam.z * viewport.h;
+    const float height = camera->pos.z * FANG_PROJECTION_RATIO;
+    const int   offset = (int)(pitch + height);
+
+    if (height <= 0.0f)
+        return;
 
     const Fang_Vec2 ray_start = {
         .x = camera->dir.x + camera->cam.x,
@@ -419,17 +425,22 @@ Fang_DrawMapFloor(
         .y = camera->dir.y - camera->cam.y,
     };
 
-    for (int y = viewport.h / 2 + pitch; y < viewport.h; ++y)
+    for (int y = viewport.h / 2 + offset; y < viewport.h; ++y)
     {
         if (y < 0)
             continue;
 
-        const int p = y - viewport.h / 2 - pitch;
+        /* Vertical position in screen space shifted by our height/pitch */
+        const int p = (int)(y - (viewport.h / 2) - offset);
 
         if (!p)
             continue;
 
-        const float row_dist = ((viewport.h / 2) + camera->pos.z) / p;
+        /* Calculate row distance, based on perspective at our given height */
+        float row_dist = ((viewport.h / 2.0f) / p) / (1.0f / height);
+
+        framebuf->state.current_depth = row_dist
+                                      * (1.0f / FANG_PROJECTION_RATIO);
 
         const Fang_Vec2 floor_step = {
             .x = row_dist * (ray_end.x - ray_start.x) / viewport.w,
@@ -437,34 +448,43 @@ Fang_DrawMapFloor(
         };
 
         Fang_Vec2 floor_pos = {
-            .x = (camera->pos.x / map->tile_size) + row_dist * ray_start.x,
-            .y = (camera->pos.y / map->tile_size) + row_dist * ray_start.y,
+            .x = (camera->pos.x / map->tile_size) / 2.0f
+               + row_dist * ray_start.x,
+            .y = (camera->pos.y / map->tile_size) / 2.0f
+               + row_dist * ray_start.y,
         };
-
-        framebuf->state.current_depth = row_dist;
 
         for (int x = 0; x < viewport.w; ++x)
         {
-            const Fang_Point tex_pos = {
-                .x = (int)(map->floor.width  * (floor_pos.x - (int)floor_pos.x))
-                   & (map->floor.width  - 1),
-                .y = (int)(map->floor.height * (floor_pos.y - (int)floor_pos.y))
-                   & (map->floor.height - 1),
+            Fang_Point tex_pos = {
+                .x = (int)roundf(
+                    map->floor.width * (floor_pos.x - (int)floor_pos.x)
+                ),
+                .y = (int)roundf(
+                    map->floor.height * (floor_pos.y - (int)floor_pos.y)
+                ),
             };
+
+            tex_pos.x &= (map->floor.width  - 1);
+            tex_pos.y &= (map->floor.height - 1);
 
             floor_pos.x += floor_step.x;
             floor_pos.y += floor_step.y;
 
             Fang_Color dest_color = Fang_ImageQuery(&map->floor, &tex_pos);
 
+            /* Shortening the floor fog seems to align closer to tile fog */
             dest_color = Fang_ColorBlend(
                 &(Fang_Color){
                     .r = map->fog.r,
                     .g = map->fog.g,
                     .b = map->fog.b,
                     .a = (uint8_t)(
-                        clamp(row_dist / map->fog_distance, 0.0f, 1.0f)
-                        * 255.0f
+                        clamp(
+                            (row_dist * 2.0f) / map->fog_distance,
+                            0.0f,
+                            1.0f
+                        ) * 255.0f
                     ),
                 },
                 &dest_color
@@ -515,7 +535,7 @@ Fang_DrawMapTiles(
             if (!Fang_MapQueryType(map, hit->tile_pos.x, hit->tile_pos.y))
                 continue;
 
-            const Fang_TileSize wall_size = Fang_MapQuerySize(
+            const Fang_Tile tile = Fang_MapQuerySize(
                 map, hit->tile_pos.x, hit->tile_pos.y
             );
 
@@ -533,23 +553,21 @@ Fang_DrawMapTiles(
                     ? hit->front_dist
                     : hit->back_dist;
 
-                const Fang_Rect surface = Fang_CameraProjectSurface(
-                    camera,
-                    &(Fang_Rect){
-                        .x = (int)i,
-                        .y = wall_size.height,
-                        .w = 1,
-                        .h = wall_size.size,
-                    },
-                    face_dist,
-                    map->tile_size,
-                    &viewport
+                const Fang_Tile projected_tile = Fang_CameraProjectTile(
+                    camera, &tile, face_dist, &viewport
                 );
 
+                const Fang_Rect dest_rect = {
+                    .x = (int)i,
+                    .y = projected_tile.y,
+                    .w = 1,
+                    .h = projected_tile.h,
+                };
+
                 if (k == 0)
-                    front_face = surface;
+                    front_face = dest_rect;
                 else
-                    back_face  = surface;
+                    back_face  = dest_rect;
 
                 /* NOTE: Cull backfaces until transparent texture support */
                 if (k == 1)
@@ -583,12 +601,12 @@ Fang_DrawMapTiles(
                         .w = 1,
                         .h = FANG_FACE_SIZE,
                     },
-                    &surface
+                    &dest_rect
                 );
 
                 Fang_FillRect(
                     framebuf,
-                    &surface,
+                    &dest_rect,
                     &(Fang_Color){
                         .r = map->fog.r,
                         .g = map->fog.g,
@@ -888,8 +906,6 @@ Fang_DrawEntities(
 
         if (surface.y + surface.h <= 0 || surface.y > viewport.h)
             continue;
-
-        framebuf->state.current_depth /= map->tile_size;
 
         Fang_FillRect(
             framebuf,
