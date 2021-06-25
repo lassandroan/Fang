@@ -17,8 +17,6 @@ typedef struct Fang_Map {
     int width;
     int height;
 
-    int tile_size;
-
     Fang_Atlas textures;
 
     Fang_TileType * tiles;
@@ -51,7 +49,6 @@ Fang_Map temp_map = {
     .tiles = &temp_map_map[0][0],
     .width = temp_map_width,
     .height = temp_map_height,
-    .tile_size = 16,
     .fog = FANG_BLACK,
     .fog_distance = 16,
 };
@@ -90,8 +87,8 @@ Fang_MapQueryType(
 {
     assert(map);
 
-    x /= map->tile_size;
-    y /= map->tile_size;
+    x /= FANG_GRID_SIZE;
+    y /= FANG_GRID_SIZE;
 
     if (x < 0 || x >= map->width)
         return FANG_TILETYPE_NONE;
@@ -115,10 +112,10 @@ Fang_MapQuerySize(
     switch (type)
     {
         case FANG_TILETYPE_SOLID:
-            return (Fang_Tile){0, map->tile_size};
+            return (Fang_Tile){0, FANG_GRID_SIZE};
 
         case FANG_TILETYPE_FLOATING:
-            return (Fang_Tile){map->tile_size, map->tile_size};
+            return (Fang_Tile){FANG_GRID_SIZE, FANG_GRID_SIZE};
 
         default:
             return (Fang_Tile){0, 0};

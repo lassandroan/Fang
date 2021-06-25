@@ -56,8 +56,8 @@ Fang_RayCast(
     const Fang_Vec3 * const cam = &camera->cam;
 
     const Fang_Vec2 cam_pos = {
-        .x = camera->pos.x / map->tile_size,
-        .y = camera->pos.y / map->tile_size,
+        .x = camera->pos.x / FANG_GRID_SIZE,
+        .y = camera->pos.y / FANG_GRID_SIZE,
     };
 
     memset(rays, 0, sizeof(Fang_Ray) * count);
@@ -153,8 +153,8 @@ Fang_RayCast(
             }
 
             const Fang_Point tile_pos = {
-                .x = (int)(trunc_pos.x * map->tile_size),
-                .y = (int)(trunc_pos.y * map->tile_size),
+                .x = (int)(trunc_pos.x * FANG_GRID_SIZE),
+                .y = (int)(trunc_pos.y * FANG_GRID_SIZE),
             };
 
             const Fang_TileType wall_type = Fang_MapQueryType(
@@ -187,9 +187,9 @@ Fang_RayCast(
 
                 hit->front_hit = (Fang_Vec2){
                     .x = camera->pos.x + (hit->front_dist * cam_ray.x)
-                       * map->tile_size,
+                       * FANG_GRID_SIZE,
                     .y = camera->pos.y + (hit->front_dist * cam_ray.y)
-                       * map->tile_size,
+                       * FANG_GRID_SIZE,
                 };
 
                 const Fang_Vec2 old_trunc_pos = trunc_pos;
@@ -249,9 +249,9 @@ Fang_RayCast(
 
                     hit->back_hit = (Fang_Vec2){
                         .x = camera->pos.x + (hit->back_dist * cam_ray.x)
-                           * map->tile_size,
+                           * FANG_GRID_SIZE,
                         .y = camera->pos.y + (hit->back_dist * cam_ray.y)
-                           * map->tile_size,
+                           * FANG_GRID_SIZE,
                     };
                 }
 

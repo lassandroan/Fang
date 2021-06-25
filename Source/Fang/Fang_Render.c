@@ -448,9 +448,9 @@ Fang_DrawMapFloor(
         };
 
         Fang_Vec2 floor_pos = {
-            .x = (camera->pos.x / map->tile_size) / 2.0f
+            .x = (camera->pos.x / FANG_GRID_SIZE) / 2.0f
                + row_dist * ray_start.x,
-            .y = (camera->pos.y / map->tile_size) / 2.0f
+            .y = (camera->pos.y / FANG_GRID_SIZE) / 2.0f
                + row_dist * ray_start.y,
         };
 
@@ -581,8 +581,8 @@ Fang_DrawMapTiles(
 
                 float tex_x =
                     (face == FANG_FACE_NORTH || face == FANG_FACE_SOUTH)
-                        ? fmodf(face_hit.x, map->tile_size) / map->tile_size
-                        : fmodf(face_hit.y, map->tile_size) / map->tile_size;
+                        ? fmodf(face_hit.x, FANG_GRID_SIZE) / FANG_GRID_SIZE
+                        : fmodf(face_hit.y, FANG_GRID_SIZE) / FANG_GRID_SIZE;
 
                 tex_x = clamp(tex_x, 0.0f, 1.0f);
 
@@ -674,11 +674,11 @@ Fang_DrawMapTiles(
                     Fang_Point tex_pos;
                     {
                         Fang_Vec2 norm_hit_start = Fang_Vec2Divf(
-                            hit_start, map->tile_size
+                            hit_start, FANG_GRID_SIZE
                         );
 
                         Fang_Vec2 norm_hit_end = Fang_Vec2Divf(
-                            hit_end, map->tile_size
+                            hit_end, FANG_GRID_SIZE
                         );
 
                         float u = ((1.0f - r_y) * norm_hit_start.x)
@@ -808,8 +808,8 @@ Fang_DrawMinimap(
                 framebuf, (int)(colf * framebuf->color.width), &FANG_GREY
             );
 
-            const int x = row * map->tile_size;
-            const int y = col * map->tile_size;
+            const int x = row * FANG_GRID_SIZE;
+            const int y = col * FANG_GRID_SIZE;
 
             if (!Fang_MapQueryType(map, x, y))
                 continue;
@@ -831,10 +831,10 @@ Fang_DrawMinimap(
 
     const Fang_Point camera_pos = {
         .x = (int)(
-            camera->pos.x / (float)(map->tile_size * map->width) * bounds.w
+            camera->pos.x / (float)(FANG_GRID_SIZE * map->width) * bounds.w
         ),
         .y = (int)(
-            camera->pos.y / (float)(map->tile_size * map->height) * bounds.h
+            camera->pos.y / (float)(FANG_GRID_SIZE * map->height) * bounds.h
         ),
     };
 
@@ -849,10 +849,10 @@ Fang_DrawMinimap(
             &camera_pos,
             &(Fang_Point){
                 .x = (int)(
-                    ray_pos.x / (float)(map->tile_size * map->width) * bounds.w
+                    ray_pos.x / (float)(FANG_GRID_SIZE * map->width) * bounds.w
                 ),
                 .y = (int)(
-                    ray_pos.y / (float)(map->tile_size * map->height) * bounds.h
+                    ray_pos.y / (float)(FANG_GRID_SIZE * map->height) * bounds.h
                 ),
             },
             &FANG_BLUE

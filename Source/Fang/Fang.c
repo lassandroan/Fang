@@ -23,6 +23,7 @@
 #include <string.h>
 
 #include "Fang_Defines.c"
+#include "Fang_Constants.c"
 #include "Fang_Macros.c"
 #include "Fang_File.c"
 #include "Fang_Color.c"
