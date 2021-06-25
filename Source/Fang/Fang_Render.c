@@ -835,31 +835,36 @@ Fang_DrawMinimap(
         .y = (int)((camera->pos.y / map->height) * bounds.h),
     };
 
-    for (size_t i = 0; i < count; ++i)
+
+    if ((camera_pos.x >= 0 || camera_pos.x < bounds.w)
+    ||  (camera_pos.y >= 0 || camera_pos.y < bounds.h))
     {
-        const Fang_Ray * const ray = &rays[i];
+        for (size_t i = 0; i < count; ++i)
+        {
+            const Fang_Ray * const ray = &rays[i];
 
-        if (!ray->hit_count)
-            continue;
+            if (!ray->hit_count)
+                continue;
 
-        const Fang_Vec2 ray_pos = ray->hits[ray->hit_count - 1].front_hit;
+            const Fang_Vec2 ray_pos = ray->hits[ray->hit_count - 1].back_hit;
 
-        Fang_DrawLine(
-            framebuf,
-            &camera_pos,
-            &(Fang_Point){
-                .x = (int)((ray_pos.x / map->width) * bounds.w),
-                .y = (int)((ray_pos.y / map->height) * bounds.h),
-            },
-            &FANG_BLUE
-        );
+            Fang_DrawLine(
+                framebuf,
+                &camera_pos,
+                &(Fang_Point){
+                    .x = (int)((ray_pos.x / map->width) * bounds.w),
+                    .y = (int)((ray_pos.y / map->height) * bounds.h),
+                },
+                &FANG_BLUE
+            );
+        }
     }
 
     Fang_FillRect(
         framebuf,
         &(Fang_Rect){
-            .x = camera_pos.x - 5,
-            .y = camera_pos.y - 5,
+            .x = clamp(camera_pos.x, 0, bounds.w)  - 5,
+            .y = clamp(camera_pos.y, 0, bounds.h) - 5,
             .w = 10,
             .h = 10,
         },
