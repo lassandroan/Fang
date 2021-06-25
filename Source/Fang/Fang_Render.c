@@ -439,9 +439,7 @@ Fang_DrawMapFloor(
         /* Calculate row distance, based on perspective at our given height */
         float row_dist = ((viewport.h / 2.0f) / p) / (1.0f / height);
 
-        framebuf->state.current_depth = row_dist
-                                      * height
-                                      * (1.0f / FANG_PROJECTION_RATIO);
+        framebuf->state.current_depth = row_dist * FANG_PROJECTION_RATIO;
 
         const Fang_Vec2 floor_step = {
             .x = row_dist * (ray_end.x - ray_start.x) / viewport.w,
@@ -770,12 +768,7 @@ Fang_DrawMap(
         Fang_DrawMapSkybox(framebuf, map, camera);
 
     if (map->floor.pixels)
-    {
-        const Fang_FrameState state = framebuf->state;
-        framebuf->state.enable_depth = false;
         Fang_DrawMapFloor(framebuf, map, camera);
-        framebuf->state = state;
-    }
 
     Fang_DrawMapTiles(framebuf, map, camera, rays, count);
 }
