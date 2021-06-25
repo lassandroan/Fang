@@ -440,6 +440,7 @@ Fang_DrawMapFloor(
         float row_dist = ((viewport.h / 2.0f) / p) / (1.0f / height);
 
         framebuf->state.current_depth = row_dist
+                                      * height
                                       * (1.0f / FANG_PROJECTION_RATIO);
 
         const Fang_Vec2 floor_step = {
@@ -448,10 +449,8 @@ Fang_DrawMapFloor(
         };
 
         Fang_Vec2 floor_pos = {
-            .x = (camera->pos.x / FANG_GRID_SIZE) / 2.0f
-               + row_dist * ray_start.x,
-            .y = (camera->pos.y / FANG_GRID_SIZE) / 2.0f
-               + row_dist * ray_start.y,
+            .x = (camera->pos.x / 2.0f) + row_dist * ray_start.x,
+            .y = (camera->pos.y / 2.0f) + row_dist * ray_start.y,
         };
 
         for (int x = 0; x < viewport.w; ++x)
@@ -569,6 +568,12 @@ Fang_DrawMapTiles(
                 else
                     back_face  = dest_rect;
 
+                if (dest_rect.y >= viewport.h)
+                    continue;
+
+                if (dest_rect.y + dest_rect.h <= 0)
+                    continue;
+
                 /* NOTE: Cull backfaces until transparent texture support */
                 if (k == 1)
                     continue;
@@ -581,8 +586,8 @@ Fang_DrawMapTiles(
 
                 float tex_x =
                     (face == FANG_FACE_NORTH || face == FANG_FACE_SOUTH)
-                        ? fmodf(face_hit.x, FANG_GRID_SIZE) / FANG_GRID_SIZE
-                        : fmodf(face_hit.y, FANG_GRID_SIZE) / FANG_GRID_SIZE;
+                        ? fmodf(face_hit.x, 1.0f)
+                        : fmodf(face_hit.y, 1.0f);
 
                 tex_x = clamp(tex_x, 0.0f, 1.0f);
 
@@ -666,26 +671,27 @@ Fang_DrawMapTiles(
                     continue;
                 }
 
+                if (start_y <= 0 && end_y <= 0)
+                    continue;
+
+                if (start_y >= viewport.h)
+                    continue;
+
                 for (int y = start_y; y < end_y; ++y)
                 {
                     const float r_y = (float)(y - start_y)
                                     / (float)(end_y - start_y);
 
+                    if (y < 0 || y >= viewport.h)
+                        continue;
+
                     Fang_Point tex_pos;
                     {
-                        Fang_Vec2 norm_hit_start = Fang_Vec2Divf(
-                            hit_start, FANG_GRID_SIZE
-                        );
+                        float u = ((1.0f - r_y) * hit_start.x)
+                                + (r_y * hit_end.x);
 
-                        Fang_Vec2 norm_hit_end = Fang_Vec2Divf(
-                            hit_end, FANG_GRID_SIZE
-                        );
-
-                        float u = ((1.0f - r_y) * norm_hit_start.x)
-                                + (r_y * norm_hit_end.x);
-
-                        float v = ((1.0f - r_y) * norm_hit_start.y)
-                                + (r_y * norm_hit_end.y);
+                        float v = ((1.0f - r_y) * hit_start.y)
+                                + (r_y * hit_end.y);
 
                         float integral;
                         u = clamp(modff(u, &integral), 0.0f, 1.0f);
@@ -764,7 +770,12 @@ Fang_DrawMap(
         Fang_DrawMapSkybox(framebuf, map, camera);
 
     if (map->floor.pixels)
+    {
+        const Fang_FrameState state = framebuf->state;
+        framebuf->state.enable_depth = false;
         Fang_DrawMapFloor(framebuf, map, camera);
+        framebuf->state = state;
+    }
 
     Fang_DrawMapTiles(framebuf, map, camera, rays, count);
 }
@@ -792,26 +803,23 @@ Fang_DrawMinimap(
 
     Fang_FillRect(framebuf, &bounds, &FANG_BLACK);
 
-    for (int row = 0; row < 8; ++row)
+    for (int row = 0; row < map->height; ++row)
     {
-        const float rowf = row / 8.0f;
+        const float rowf = (float)row / (float)map->height;
 
         Fang_DrawHorizontalLine(
             framebuf, (int)(rowf * framebuf->color.height), &FANG_GREY
         );
 
-        for (int col = 0; col < 8; ++col)
+        for (int col = 0; col < map->width; ++col)
         {
-            const float colf = col / 8.0f;
+            const float colf = col / (float)map->width;
 
             Fang_DrawVerticalLine(
                 framebuf, (int)(colf * framebuf->color.width), &FANG_GREY
             );
 
-            const int x = row * FANG_GRID_SIZE;
-            const int y = col * FANG_GRID_SIZE;
-
-            if (!Fang_MapQueryType(map, x, y))
+            if (!Fang_MapQueryType(map, row, col))
                 continue;
 
             Fang_Rect map_tile_bounds = Fang_RectResize(
@@ -830,17 +838,16 @@ Fang_DrawMinimap(
     }
 
     const Fang_Point camera_pos = {
-        .x = (int)(
-            camera->pos.x / (float)(FANG_GRID_SIZE * map->width) * bounds.w
-        ),
-        .y = (int)(
-            camera->pos.y / (float)(FANG_GRID_SIZE * map->height) * bounds.h
-        ),
+        .x = (int)((camera->pos.x / map->width) * bounds.w),
+        .y = (int)((camera->pos.y / map->height) * bounds.h),
     };
 
     for (size_t i = 0; i < count; ++i)
     {
         const Fang_Ray * const ray = &rays[i];
+
+        if (!ray->hit_count)
+            continue;
 
         const Fang_Vec2 ray_pos = ray->hits[ray->hit_count - 1].front_hit;
 
@@ -848,12 +855,8 @@ Fang_DrawMinimap(
             framebuf,
             &camera_pos,
             &(Fang_Point){
-                .x = (int)(
-                    ray_pos.x / (float)(FANG_GRID_SIZE * map->width) * bounds.w
-                ),
-                .y = (int)(
-                    ray_pos.y / (float)(FANG_GRID_SIZE * map->height) * bounds.h
-                ),
+                .x = (int)((ray_pos.x / map->width) * bounds.w),
+                .y = (int)((ray_pos.y / map->height) * bounds.h),
             },
             &FANG_BLUE
         );
@@ -901,10 +904,10 @@ Fang_DrawEntities(
         if (surface.h <= 0)
             continue;
 
-        if (surface.x + surface.w <= 0 || surface.x > viewport.w)
+        if (surface.x + surface.w <= 0 || surface.x >= viewport.w)
             continue;
 
-        if (surface.y + surface.h <= 0 || surface.y > viewport.h)
+        if (surface.y + surface.h <= 0 || surface.y >= viewport.h)
             continue;
 
         Fang_FillRect(

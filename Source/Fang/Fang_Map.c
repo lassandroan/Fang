@@ -82,13 +82,10 @@ Fang_DestroyMap(void)
 static inline Fang_TileType
 Fang_MapQueryType(
     const Fang_Map * const map,
-    int x,
-    int y)
+    const int              x,
+    const int              y)
 {
     assert(map);
-
-    x /= FANG_GRID_SIZE;
-    y /= FANG_GRID_SIZE;
 
     if (x < 0 || x >= map->width)
         return FANG_TILETYPE_NONE;
@@ -102,8 +99,8 @@ Fang_MapQueryType(
 static inline Fang_Tile
 Fang_MapQuerySize(
     const Fang_Map * const map,
-    const int x,
-    const int y)
+    const int              x,
+    const int              y)
 {
     assert(map);
 
@@ -112,10 +109,10 @@ Fang_MapQuerySize(
     switch (type)
     {
         case FANG_TILETYPE_SOLID:
-            return (Fang_Tile){0, FANG_GRID_SIZE};
+            return (Fang_Tile){0, 1};
 
         case FANG_TILETYPE_FLOATING:
-            return (Fang_Tile){FANG_GRID_SIZE, FANG_GRID_SIZE};
+            return (Fang_Tile){1, 1};
 
         default:
             return (Fang_Tile){0, 0};
@@ -125,8 +122,8 @@ Fang_MapQuerySize(
 static inline const Fang_Image*
 Fang_MapQueryTexture(
     const Fang_Map * const map,
-    const int x,
-    const int y)
+    const int              x,
+    const int              y)
 {
     assert(map);
 

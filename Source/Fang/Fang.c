@@ -61,8 +61,8 @@ Fang_Ray raycast[FANG_WINDOW_SIZE];
 
 Fang_Camera camera = (Fang_Camera){
     .pos = {
-        .x = 32 * 2,
-        .y = 32 * 2,
+        .x = 2,
+        .y = 2,
         .z = 0,
     },
     .dir = {.x = -1.0f},
@@ -76,14 +76,14 @@ enum {
 Fang_Entity entities[FANG_NUM_ENTITIES] = {
     [0] = (Fang_Entity){
         (Fang_Body){
-            .pos  = (Fang_Vec2){.x = 32, .y = 32},
-            .size = 16,
+            .pos  = (Fang_Vec2){.x = 2.0f, .y = 2.0f},
+            .size = 1,
         },
     },
     [1] = (Fang_Entity){
         (Fang_Body){
-            .pos  = (Fang_Vec2){.x = 96, .y = 84},
-            .size = 16,
+            .pos  = (Fang_Vec2){.x = 6.0f, .y = 5.5f},
+            .size = 1,
         },
     },
 };
@@ -194,7 +194,7 @@ Fang_Update(
         &interface, &height, "height",
         &(Fang_Rect){.x = 256 - 100, .w = 100, .h = 15}))
     {
-        camera.pos.z = (height * 2.0f - 1.0f) * (32.0f);
+        camera.pos.z = (height * 2.0f - 1.0f) * (1.0f);
     }
 
     if (Fang_InterfaceSlider(
@@ -219,7 +219,7 @@ Fang_Update(
         &interface, &move, "move",
         &(Fang_Rect){.x = 256 - 100, .y = 60, .w = 100, .h = 15}))
     {
-        const float vel = (move * 2.0f - 1.0f) * 0.5f;
+        const float vel = (move * 2.0f - 1.0f) * 0.05f;
 
         Fang_Vec2 * const pos = (Fang_Vec2*)&camera.pos;
         Fang_Vec3 * const dir = &camera.dir;

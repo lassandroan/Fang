@@ -13,5 +13,4 @@
 // You should have received a copy of the GNU General Public License along
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-const int   FANG_GRID_SIZE        = 16;
-const float FANG_PROJECTION_RATIO = 1.0f / (FANG_GRID_SIZE / 2.0f);
+const float FANG_PROJECTION_RATIO = 1.0f / (1.0f / 2.0f);

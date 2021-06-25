@@ -55,10 +55,7 @@ Fang_RayCast(
     const Fang_Vec3 * const dir = &camera->dir;
     const Fang_Vec3 * const cam = &camera->cam;
 
-    const Fang_Vec2 cam_pos = {
-        .x = camera->pos.x / FANG_GRID_SIZE,
-        .y = camera->pos.y / FANG_GRID_SIZE,
-    };
+    const Fang_Vec2 cam_pos = *(Fang_Vec2*)&camera->pos;
 
     memset(rays, 0, sizeof(Fang_Ray) * count);
 
@@ -152,13 +149,8 @@ Fang_RayCast(
                 }
             }
 
-            const Fang_Point tile_pos = {
-                .x = (int)(trunc_pos.x * FANG_GRID_SIZE),
-                .y = (int)(trunc_pos.y * FANG_GRID_SIZE),
-            };
-
             const Fang_TileType wall_type = Fang_MapQueryType(
-                map, tile_pos.x, tile_pos.y
+                map, (int)trunc_pos.x, (int)trunc_pos.y
             );
 
             if (wall_type)
@@ -183,13 +175,13 @@ Fang_RayCast(
                         hit->front_dist /= cam_ray.y;
                 }
 
-                hit->tile_pos = tile_pos;
+                hit->tile_pos = (Fang_Point){
+                    (int)trunc_pos.x, (int)trunc_pos.y
+                };
 
                 hit->front_hit = (Fang_Vec2){
-                    .x = camera->pos.x + (hit->front_dist * cam_ray.x)
-                       * FANG_GRID_SIZE,
-                    .y = camera->pos.y + (hit->front_dist * cam_ray.y)
-                       * FANG_GRID_SIZE,
+                    .x = camera->pos.x + (hit->front_dist * cam_ray.x),
+                    .y = camera->pos.y + (hit->front_dist * cam_ray.y),
                 };
 
                 const Fang_Vec2 old_trunc_pos = trunc_pos;
@@ -248,10 +240,8 @@ Fang_RayCast(
                     }
 
                     hit->back_hit = (Fang_Vec2){
-                        .x = camera->pos.x + (hit->back_dist * cam_ray.x)
-                           * FANG_GRID_SIZE,
-                        .y = camera->pos.y + (hit->back_dist * cam_ray.y)
-                           * FANG_GRID_SIZE,
+                        .x = camera->pos.x + (hit->back_dist * cam_ray.x),
+                        .y = camera->pos.y + (hit->back_dist * cam_ray.y),
                     };
                 }
 
