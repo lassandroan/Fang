@@ -14,8 +14,7 @@
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 typedef struct Fang_Map {
-    int width;
-    int height;
+    int size;
 
     Fang_Atlas textures;
 
@@ -30,11 +29,10 @@ typedef struct Fang_Map {
 } Fang_Map;
 
 enum {
-    temp_map_width  = 8,
-    temp_map_height = 8,
+    temp_map_size = 8,
 };
 
-Fang_TileType temp_map_map[temp_map_width][temp_map_height] = {
+Fang_TileType temp_map_map[temp_map_size][temp_map_size] = {
     {1, 1, 1, 0, 0, 0, 1, 1},
     {1, 0, 0, 0, 0, 0, 2, 1},
     {1, 0, 0, 0, 0, 0, 0, 1},
@@ -47,8 +45,7 @@ Fang_TileType temp_map_map[temp_map_width][temp_map_height] = {
 
 Fang_Map temp_map = {
     .tiles = &temp_map_map[0][0],
-    .width = temp_map_width,
-    .height = temp_map_height,
+    .size = temp_map_size,
     .fog = FANG_BLACK,
     .fog_distance = 16,
 };
@@ -79,56 +76,43 @@ Fang_DestroyMap(void)
     Fang_AtlasFree(&temp_map.textures);
 }
 
-static inline Fang_TileType
-Fang_MapQueryType(
+static inline const Fang_Tile *
+Fang_MapQuery(
     const Fang_Map * const map,
     const int              x,
     const int              y)
 {
     assert(map);
 
-    if (x < 0 || x >= map->width)
-        return FANG_TILETYPE_NONE;
+    static const Fang_Tile solid_tile = {
+        .texture = FANG_TEXTURE_TILE,
+        .y = 0.0f,
+        .h = 1.0f,
+    };
 
-    if (y < 0 || y >= map->height)
-        return FANG_TILETYPE_NONE;
+    static const Fang_Tile floating_tile = {
+        .texture = FANG_TEXTURE_TILE,
+        .y = 1.0f,
+        .h = 1.0f,
+    };
 
-    return map->tiles[y * map->width + x];
-}
+    if (x < 0 || x >= map->size)
+        return NULL;
 
-static inline Fang_Tile
-Fang_MapQuerySize(
-    const Fang_Map * const map,
-    const int              x,
-    const int              y)
-{
-    assert(map);
+    if (y < 0 || y >= map->size)
+        return NULL;
 
-    const Fang_TileType type = Fang_MapQueryType(map, x, y);
+    const Fang_TileType type = map->tiles[y * map->size + x];
 
     switch (type)
     {
         case FANG_TILETYPE_SOLID:
-            return (Fang_Tile){0, 1};
+            return &solid_tile;
 
         case FANG_TILETYPE_FLOATING:
-            return (Fang_Tile){1, 1};
+            return &floating_tile;
 
         default:
-            return (Fang_Tile){0, 0};
+            return NULL;
     }
-}
-
-static inline const Fang_Image*
-Fang_MapQueryTexture(
-    const Fang_Map * const map,
-    const int              x,
-    const int              y)
-{
-    assert(map);
-
-    (void)x;
-    (void)y;
-
-    return Fang_AtlasQuery(&map->textures, FANG_TEXTURE_TILE);
 }

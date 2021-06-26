@@ -526,18 +526,14 @@ Fang_DrawMapTiles(
         {
             const Fang_RayHit * const hit = &ray->hits[j];
 
+            if (!hit->tile)
+                continue;
+
             if (hit->front_dist <= 0.0f)
                 continue;
 
-            if (!Fang_MapQueryType(map, hit->tile_pos.x, hit->tile_pos.y))
-                continue;
-
-            const Fang_Tile tile = Fang_MapQuerySize(
-                map, hit->tile_pos.x, hit->tile_pos.y
-            );
-
-            const Fang_Image * const wall_tex = Fang_MapQueryTexture(
-                map, hit->tile_pos.x, hit->tile_pos.y
+            const Fang_Image * const wall_tex = Fang_AtlasQuery(
+                &map->textures, hit->tile->texture
             );
 
             Fang_Rect front_face;
@@ -550,16 +546,12 @@ Fang_DrawMapTiles(
                     ? hit->front_dist
                     : hit->back_dist;
 
-                const Fang_Tile projected_tile = Fang_CameraProjectTile(
-                    camera, &tile, face_dist, &viewport
+                Fang_Rect dest_rect = Fang_CameraProjectTile(
+                    camera, hit->tile, face_dist, &viewport
                 );
 
-                const Fang_Rect dest_rect = {
-                    .x = (int)i,
-                    .y = projected_tile.y,
-                    .w = 1,
-                    .h = projected_tile.h,
-                };
+                dest_rect.x = (int)i;
+                dest_rect.w = 1;
 
                 if (k == 0)
                     front_face = dest_rect;
@@ -796,23 +788,23 @@ Fang_DrawMinimap(
 
     Fang_FillRect(framebuf, &bounds, &FANG_BLACK);
 
-    for (int row = 0; row < map->height; ++row)
+    for (int row = 0; row < map->size; ++row)
     {
-        const float rowf = (float)row / (float)map->height;
+        const float rowf = (float)row / (float)map->size;
 
         Fang_DrawHorizontalLine(
             framebuf, (int)(rowf * framebuf->color.height), &FANG_GREY
         );
 
-        for (int col = 0; col < map->width; ++col)
+        for (int col = 0; col < map->size; ++col)
         {
-            const float colf = col / (float)map->width;
+            const float colf = col / (float)map->size;
 
             Fang_DrawVerticalLine(
                 framebuf, (int)(colf * framebuf->color.width), &FANG_GREY
             );
 
-            if (!Fang_MapQueryType(map, row, col))
+            if (!Fang_MapQuery(map, row, col))
                 continue;
 
             Fang_Rect map_tile_bounds = Fang_RectResize(
@@ -831,8 +823,8 @@ Fang_DrawMinimap(
     }
 
     const Fang_Point camera_pos = {
-        .x = (int)((camera->pos.x / map->width) * bounds.w),
-        .y = (int)((camera->pos.y / map->height) * bounds.h),
+        .x = (int)((camera->pos.x / map->size) * bounds.w),
+        .y = (int)((camera->pos.y / map->size) * bounds.h),
     };
 
 
@@ -852,8 +844,8 @@ Fang_DrawMinimap(
                 framebuf,
                 &camera_pos,
                 &(Fang_Point){
-                    .x = (int)((ray_pos.x / map->width) * bounds.w),
-                    .y = (int)((ray_pos.y / map->height) * bounds.h),
+                    .x = (int)((ray_pos.x / map->size) * bounds.w),
+                    .y = (int)((ray_pos.y / map->size) * bounds.h),
                 },
                 &FANG_BLUE
             );
