@@ -136,8 +136,7 @@ int Fang_Main(int argc, char** argv)
     Fang_Input input;
     SDL_memset(&input, 0, sizeof(Fang_Input));
 
-    if (Fang_Init() != 0)
-        goto Error_GameInit;
+    Fang_Init();
 
     bool quit = false;
     while (!quit)
@@ -362,7 +361,7 @@ int Fang_Main(int argc, char** argv)
             if (error)
                 break;
 
-            Fang_Update(&input, &framebuf);
+            Fang_Update(&input, &framebuf, SDL_GetTicks());
 
             SDL_UnlockTexture(depth);
             SDL_UnlockTexture(texture);
@@ -375,7 +374,6 @@ int Fang_Main(int argc, char** argv)
 
     FangSDL_DisconnectController(&controller);
 
-Error_GameInit:
     Fang_Quit();
 
 Error_Depthbuffer:

@@ -42,13 +42,13 @@ typedef struct Fang_Ray {
 
 static inline void
 Fang_RayCast(
-    const Fang_Map    * const map,
     const Fang_Camera * const camera,
+    const Fang_Map    * const map,
           Fang_Ray    * const rays,
     const size_t              count)
 {
-    assert(map);
     assert(camera);
+    assert(map);
     assert(rays);
     assert(count);
 

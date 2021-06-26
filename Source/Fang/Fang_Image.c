@@ -102,11 +102,10 @@ Fang_ImageQuery(
     const Fang_Image * const image,
     const Fang_Point * const point)
 {
-    assert(image);
     assert(point);
 
     /* The 'XOR Texture' serves as the default 'missing' texture. */
-    if (!image->pixels)
+    if (!image || !image->pixels)
     {
         const uint8_t value = (uint8_t)point->x ^ (uint8_t)point->y;
         return (Fang_Color){value, value, value, 255};

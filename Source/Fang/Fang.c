@@ -34,80 +34,104 @@
 #include "Fang_Image.c"
 #include "Fang_TGA.c"
 #include "Fang_Framebuffer.c"
+#include "Fang_Textures.c"
 #include "Fang_Body.c"
 #include "Fang_Tile.c"
 #include "Fang_Camera.c"
-#include "Fang_Textures.c"
 #include "Fang_Map.c"
 #include "Fang_Ray.c"
 #include "Fang_Entity.c"
 #include "Fang_Render.c"
 #include "Fang_Interface.c"
+#include "Fang_State.c"
 
-Fang_Interface interface = (Fang_Interface){
-    .textures = &temp_map.textures,
-    .theme = (Fang_InterfaceTheme){
-        .font = FANG_TEXTURE_FORMULA,
-        .colors = (Fang_InterfaceColors){
-            .background = FANG_TRANSPARENT,
-            .foreground = FANG_RED,
-            .highlight  = FANG_WHITE,
-            .disabled   = FANG_GREY,
-        },
-    },
-};
+const uint32_t update_dt = 10;
 
-Fang_Ray raycast[FANG_WINDOW_SIZE];
+Fang_State gamestate;
 
-Fang_Camera camera = (Fang_Camera){
-    .pos = {
-        .x = 2,
-        .y = 2,
-        .z = 0,
-    },
-    .dir = {.x = -1.0f},
-    .cam = {.y =  0.5f},
-};
-
-enum {
-    FANG_NUM_ENTITIES = 2,
-};
-
-Fang_Entity entities[FANG_NUM_ENTITIES] = {
-    [0] = (Fang_Entity){
-        (Fang_Body){
-            .pos  = (Fang_Vec2){.x = 2.0f, .y = 2.0f},
-            .size = 1,
-        },
-    },
-    [1] = (Fang_Entity){
-        (Fang_Body){
-            .pos  = (Fang_Vec2){.x = 6.0f, .y = 5.5f},
-            .size = 1,
-        },
-    },
-};
-
-static inline int
+static inline void
 Fang_Init(void)
 {
-    if (Fang_LoadMap())
-        return 1;
+    for (Fang_Texture i = 0; i < FANG_NUM_TEXTURES; ++i)
+        Fang_AtlasLoad(&gamestate.textures, i);
 
-    return 0;
+    gamestate.interface = (Fang_Interface){
+        .textures = &gamestate.textures,
+        .theme = (Fang_InterfaceTheme){
+            .font = FANG_TEXTURE_FORMULA,
+            .colors = (Fang_InterfaceColors){
+                .background = FANG_TRANSPARENT,
+                .foreground = FANG_RED,
+                .highlight  = FANG_WHITE,
+                .disabled   = FANG_GREY,
+            },
+        },
+    };
+
+    gamestate.camera = (Fang_Camera){
+        .pos = {
+            .x = 2,
+            .y = 2,
+            .z = 0,
+        },
+        .dir = {.x = -1.0f},
+        .cam = {.y =  0.5f},
+    };
+
+    {
+        Fang_Entity entities [FANG_MAX_ENTITIES] = {
+            [0] = (Fang_Entity){
+                (Fang_Body){
+                    .pos  = (Fang_Vec2){.x = 2.0f, .y = 2.0f},
+                    .size = 1,
+                },
+            },
+            [1] = (Fang_Entity){
+                (Fang_Body){
+                    .pos  = (Fang_Vec2){.x = 6.0f, .y = 5.5f},
+                    .size = 1,
+                },
+            },
+        };
+
+        memcpy(gamestate.entities, entities, sizeof(entities));
+    }
+
+    gamestate.map = (Fang_Map){
+        .size         = 8,
+        .skybox       = FANG_TEXTURE_SKYBOX,
+        .floor        = FANG_TEXTURE_FLOOR,
+        .fog          = FANG_BLACK,
+        .fog_distance = 16.0f,
+    };
 }
 
 static inline void
 Fang_Update(
     const Fang_Input       * const input,
-          Fang_Framebuffer * const framebuf)
+          Fang_Framebuffer * const framebuf,
+          uint32_t                 time)
 {
     assert(input);
     assert(framebuf);
 
-    interface.input    = input;
-    interface.framebuf = framebuf;
-    Fang_InterfaceUpdate(&interface);
+    {
+        if (!gamestate.clock.time)
+            gamestate.clock.time = time;
+
+        const uint32_t frame_time = time - gamestate.clock.time;
+        gamestate.clock.time = time;
+        gamestate.clock.accumulator += frame_time;
+
+        while (gamestate.clock.accumulator >= update_dt)
+            gamestate.clock.accumulator -= update_dt;
+    }
+
+    {
+        gamestate.interface.input    = input;
+        gamestate.interface.framebuf = framebuf;
+        Fang_InterfaceUpdate(&gamestate.interface);
+    }
 
     Fang_ImageClear(&framebuf->color);
 
@@ -129,26 +153,26 @@ Fang_Update(
     framebuf->state.enable_depth  = true;
 
     Fang_RayCast(
-        &temp_map,
-        &camera,
-        raycast,
+        &gamestate.camera,
+        &gamestate.map,
+        gamestate.raycast,
         (size_t)FANG_WINDOW_SIZE
     );
 
     Fang_DrawMap(
         framebuf,
-        &temp_map,
-        &camera,
-        raycast,
+        &gamestate.camera,
+        &gamestate.textures,
+        &gamestate.map,
+        gamestate.raycast,
         (size_t)FANG_WINDOW_SIZE
     );
 
     Fang_DrawEntities(
         framebuf,
-        &temp_map,
-        &camera,
-        entities,
-        FANG_NUM_ENTITIES
+        &gamestate.camera,
+        gamestate.entities,
+        FANG_MAX_ENTITIES
     );
 
     {
@@ -166,9 +190,9 @@ Fang_Update(
 
         Fang_DrawMinimap(
             framebuf,
-            &temp_map,
-            &camera,
-            raycast,
+            &gamestate.camera,
+            &gamestate.map,
+            gamestate.raycast,
             (size_t)FANG_WINDOW_SIZE
         );
 
@@ -180,7 +204,7 @@ Fang_Update(
     Fang_DrawText(
         framebuf,
         "FANG",
-        Fang_AtlasQuery(&temp_map.textures, FANG_TEXTURE_FORMULA),
+        Fang_AtlasQuery(&gamestate.textures, FANG_TEXTURE_FORMULA),
         FANG_FONT_HEIGHT,
         &(Fang_Point){.x = 5, .y = 3}
     );
@@ -191,42 +215,43 @@ Fang_Update(
     static float move   = 0.0f;
 
     if (Fang_InterfaceSlider(
-        &interface, &height, "height",
+        &gamestate.interface, &height, "height",
         &(Fang_Rect){.x = 256 - 100, .w = 100, .h = 15}))
     {
-        camera.pos.z = (height * 2.0f - 1.0f) * (1.0f);
+        gamestate.camera.pos.z = (height * 2.0f - 1.0f) * (1.0f);
     }
 
     if (Fang_InterfaceSlider(
-        &interface, &pitch, "pitch",
+        &gamestate.interface, &pitch, "pitch",
         &(Fang_Rect){.x = 256 - 100, .y = 20, .w = 100, .h = 15}))
     {
-        camera.cam.z = pitch * 2.0f - 1.0f;
+        gamestate.camera.cam.z = pitch * 2.0f - 1.0f;
     }
 
     if (Fang_InterfaceSlider(
-        &interface, &rotate, "rotate",
+        &gamestate.interface, &rotate, "rotate",
         &(Fang_Rect){.x = 256 - 100, .y = 40, .w = 100, .h = 15}))
     {
         Fang_CameraRotate(
-            &camera,
+            &gamestate.camera,
             (rotate * 2.0f - 1.0f) / 100.0f,
             0
         );
     }
 
     if (Fang_InterfaceSlider(
-        &interface, &move, "move",
+        &gamestate.interface, &move, "move",
         &(Fang_Rect){.x = 256 - 100, .y = 60, .w = 100, .h = 15}))
     {
         const float vel = (move * 2.0f - 1.0f) * 0.05f;
 
-        Fang_Vec2 * const pos = (Fang_Vec2*)&camera.pos;
-        Fang_Vec3 * const dir = &camera.dir;
+        Fang_Vec3 * const pos = &gamestate.camera.pos;
+        Fang_Vec3 * const dir = &gamestate.camera.dir;
 
-        *pos = (Fang_Vec2){
+        *pos = (Fang_Vec3){
             .x = pos->x + (dir->x * vel),
             .y = pos->y + (dir->y * vel),
+            .z = pos->z,
         };
     }
 }
@@ -234,5 +259,5 @@ Fang_Update(
 static inline void
 Fang_Quit(void)
 {
-    Fang_DestroyMap();
+    Fang_AtlasFree(&gamestate.textures);
 }
