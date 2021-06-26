@@ -14,8 +14,7 @@
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 typedef struct Fang_Map {
-    int width;
-    int height;
+    int size;
 
     Fang_Atlas textures;
 
@@ -30,11 +29,10 @@ typedef struct Fang_Map {
 } Fang_Map;
 
 enum {
-    temp_map_width  = 8,
-    temp_map_height = 8,
+    temp_map_size = 8,
 };
 
-Fang_TileType temp_map_map[temp_map_width][temp_map_height] = {
+Fang_TileType temp_map_map[temp_map_size][temp_map_size] = {
     {1, 1, 1, 0, 0, 0, 1, 1},
     {1, 0, 0, 0, 0, 0, 2, 1},
     {1, 0, 0, 0, 0, 0, 0, 1},
@@ -47,8 +45,7 @@ Fang_TileType temp_map_map[temp_map_width][temp_map_height] = {
 
 Fang_Map temp_map = {
     .tiles = &temp_map_map[0][0],
-    .width = temp_map_width,
-    .height = temp_map_height,
+    .size = temp_map_size,
     .fog = FANG_BLACK,
     .fog_distance = 16,
 };
@@ -87,13 +84,13 @@ Fang_MapQueryType(
 {
     assert(map);
 
-    if (x < 0 || x >= map->width)
+    if (x < 0 || x >= map->size)
         return FANG_TILETYPE_NONE;
 
-    if (y < 0 || y >= map->height)
+    if (y < 0 || y >= map->size)
         return FANG_TILETYPE_NONE;
 
-    return map->tiles[y * map->width + x];
+    return map->tiles[y * map->size + x];
 }
 
 static inline Fang_Tile
