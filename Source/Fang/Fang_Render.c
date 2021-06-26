@@ -526,18 +526,14 @@ Fang_DrawMapTiles(
         {
             const Fang_RayHit * const hit = &ray->hits[j];
 
+            if (!hit->tile)
+                continue;
+
             if (hit->front_dist <= 0.0f)
                 continue;
 
-            if (!Fang_MapQueryType(map, hit->tile_pos.x, hit->tile_pos.y))
-                continue;
-
-            const Fang_Tile tile = Fang_MapQuerySize(
-                map, hit->tile_pos.x, hit->tile_pos.y
-            );
-
-            const Fang_Image * const wall_tex = Fang_MapQueryTexture(
-                map, hit->tile_pos.x, hit->tile_pos.y
+            const Fang_Image * const wall_tex = Fang_AtlasQuery(
+                &map->textures, hit->tile->texture
             );
 
             Fang_Rect front_face;
@@ -550,16 +546,12 @@ Fang_DrawMapTiles(
                     ? hit->front_dist
                     : hit->back_dist;
 
-                const Fang_Tile projected_tile = Fang_CameraProjectTile(
-                    camera, &tile, face_dist, &viewport
+                Fang_Rect dest_rect = Fang_CameraProjectTile(
+                    camera, hit->tile, face_dist, &viewport
                 );
 
-                const Fang_Rect dest_rect = {
-                    .x = (int)i,
-                    .y = projected_tile.y,
-                    .w = 1,
-                    .h = projected_tile.h,
-                };
+                dest_rect.x = (int)i;
+                dest_rect.w = 1;
 
                 if (k == 0)
                     front_face = dest_rect;
@@ -812,7 +804,7 @@ Fang_DrawMinimap(
                 framebuf, (int)(colf * framebuf->color.width), &FANG_GREY
             );
 
-            if (!Fang_MapQueryType(map, row, col))
+            if (!Fang_MapQuery(map, row, col))
                 continue;
 
             Fang_Rect map_tile_bounds = Fang_RectResize(

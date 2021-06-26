@@ -27,11 +27,11 @@ typedef enum Fang_Face {
 } Fang_Face;
 
 typedef struct Fang_RayHit {
+    const Fang_Tile * tile;
     Fang_Vec2  front_hit;
     float      front_dist;
     Fang_Vec2  back_hit;
     float      back_dist;
-    Fang_Point tile_pos;
     Fang_Face  norm_dir;
 } Fang_RayHit;
 
@@ -148,11 +148,9 @@ Fang_RayCast(
                 }
             }
 
-            const Fang_TileType wall_type = Fang_MapQueryType(
-                map, (int)int_pos.x, (int)int_pos.y
-            );
+            hit->tile = Fang_MapQuery(map, (int)int_pos.x, (int)int_pos.y);
 
-            if (wall_type)
+            if (hit->tile)
             {
                 /* Check the axis of collision */
                 if (hit->norm_dir == side_face_x)
@@ -173,10 +171,6 @@ Fang_RayCast(
                     if (cam_ray.y != 0.0f)
                         hit->front_dist /= cam_ray.y;
                 }
-
-                hit->tile_pos = (Fang_Point){
-                    (int)int_pos.x, (int)int_pos.y
-                };
 
                 hit->front_hit = (Fang_Vec2){
                     .x = pos.x + (hit->front_dist * cam_ray.x),

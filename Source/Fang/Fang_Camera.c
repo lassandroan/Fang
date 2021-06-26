@@ -48,7 +48,7 @@ Fang_CameraRotate(
     cam->y *= 0.5f;
 }
 
-static inline Fang_Tile
+static inline Fang_Rect
 Fang_CameraProjectTile(
     const Fang_Camera   * const camera,
     const Fang_Tile     * const tile,
@@ -65,7 +65,7 @@ Fang_CameraProjectTile(
     const float height = (camera->pos.z * FANG_PROJECTION_RATIO) * dist;
     const float pitch  = (camera->cam.z * viewport->h);
 
-    return (Fang_Tile){
+    return (Fang_Rect){
         .y = (int)roundf((viewport->h / 2) - offset - size + height + pitch),
         .h = (int)roundf(size),
     };

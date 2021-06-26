@@ -76,56 +76,43 @@ Fang_DestroyMap(void)
     Fang_AtlasFree(&temp_map.textures);
 }
 
-static inline Fang_TileType
-Fang_MapQueryType(
+static inline const Fang_Tile *
+Fang_MapQuery(
     const Fang_Map * const map,
     const int              x,
     const int              y)
 {
     assert(map);
+
+    static const Fang_Tile solid_tile = {
+        .texture = FANG_TEXTURE_TILE,
+        .y = 0.0f,
+        .h = 1.0f,
+    };
+
+    static const Fang_Tile floating_tile = {
+        .texture = FANG_TEXTURE_TILE,
+        .y = 1.0f,
+        .h = 1.0f,
+    };
 
     if (x < 0 || x >= map->size)
-        return FANG_TILETYPE_NONE;
+        return NULL;
 
     if (y < 0 || y >= map->size)
-        return FANG_TILETYPE_NONE;
+        return NULL;
 
-    return map->tiles[y * map->size + x];
-}
-
-static inline Fang_Tile
-Fang_MapQuerySize(
-    const Fang_Map * const map,
-    const int              x,
-    const int              y)
-{
-    assert(map);
-
-    const Fang_TileType type = Fang_MapQueryType(map, x, y);
+    const Fang_TileType type = map->tiles[y * map->size + x];
 
     switch (type)
     {
         case FANG_TILETYPE_SOLID:
-            return (Fang_Tile){0, 1};
+            return &solid_tile;
 
         case FANG_TILETYPE_FLOATING:
-            return (Fang_Tile){1, 1};
+            return &floating_tile;
 
         default:
-            return (Fang_Tile){0, 0};
+            return NULL;
     }
-}
-
-static inline const Fang_Image*
-Fang_MapQueryTexture(
-    const Fang_Map * const map,
-    const int              x,
-    const int              y)
-{
-    assert(map);
-
-    (void)x;
-    (void)y;
-
-    return Fang_AtlasQuery(&map->textures, FANG_TEXTURE_TILE);
 }
