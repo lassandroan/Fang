@@ -17,8 +17,6 @@ typedef struct Fang_Map {
     int width;
     int height;
 
-    int tile_size;
-
     Fang_Atlas textures;
 
     Fang_TileType * tiles;
@@ -51,7 +49,6 @@ Fang_Map temp_map = {
     .tiles = &temp_map_map[0][0],
     .width = temp_map_width,
     .height = temp_map_height,
-    .tile_size = 16,
     .fog = FANG_BLACK,
     .fog_distance = 16,
 };
@@ -85,13 +82,10 @@ Fang_DestroyMap(void)
 static inline Fang_TileType
 Fang_MapQueryType(
     const Fang_Map * const map,
-    int x,
-    int y)
+    const int              x,
+    const int              y)
 {
     assert(map);
-
-    x /= map->tile_size;
-    y /= map->tile_size;
 
     if (x < 0 || x >= map->width)
         return FANG_TILETYPE_NONE;
@@ -105,8 +99,8 @@ Fang_MapQueryType(
 static inline Fang_Tile
 Fang_MapQuerySize(
     const Fang_Map * const map,
-    const int x,
-    const int y)
+    const int              x,
+    const int              y)
 {
     assert(map);
 
@@ -115,10 +109,10 @@ Fang_MapQuerySize(
     switch (type)
     {
         case FANG_TILETYPE_SOLID:
-            return (Fang_Tile){0, map->tile_size};
+            return (Fang_Tile){0, 1};
 
         case FANG_TILETYPE_FLOATING:
-            return (Fang_Tile){map->tile_size, map->tile_size};
+            return (Fang_Tile){1, 1};
 
         default:
             return (Fang_Tile){0, 0};
@@ -128,8 +122,8 @@ Fang_MapQuerySize(
 static inline const Fang_Image*
 Fang_MapQueryTexture(
     const Fang_Map * const map,
-    const int x,
-    const int y)
+    const int              x,
+    const int              y)
 {
     assert(map);
 

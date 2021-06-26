@@ -13,8 +13,6 @@
 // You should have received a copy of the GNU General Public License along
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-const float FANG_PROJECTION_RATIO = 1.0f / 8.0f;
-
 typedef struct Fang_Camera {
     Fang_Vec3 pos;
     Fang_Vec3 dir;
