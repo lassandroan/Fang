@@ -336,11 +336,11 @@ static void
 Fang_DrawMapSkybox(
           Fang_Framebuffer * const framebuf,
     const Fang_Camera      * const camera,
-    const Fang_Image       * const skybox)
+    const Fang_Image       * const texture)
 {
     assert(framebuf);
     assert(camera);
-    assert(skybox);
+    assert(texture);
 
     const Fang_Rect viewport = Fang_FramebufferGetViewport(framebuf);
 
@@ -364,7 +364,7 @@ Fang_DrawMapSkybox(
     {
         Fang_DrawImageEx(
             framebuf,
-            skybox,
+            texture,
             NULL,
             &(Fang_Rect){
                 .x = dest.x + (dest.w * i),
@@ -377,7 +377,7 @@ Fang_DrawMapSkybox(
         );
     }
 
-    Fang_DrawImage(framebuf, skybox, NULL, &dest);
+    Fang_DrawImage(framebuf, texture, NULL, &dest);
 }
 
 /**
@@ -389,12 +389,12 @@ Fang_DrawMapFloor(
           Fang_Framebuffer * const framebuf,
     const Fang_Camera      * const camera,
     const Fang_Map         * const map,
-    const Fang_Image       * const floor)
+    const Fang_Image       * const texture)
 {
     assert(framebuf);
     assert(camera);
     assert(map);
-    assert(floor);
+    assert(texture);
 
     const Fang_Rect viewport = Fang_FramebufferGetViewport(framebuf);
 
@@ -449,20 +449,20 @@ Fang_DrawMapFloor(
         {
             Fang_Point tex_pos = {
                 .x = (int)roundf(
-                    floor->width * (floor_pos.x - (int)floor_pos.x)
+                    texture->width * (floor_pos.x - (int)floor_pos.x)
                 ),
                 .y = (int)roundf(
-                    floor->height * (floor_pos.y - (int)floor_pos.y)
+                    texture->height * (floor_pos.y - (int)floor_pos.y)
                 ),
             };
 
-            tex_pos.x &= (floor->width  - 1);
-            tex_pos.y &= (floor->height - 1);
+            tex_pos.x &= (texture->width  - 1);
+            tex_pos.y &= (texture->height - 1);
 
             floor_pos.x += floor_step.x;
             floor_pos.y += floor_step.y;
 
-            Fang_Color dest_color = Fang_ImageQuery(floor, &tex_pos);
+            Fang_Color dest_color = Fang_ImageQuery(texture, &tex_pos);
 
             /* Shortening the floor fog seems to align closer to tile fog */
             if (map->fog_distance != 0.0f)
