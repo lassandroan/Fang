@@ -394,7 +394,6 @@ Fang_DrawMapFloor(
     assert(framebuf);
     assert(camera);
     assert(map);
-    assert(texture);
 
     const Fang_Rect viewport = Fang_FramebufferGetViewport(framebuf);
 
@@ -418,6 +417,9 @@ Fang_DrawMapFloor(
         .x = camera->dir.x - camera->cam.x,
         .y = camera->dir.y - camera->cam.y,
     };
+
+    const int texture_width  = (texture) ? texture->width  : 32;
+    const int texture_height = (texture) ? texture->height : 32;
 
     for (int y = viewport.h / 2 + offset; y < viewport.h; ++y)
     {
@@ -449,15 +451,15 @@ Fang_DrawMapFloor(
         {
             Fang_Point tex_pos = {
                 .x = (int)roundf(
-                    texture->width * (floor_pos.x - (int)floor_pos.x)
+                    texture_width * (floor_pos.x - (int)floor_pos.x)
                 ),
                 .y = (int)roundf(
-                    texture->height * (floor_pos.y - (int)floor_pos.y)
+                    texture_height * (floor_pos.y - (int)floor_pos.y)
                 ),
             };
 
-            tex_pos.x &= (texture->width  - 1);
-            tex_pos.y &= (texture->height - 1);
+            tex_pos.x &= (texture_width  - 1);
+            tex_pos.y &= (texture_height - 1);
 
             floor_pos.x += floor_step.x;
             floor_pos.y += floor_step.y;
