@@ -24,6 +24,20 @@ typedef struct Fang_Image {
     int       stride;
 } Fang_Image;
 
+static inline bool
+Fang_ImageValid(
+    const Fang_Image * const image)
+{
+    return (
+        image
+     && image->pixels
+     && image->width
+     && image->height
+     && image->stride
+     && image->pitch
+    );
+}
+
 /**
  * Sets the image attributes and allocates a pixel buffer for the image.
  *
@@ -62,8 +76,7 @@ static inline void
 Fang_ImageFree(
     Fang_Image * const image)
 {
-    assert(image);
-    assert(image->pixels);
+    assert(Fang_ImageValid(image));
 
     free(image->pixels);
     memset(image, 0, sizeof(Fang_Image));
@@ -81,14 +94,9 @@ static inline void
 Fang_ImageClear(
     Fang_Image * const image)
 {
-    assert(image);
-    assert(image->pixels);
+    assert(Fang_ImageValid(image));
 
-    memset(
-        (void*)image->pixels,
-        0,
-        (size_t)(image->pitch * image->height)
-    );
+    memset((void*)image->pixels, 0, (size_t)(image->pitch * image->height));
 }
 
 /**
@@ -105,7 +113,7 @@ Fang_ImageQuery(
     assert(point);
 
     /* The 'XOR Texture' serves as the default 'missing' texture. */
-    if (!image || !image->pixels)
+    if (!Fang_ImageValid(image))
     {
         const uint8_t value = (uint8_t)point->x ^ (uint8_t)point->y;
         return (Fang_Color){value, value, value, 255};

@@ -185,7 +185,6 @@ Fang_DrawImageEx(
 {
     assert(framebuf);
     assert(framebuf->color.stride == 4);
-    assert(image);
 
     /* If the image is invalid we will supply a default size for
        Fang_ImageQuery() to use in creating the 'XOR Texture'.
@@ -193,7 +192,7 @@ Fang_DrawImageEx(
        Note that any smaller height value will cause the XOR texture to warp on
        walls.
     */
-    const Fang_Rect image_area = (image->pixels)
+    const Fang_Rect image_area = (Fang_ImageValid(image))
         ? (Fang_Rect){.w = image->width, .h = image->height}
         : (Fang_Rect){.w = 0, .h = FANG_FACE_SIZE};
 
@@ -336,13 +335,27 @@ static void
 Fang_DrawMapSkybox(
           Fang_Framebuffer * const framebuf,
     const Fang_Camera      * const camera,
+    const Fang_Map         * const map,
     const Fang_Image       * const texture)
 {
     assert(framebuf);
     assert(camera);
-    assert(texture);
 
     const Fang_Rect viewport = Fang_FramebufferGetViewport(framebuf);
+
+    if (!Fang_ImageValid(texture))
+    {
+        Fang_FillRect(
+            framebuf,
+            &(Fang_Rect){
+                .w = viewport.w,
+                .h = viewport.h / 2,
+            },
+            &map->fog
+        );
+
+        return;
+    }
 
     const int pitch = (int)roundf(camera->cam.z * viewport.h);
 
@@ -772,14 +785,27 @@ Fang_DrawMap(
     framebuf->state.current_depth = FLT_MAX;
 
     Fang_DrawMapSkybox(
-        framebuf, camera, Fang_AtlasQuery(textures, map->skybox)
+        framebuf,
+        camera,
+        map,
+        Fang_AtlasQuery(textures, map->skybox)
     );
 
     Fang_DrawMapFloor(
-        framebuf, camera, map, Fang_AtlasQuery(textures, map->floor)
+        framebuf,
+        camera,
+        map,
+        Fang_AtlasQuery(textures, map->floor)
     );
 
-    Fang_DrawMapTiles(framebuf, camera, textures, map, rays, count);
+    Fang_DrawMapTiles(
+        framebuf,
+        camera,
+        textures,
+        map,
+        rays,
+        count
+    );
 }
 
 /**

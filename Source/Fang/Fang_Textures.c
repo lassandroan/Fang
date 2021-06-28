@@ -88,7 +88,7 @@ Fang_AtlasLoad(
 
     Fang_Image * const result = &atlas->textures[id];
 
-    if (result->pixels)
+    if (Fang_ImageValid(result))
         Fang_AtlasUnload(atlas, id);
 
     typedef enum {
@@ -125,7 +125,7 @@ Fang_AtlasLoad(
     };
 
     *result = Fang_TGALoad(texture_info[id].path);
-    if (!result->pixels)
+    if (!Fang_ImageValid(result))
         return 1;
 
     switch (texture_info[id].type)
