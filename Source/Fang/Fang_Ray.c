@@ -125,13 +125,13 @@ Fang_RayCast(
 
             if (side_dist.x < side_dist.y)
             {
-                int_pos.x  += step_dist.x;
+                int_pos.x    += step_dist.x;
                 side_dist.x  += delta_dist.x;
                 hit->norm_dir = side_face_x;
             }
             else if (side_dist.x > side_dist.y)
             {
-                int_pos.y  += step_dist.y;
+                int_pos.y    += step_dist.y;
                 side_dist.y  += delta_dist.y;
                 hit->norm_dir = side_face_y;
             }
@@ -139,13 +139,13 @@ Fang_RayCast(
             {
                 if (step_dist.x < step_dist.y)
                 {
-                    int_pos.x  += step_dist.x;
+                    int_pos.x    += step_dist.x;
                     side_dist.x  += delta_dist.x;
                     hit->norm_dir = side_face_x;
                 }
                 else
                 {
-                    int_pos.y  += step_dist.y;
+                    int_pos.y    += step_dist.y;
                     side_dist.y  += delta_dist.y;
                     hit->norm_dir = side_face_y;
                 }

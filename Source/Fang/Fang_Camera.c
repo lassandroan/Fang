@@ -55,7 +55,7 @@ Fang_CameraProjectTile(
     dist = viewport->h / dist;
 
     const float offset = (tile->y       * FANG_PROJECTION_RATIO) * dist;
-    const float size   = (tile->h       * FANG_PROJECTION_RATIO) * dist - dist;
+    const float size   = (tile->h       * FANG_PROJECTION_RATIO) * dist;
     const float height = (camera->pos.z * FANG_PROJECTION_RATIO) * dist;
     const float pitch  = (camera->cam.z * viewport->h);
 

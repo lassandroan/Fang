@@ -136,11 +136,9 @@ Fang_Update(
             move.y -= 1.0f;
 
         if (Fang_InputPressed(&input->controller.action_down))
-        {
-            if (gamestate.player.body.pos.z <= gamestate.player.body.size)
-                move.z = FANG_JUMP_SPEED;
-        }
-        else if (input->controller.joystick_left.button.pressed)
+            move.z = FANG_JUMP_SPEED;
+
+        if (input->controller.joystick_left.button.pressed)
         {
             gamestate.player.body.max.x = FANG_RUN_SPEED * 1.5f;
             gamestate.player.body.max.y = FANG_RUN_SPEED * 1.5f;
@@ -184,6 +182,7 @@ Fang_Update(
         {
             Fang_BodyMove(
                 &gamestate.player.body,
+                &gamestate.map,
                 &move,
                 (float)update_dt / 1000.0f
             );

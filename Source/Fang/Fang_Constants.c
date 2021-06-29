@@ -17,5 +17,5 @@ const float FANG_PROJECTION_RATIO = 1.0f / (1.0f / 2.0f);
 
 const float FANG_GRAVITY     = 9.834f;
 const float FANG_RUN_SPEED   = 8.33f; // 30 km/h ~= 8.33 m/s
-const float FANG_JUMP_SPEED  = 2.0f;
-const float FANG_PLAYER_SIZE = 0.25f;
+const float FANG_JUMP_SPEED  = 3.0f;
+const float FANG_PLAYER_SIZE = 0.3f;

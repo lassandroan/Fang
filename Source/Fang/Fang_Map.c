@@ -39,13 +39,13 @@ Fang_MapQuery(
     static const Fang_Tile solid_tile = {
         .texture = FANG_TEXTURE_TILE,
         .y = 0.0f,
-        .h = 1.0f,
+        .h = 0.1f,
     };
 
     static const Fang_Tile floating_tile = {
         .texture = FANG_TEXTURE_TILE,
-        .y = 1.0f,
-        .h = 1.0f,
+        .y = 0.0f,
+        .h = 0.2f,
     };
 
     if (x < 0 || x >= map->size)

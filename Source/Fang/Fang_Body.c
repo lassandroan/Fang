@@ -28,6 +28,92 @@ typedef struct Fang_Body {
     float     size; /* Body Size (All Axes) */
 } Fang_Body;
 
+static inline bool
+Fang_BodyCanStep(
+    const Fang_Body * const body,
+    const float             surface_top)
+{
+    assert(body);
+
+    return (surface_top <= body->pos.z + (body->size / 3.0f));
+}
+
+static inline bool
+Fang_BodyCollideMap(
+    const Fang_Body * const body,
+    const Fang_Map  * const map)
+{
+    assert(body);
+    assert(map);
+
+    const Fang_Tile * const tile = Fang_MapQuery(
+        map, (int)floorf(body->pos.x), (int)floorf(body->pos.y)
+    );
+
+    if (!tile)
+        return false;
+
+    const float body_top = body->pos.z + body->size;
+    const float tile_top = tile->y + tile->h;
+
+    if (tile->y >= body_top)
+        return false;
+
+    if (tile_top <= body->pos.z)
+        return false;
+
+    if (Fang_BodyCanStep(body, tile_top))
+        return false;
+
+    return true;
+}
+
+static inline float
+Fang_BodyFindFloor(
+    const Fang_Body * const body,
+    const Fang_Map  * const map)
+{
+    assert(body);
+    assert(map);
+
+    const Fang_Tile * const tile = Fang_MapQuery(
+        map, (int)floorf(body->pos.x), (int)floorf(body->pos.y)
+    );
+
+    if (!tile)
+        return 0.0f;
+
+    const float tile_top = tile->y + tile->h;
+
+    if (tile_top > body->pos.z)
+        return 0.0f;
+
+    return tile_top;
+}
+
+static inline float
+Fang_BodyFindStep(
+    const Fang_Body * const body,
+    const Fang_Map  * const map)
+{
+    assert(body);
+    assert(map);
+
+    const Fang_Tile * const tile = Fang_MapQuery(
+        map, (int)floorf(body->pos.x), (int)floorf(body->pos.y)
+    );
+
+    if (!tile)
+        return 0.0f;
+
+    const float tile_top = tile->y + tile->h;
+
+    if (Fang_BodyCanStep(body, tile_top))
+        return tile_top;
+
+    return 0.0f;
+}
+
 /**
  * Moves a body using a given 'move' vector.
  *
@@ -35,73 +121,110 @@ typedef struct Fang_Body {
  * acceleration values to determine the increase/decrease in velocity.
  *
  * The Z value of the move vector will be directly applied as the body's new
- * Z velocity.
+ * Z velocity, but only if the body is standing on a surface.
  *
  * If the movement vector is 0.0f for X/Y, the current velocities for those axes
  * will be decreased until they reach 0.0f. The same applies to the Z axis, but
- * instead it is gravity acting on the body if its position is above the floor.
+ * instead it is gravity acting on the body if its position is above a surface.
  *
  * If the body is in the air, deceleration in the X/Y axes will not occur.
 **/
 static void
 Fang_BodyMove(
           Fang_Body * const body,
+          Fang_Map  * const map,
     const Fang_Vec3 * const move,
     const float             delta)
 {
     assert(body);
+    assert(map);
     assert(move);
 
-    if (body->pos.z <= 0.0f)
+    for (size_t i = 0; i < 2; ++i)
     {
-        for (size_t i = 0; i < 2; ++i)
+        float * const target = &body->vel.xyz[i];
+
+        if (fabsf(move->xyz[i]) < FLT_EPSILON)
         {
-            float * const target = &body->vel.xyz[i];
+            const float delta_acc = body->acc.xy[i] * delta;
 
-            if (fabsf(move->xyz[i]) < FLT_EPSILON)
+            if (*target < 0.0f)
             {
-                const float delta_acc = body->acc.xy[i] * delta;
-
-                if (*target < 0.0f)
-                {
-                    if (*target + delta_acc < 0.0f)
-                        *target += delta_acc;
-                    else
-                        *target = 0.0f;
-                }
-                else if (*target > 0.0f)
-                {
-                    if (*target - delta_acc > 0.0f)
-                        *target -= delta_acc;
-                    else
-                        *target = 0.0f;
-                }
+                if (*target + delta_acc < 0.0f)
+                    *target += delta_acc;
+                else
+                    *target = 0.0f;
             }
+            else if (*target > 0.0f)
+            {
+                if (*target - delta_acc > 0.0f)
+                    *target -= delta_acc;
+                else
+                    *target = 0.0f;
+            }
+        }
 
-            *target = clamp(
-                *target + ((body->acc.xy[i] * delta) * move->xyz[i]),
-                -body->max.xyz[i],
-                body->max.xyz[i]
-            );
+        *target = clamp(
+            *target + ((body->acc.xy[i] * delta) * move->xyz[i]),
+            -body->max.xyz[i],
+            body->max.xyz[i]
+        );
+    }
+
+    {
+        const float standing_surface = Fang_BodyFindFloor(body, map);
+
+        if (body->pos.z > standing_surface)
+            body->vel.z -= FANG_GRAVITY * delta;
+        else if (fabsf(move->z) > FLT_EPSILON)
+            body->vel.z = move->z;
+
+        if (body->pos.z + (body->vel.z * delta) <= standing_surface)
+        {
+            body->vel.z = 0.0f;
+            body->pos.z = standing_surface;
         }
     }
 
-    if (fabsf(move->z) > FLT_EPSILON)
-        body->vel.z = move->z;
-    else
-        body->vel.z -= FANG_GRAVITY * delta;
+    Fang_Vec3 new = body->pos;
+    new.x += (body->dir.x * body->vel.x + body->dir.y * body->vel.y) * delta;
+    new.y += (body->dir.y * body->vel.x - body->dir.x * body->vel.y) * delta;
+    new.z += body->vel.z * delta;
 
-    if (body->pos.z + (body->vel.z * delta) <= 0.0f)
+    /* X velocity collision */
     {
-        body->vel.z = 0.0f;
-        body->pos.z = 0.0f;
+        Fang_Body test_body = *body;
+        test_body.pos.x     = new.x;
+
+        if (!Fang_BodyCollideMap(&test_body, map))
+            body->pos.x = new.x;
     }
 
-    body->pos.x += (body->dir.x * body->vel.x + body->dir.y * body->vel.y)
-                 * delta;
+    /* Y velocity collision */
+    {
+        Fang_Body test_body = *body;
+        test_body.pos.y     = new.y;
 
-    body->pos.y += (body->dir.y * body->vel.x - body->dir.x * body->vel.y)
-                 * delta;
+        if (!Fang_BodyCollideMap(&test_body, map))
+            body->pos.y = new.y;
+    }
 
-    body->pos.z += body->vel.z * delta;
+    /* Z velocity collision */
+    {
+        Fang_Body test_body = *body;
+        test_body.pos.z     = new.z;
+
+        if (!Fang_BodyCollideMap(&test_body, map))
+            body->pos.z = new.z;
+        else
+            body->vel.z = 0.0f;
+    }
+
+    /* If we moved onto a short tile, step up onto it */
+    {
+        const float standing_surface = Fang_BodyFindStep(body, map);
+
+        if (body->pos.z <= standing_surface)
+            body->pos.z = standing_surface;
+    }
 }
