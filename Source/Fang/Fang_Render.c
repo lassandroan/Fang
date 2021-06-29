@@ -114,22 +114,29 @@ Fang_DrawRect(
     assert(rect);
     assert(color);
 
-    for (int h = 0; h < rect->h; h += rect->h - 1)
+    const Fang_Rect viewport  = Fang_FramebufferGetViewport(framebuf);
+    const Fang_Rect dest_rect = Fang_RectClip(rect, &viewport);
+
+    for (int h = 0; h < dest_rect.h; h += dest_rect.h - 1)
     {
-        for (int w = 0; w < rect->w; ++w)
+        for (int w = 0; w < dest_rect.w; ++w)
         {
             Fang_FramebufferPutPixel(
-                framebuf, &(Fang_Point){rect->x + w, rect->y + h}, color
+                framebuf,
+                &(Fang_Point){dest_rect.x + w, dest_rect.y + h},
+                color
             );
         }
     }
 
-    for (int h = 0; h < rect->h; ++h)
+    for (int h = 0; h < dest_rect.h; ++h)
     {
-        for (int w = 0; w < rect->w; w += rect->w - 1)
+        for (int w = 0; w < dest_rect.w; w += dest_rect.w - 1)
         {
             Fang_FramebufferPutPixel(
-                framebuf, &(Fang_Point){rect->x + w, rect->y + h}, color
+                framebuf,
+                &(Fang_Point){dest_rect.x + w, dest_rect.y + h},
+                color
             );
         }
     }
@@ -150,12 +157,17 @@ Fang_FillRect(
     assert(rect);
     assert(color);
 
-    for (int h = 0; h < rect->h; ++h)
+    const Fang_Rect viewport  = Fang_FramebufferGetViewport(framebuf);
+    const Fang_Rect dest_rect = Fang_RectClip(rect, &viewport);
+
+    for (int h = 0; h < dest_rect.h; ++h)
     {
-        for (int w = 0; w < rect->w; ++w)
+        for (int w = 0; w < dest_rect.w; ++w)
         {
             Fang_FramebufferPutPixel(
-                framebuf, &(Fang_Point){rect->x + w, rect->y + h}, color
+                framebuf,
+                &(Fang_Point){dest_rect.x + w, dest_rect.y + h},
+                color
             );
         }
     }
@@ -200,25 +212,18 @@ Fang_DrawImageEx(
         ? Fang_RectClip(source, &image_area)
         : image_area;
 
-    const Fang_Rect framebuf_area = {
-        .w = framebuf->color.width,
-        .h = framebuf->color.height,
-    };
+    const Fang_Rect framebuf_area = Fang_FramebufferGetViewport(framebuf);
 
     const Fang_Rect dest_area = (dest)
         ? *dest
         : framebuf_area;
 
-    for (int x = dest_area.x; x < dest_area.x + dest_area.w; ++x)
+    const Fang_Rect clipped_area = Fang_RectClip(&dest_area, &framebuf_area);
+
+    for (int x = clipped_area.x; x < clipped_area.x + clipped_area.w; ++x)
     {
-        if (x < 0 || x >= framebuf->color.width)
-            continue;
-
-        for (int y = dest_area.y; y < dest_area.y + dest_area.h; ++y)
+        for (int y = clipped_area.y; y < clipped_area.y + clipped_area.h; ++y)
         {
-            if (y < 0 || y >= framebuf->color.height)
-                continue;
-
             float r_x = (float)(x - dest_area.x) / (float)dest_area.w;
             float r_y = (float)(y - dest_area.y) / (float)dest_area.h;
 
