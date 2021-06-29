@@ -114,22 +114,29 @@ Fang_DrawRect(
     assert(rect);
     assert(color);
 
-    for (int h = 0; h < rect->h; h += rect->h - 1)
+    const Fang_Rect viewport  = Fang_FramebufferGetViewport(framebuf);
+    const Fang_Rect dest_rect = Fang_RectClip(rect, &viewport);
+
+    for (int h = 0; h < dest_rect.h; h += dest_rect.h - 1)
     {
-        for (int w = 0; w < rect->w; ++w)
+        for (int w = 0; w < dest_rect.w; ++w)
         {
             Fang_FramebufferPutPixel(
-                framebuf, &(Fang_Point){rect->x + w, rect->y + h}, color
+                framebuf,
+                &(Fang_Point){dest_rect.x + w, dest_rect.y + h},
+                color
             );
         }
     }
 
-    for (int h = 0; h < rect->h; ++h)
+    for (int h = 0; h < dest_rect.h; ++h)
     {
-        for (int w = 0; w < rect->w; w += rect->w - 1)
+        for (int w = 0; w < dest_rect.w; w += dest_rect.w - 1)
         {
             Fang_FramebufferPutPixel(
-                framebuf, &(Fang_Point){rect->x + w, rect->y + h}, color
+                framebuf,
+                &(Fang_Point){dest_rect.x + w, dest_rect.y + h},
+                color
             );
         }
     }
@@ -150,12 +157,17 @@ Fang_FillRect(
     assert(rect);
     assert(color);
 
-    for (int h = 0; h < rect->h; ++h)
+    const Fang_Rect viewport  = Fang_FramebufferGetViewport(framebuf);
+    const Fang_Rect dest_rect = Fang_RectClip(rect, &viewport);
+
+    for (int h = 0; h < dest_rect.h; ++h)
     {
-        for (int w = 0; w < rect->w; ++w)
+        for (int w = 0; w < dest_rect.w; ++w)
         {
             Fang_FramebufferPutPixel(
-                framebuf, &(Fang_Point){rect->x + w, rect->y + h}, color
+                framebuf,
+                &(Fang_Point){dest_rect.x + w, dest_rect.y + h},
+                color
             );
         }
     }
@@ -185,7 +197,6 @@ Fang_DrawImageEx(
 {
     assert(framebuf);
     assert(framebuf->color.stride == 4);
-    assert(image);
 
     /* If the image is invalid we will supply a default size for
        Fang_ImageQuery() to use in creating the 'XOR Texture'.
@@ -193,7 +204,7 @@ Fang_DrawImageEx(
        Note that any smaller height value will cause the XOR texture to warp on
        walls.
     */
-    const Fang_Rect image_area = (image->pixels)
+    const Fang_Rect image_area = (Fang_ImageValid(image))
         ? (Fang_Rect){.w = image->width, .h = image->height}
         : (Fang_Rect){.w = 0, .h = FANG_FACE_SIZE};
 
@@ -201,25 +212,18 @@ Fang_DrawImageEx(
         ? Fang_RectClip(source, &image_area)
         : image_area;
 
-    const Fang_Rect framebuf_area = {
-        .w = framebuf->color.width,
-        .h = framebuf->color.height,
-    };
+    const Fang_Rect framebuf_area = Fang_FramebufferGetViewport(framebuf);
 
     const Fang_Rect dest_area = (dest)
         ? *dest
         : framebuf_area;
 
-    for (int x = dest_area.x; x < dest_area.x + dest_area.w; ++x)
+    const Fang_Rect clipped_area = Fang_RectClip(&dest_area, &framebuf_area);
+
+    for (int x = clipped_area.x; x < clipped_area.x + clipped_area.w; ++x)
     {
-        if (x < 0 || x >= framebuf->color.width)
-            continue;
-
-        for (int y = dest_area.y; y < dest_area.y + dest_area.h; ++y)
+        for (int y = clipped_area.y; y < clipped_area.y + clipped_area.h; ++y)
         {
-            if (y < 0 || y >= framebuf->color.height)
-                continue;
-
             float r_x = (float)(x - dest_area.x) / (float)dest_area.w;
             float r_y = (float)(y - dest_area.y) / (float)dest_area.h;
 
@@ -335,14 +339,28 @@ Fang_DrawText(
 static void
 Fang_DrawMapSkybox(
           Fang_Framebuffer * const framebuf,
-          Fang_Map         * const map,
-    const Fang_Camera      * const camera)
+    const Fang_Camera      * const camera,
+    const Fang_Map         * const map,
+    const Fang_Image       * const texture)
 {
     assert(framebuf);
-    assert(map);
     assert(camera);
 
     const Fang_Rect viewport = Fang_FramebufferGetViewport(framebuf);
+
+    if (!Fang_ImageValid(texture))
+    {
+        Fang_FillRect(
+            framebuf,
+            &(Fang_Rect){
+                .w = viewport.w,
+                .h = viewport.h / 2,
+            },
+            &map->fog
+        );
+
+        return;
+    }
 
     const int pitch = (int)roundf(camera->cam.z * viewport.h);
 
@@ -364,7 +382,7 @@ Fang_DrawMapSkybox(
     {
         Fang_DrawImageEx(
             framebuf,
-            &map->skybox,
+            texture,
             NULL,
             &(Fang_Rect){
                 .x = dest.x + (dest.w * i),
@@ -377,12 +395,7 @@ Fang_DrawMapSkybox(
         );
     }
 
-    Fang_DrawImage(
-        framebuf,
-        &map->skybox,
-        NULL,
-        &dest
-    );
+    Fang_DrawImage(framebuf, texture, NULL, &dest);
 }
 
 /**
@@ -392,19 +405,17 @@ Fang_DrawMapSkybox(
 static void
 Fang_DrawMapFloor(
           Fang_Framebuffer * const framebuf,
-          Fang_Map         * const map,
-    const Fang_Camera      * const camera)
+    const Fang_Camera      * const camera,
+    const Fang_Map         * const map,
+    const Fang_Image       * const texture)
 {
     assert(framebuf);
-    assert(map);
     assert(camera);
-
-    assert(map->floor.pixels);
-    assert(map->floor.stride == 4);
+    assert(map);
 
     const Fang_Rect viewport = Fang_FramebufferGetViewport(framebuf);
 
-    if (camera->pos.z <= viewport.h / -2.0f)
+    if (camera->pos.z <= 0.0f)
         return;
 
     /* Calculate vertical offset in screen space */
@@ -424,6 +435,9 @@ Fang_DrawMapFloor(
         .x = camera->dir.x - camera->cam.x,
         .y = camera->dir.y - camera->cam.y,
     };
+
+    const int texture_width  = (texture) ? texture->width  : 32;
+    const int texture_height = (texture) ? texture->height : 32;
 
     for (int y = viewport.h / 2 + offset; y < viewport.h; ++y)
     {
@@ -455,37 +469,40 @@ Fang_DrawMapFloor(
         {
             Fang_Point tex_pos = {
                 .x = (int)roundf(
-                    map->floor.width * (floor_pos.x - (int)floor_pos.x)
+                    texture_width * (floor_pos.x - (int)floor_pos.x)
                 ),
                 .y = (int)roundf(
-                    map->floor.height * (floor_pos.y - (int)floor_pos.y)
+                    texture_height * (floor_pos.y - (int)floor_pos.y)
                 ),
             };
 
-            tex_pos.x &= (map->floor.width  - 1);
-            tex_pos.y &= (map->floor.height - 1);
+            tex_pos.x &= (texture_width  - 1);
+            tex_pos.y &= (texture_height - 1);
 
             floor_pos.x += floor_step.x;
             floor_pos.y += floor_step.y;
 
-            Fang_Color dest_color = Fang_ImageQuery(&map->floor, &tex_pos);
+            Fang_Color dest_color = Fang_ImageQuery(texture, &tex_pos);
 
             /* Shortening the floor fog seems to align closer to tile fog */
-            dest_color = Fang_ColorBlend(
-                &(Fang_Color){
-                    .r = map->fog.r,
-                    .g = map->fog.g,
-                    .b = map->fog.b,
-                    .a = (uint8_t)(
-                        clamp(
-                            (row_dist * 2.0f) / map->fog_distance,
-                            0.0f,
-                            1.0f
-                        ) * 255.0f
-                    ),
-                },
-                &dest_color
-            );
+            if (map->fog_distance != 0.0f)
+            {
+                dest_color = Fang_ColorBlend(
+                    &(Fang_Color){
+                        .r = map->fog.r,
+                        .g = map->fog.g,
+                        .b = map->fog.b,
+                        .a = (uint8_t)(
+                            clamp(
+                                (row_dist * 2.0f) / map->fog_distance,
+                                0.0f,
+                                1.0f
+                            ) * 255.0f
+                        ),
+                    },
+                    &dest_color
+                );
+            }
 
             Fang_FramebufferPutPixel(
                 framebuf,
@@ -505,14 +522,16 @@ Fang_DrawMapFloor(
 static void
 Fang_DrawMapTiles(
           Fang_Framebuffer * const framebuf,
-          Fang_Map         * const map,
     const Fang_Camera      * const camera,
+    const Fang_Atlas       * const textures,
+          Fang_Map         * const map,
     const Fang_Ray         * const rays,
     const size_t                   count)
 {
     assert(framebuf);
-    assert(map);
     assert(camera);
+    assert(textures);
+    assert(map);
     assert(rays);
     assert(count);
 
@@ -533,7 +552,7 @@ Fang_DrawMapTiles(
                 continue;
 
             const Fang_Image * const wall_tex = Fang_AtlasQuery(
-                &map->textures, hit->tile->texture
+                textures, hit->tile->texture
             );
 
             Fang_Rect front_face;
@@ -599,19 +618,25 @@ Fang_DrawMapTiles(
                     &dest_rect
                 );
 
-                Fang_FillRect(
-                    framebuf,
-                    &dest_rect,
-                    &(Fang_Color){
-                        .r = map->fog.r,
-                        .g = map->fog.g,
-                        .b = map->fog.b,
-                        .a = (uint8_t)(
-                            clamp(face_dist / map->fog_distance, 0.0f, 1.0f)
-                            * 255.0f
-                        ),
-                    }
-                );
+                if (map->fog_distance != 0.0f)
+                {
+                    Fang_FillRect(
+                        framebuf,
+                        &dest_rect,
+                        &(Fang_Color){
+                            .r = map->fog.r,
+                            .g = map->fog.g,
+                            .b = map->fog.b,
+                            .a = (uint8_t)(
+                                clamp(
+                                    face_dist / map->fog_distance,
+                                    0.0f,
+                                    1.0f
+                                ) * 255.0f
+                            ),
+                        }
+                    );
+                }
             }
 
             /* Draw top or bottom of tile based on front/back faces */
@@ -703,18 +728,24 @@ Fang_DrawMapTiles(
                     const float dist = ((1.0f - r_y) * dist_start)
                                      + (r_y * dist_end);
 
-                    dest_color = Fang_ColorBlend(
-                        &(Fang_Color){
-                            .r = map->fog.r,
-                            .g = map->fog.g,
-                            .b = map->fog.b,
-                            .a = (uint8_t)(
-                                clamp(dist / map->fog_distance, 0.0f, 1.0f)
-                                * 255.0f
-                            ),
-                        },
-                        &dest_color
-                    );
+                    if (map->fog_distance != 0.0f)
+                    {
+                        dest_color = Fang_ColorBlend(
+                            &(Fang_Color){
+                                .r = map->fog.r,
+                                .g = map->fog.g,
+                                .b = map->fog.b,
+                                .a = (uint8_t)(
+                                    clamp(
+                                        dist / map->fog_distance,
+                                        0.0f,
+                                        1.0f
+                                    ) * 255.0f
+                                ),
+                            },
+                            &dest_color
+                        );
+                    }
 
                     framebuf->state.current_depth = dist;
 
@@ -743,26 +774,43 @@ Fang_DrawMapTiles(
 static void
 Fang_DrawMap(
           Fang_Framebuffer * const framebuf,
-          Fang_Map         * const map,
     const Fang_Camera      * const camera,
+    const Fang_Atlas       * const textures,
+          Fang_Map         * const map,
     const Fang_Ray         * const rays,
     const size_t                   count)
 {
     assert(framebuf);
-    assert(map);
     assert(camera);
+    assert(textures);
+    assert(map);
     assert(rays);
     assert(count);
 
     framebuf->state.current_depth = FLT_MAX;
 
-    if (map->skybox.pixels)
-        Fang_DrawMapSkybox(framebuf, map, camera);
+    Fang_DrawMapSkybox(
+        framebuf,
+        camera,
+        map,
+        Fang_AtlasQuery(textures, map->skybox)
+    );
 
-    if (map->floor.pixels)
-        Fang_DrawMapFloor(framebuf, map, camera);
+    Fang_DrawMapFloor(
+        framebuf,
+        camera,
+        map,
+        Fang_AtlasQuery(textures, map->floor)
+    );
 
-    Fang_DrawMapTiles(framebuf, map, camera, rays, count);
+    Fang_DrawMapTiles(
+        framebuf,
+        camera,
+        textures,
+        map,
+        rays,
+        count
+    );
 }
 
 /**
@@ -773,14 +821,14 @@ Fang_DrawMap(
 static void
 Fang_DrawMinimap(
           Fang_Framebuffer * const framebuf,
-    const Fang_Map         * const map,
     const Fang_Camera      * const camera,
+    const Fang_Map         * const map,
     const Fang_Ray         * const rays,
     const size_t                   count)
 {
     assert(framebuf);
-    assert(map);
     assert(camera);
+    assert(map);
     assert(rays);
     assert(count);
 
@@ -822,14 +870,14 @@ Fang_DrawMinimap(
         }
     }
 
-    const Fang_Point camera_pos = {
+    const Fang_Point minimap_pos = {
         .x = (int)((camera->pos.x / map->size) * bounds.w),
         .y = (int)((camera->pos.y / map->size) * bounds.h),
     };
 
 
-    if ((camera_pos.x >= 0 || camera_pos.x < bounds.w)
-    ||  (camera_pos.y >= 0 || camera_pos.y < bounds.h))
+    if ((minimap_pos.x >= 0 && minimap_pos.x < bounds.w)
+    &&  (minimap_pos.y >= 0 && minimap_pos.y < bounds.h))
     {
         for (size_t i = 0; i < count; ++i)
         {
@@ -842,12 +890,15 @@ Fang_DrawMinimap(
 
             Fang_DrawLine(
                 framebuf,
-                &camera_pos,
+                &minimap_pos,
                 &(Fang_Point){
                     .x = (int)((ray_pos.x / map->size) * bounds.w),
                     .y = (int)((ray_pos.y / map->size) * bounds.h),
                 },
-                &FANG_BLUE
+                &(Fang_Color){
+                    .b = 255,
+                    .a = 1,
+                }
             );
         }
     }
@@ -855,8 +906,8 @@ Fang_DrawMinimap(
     Fang_FillRect(
         framebuf,
         &(Fang_Rect){
-            .x = clamp(camera_pos.x, 0, bounds.w)  - 5,
-            .y = clamp(camera_pos.y, 0, bounds.h) - 5,
+            .x = clamp(minimap_pos.x, 0, bounds.w) - 5,
+            .y = clamp(minimap_pos.y, 0, bounds.h) - 5,
             .w = 10,
             .h = 10,
         },
@@ -868,13 +919,11 @@ Fang_DrawMinimap(
 static void
 Fang_DrawEntities(
           Fang_Framebuffer * const framebuf,
-          Fang_Map         * const map,
     const Fang_Camera      * const camera,
     const Fang_Entity      * const entities,
     const size_t                   count)
 {
     assert(framebuf);
-    assert(map);
     assert(camera);
     assert(entities);
 

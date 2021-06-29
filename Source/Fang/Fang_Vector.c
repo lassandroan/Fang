@@ -13,12 +13,18 @@
 // You should have received a copy of the GNU General Public License along
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-typedef struct Fang_Vec2 {
-    float x, y;
+typedef union Fang_Vec2 {
+    struct {
+        float x, y;
+    };
+    float xy[2];
 } Fang_Vec2;
 
-typedef struct Fang_Vec3 {
-    float x, y, z;
+typedef union Fang_Vec3 {
+    struct {
+        float x, y, z;
+    };
+    float xyz[3];
 } Fang_Vec3;
 
 static inline Fang_Vec2
@@ -26,7 +32,7 @@ Fang_Vec2Divf(
     const Fang_Vec2 a,
     const float     b)
 {
-    return (Fang_Vec2){a.x / b, a.y / b};
+    return (Fang_Vec2){.x = a.x / b, .y = a.y / b};
 }
 
 static inline Fang_Vec2
@@ -34,7 +40,7 @@ Fang_Vec2Multf(
     const Fang_Vec2 a,
     const float     b)
 {
-    return (Fang_Vec2){a.x * b, a.y * b};
+    return (Fang_Vec2){.x = a.x * b, .y = a.y * b};
 }
 
 static inline float

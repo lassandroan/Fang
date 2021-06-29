@@ -44,6 +44,7 @@ typedef enum Fang_Texture {
     FANG_TEXTURE_FORMULA,
 
     FANG_NUM_TEXTURES,
+    FANG_TEXTURE_NONE,
 } Fang_Texture;
 
 /**
@@ -87,7 +88,7 @@ Fang_AtlasLoad(
 
     Fang_Image * const result = &atlas->textures[id];
 
-    if (result->pixels)
+    if (Fang_ImageValid(result))
         Fang_AtlasUnload(atlas, id);
 
     typedef enum {
@@ -124,7 +125,7 @@ Fang_AtlasLoad(
     };
 
     *result = Fang_TGALoad(texture_info[id].path);
-    if (!result->pixels)
+    if (!Fang_ImageValid(result))
         return 1;
 
     switch (texture_info[id].type)
@@ -167,7 +168,10 @@ Fang_AtlasQuery(
     const Fang_Texture         id)
 {
     assert(atlas);
-    assert(id < FANG_NUM_TEXTURES);
 
+    if (id == FANG_TEXTURE_NONE)
+        return NULL;
+
+    assert(id < FANG_NUM_TEXTURES);
     return &atlas->textures[id];
 }

@@ -16,65 +16,14 @@
 typedef struct Fang_Map {
     int size;
 
-    Fang_Atlas textures;
+    Fang_Tile * tiles;
 
-    Fang_TileType * tiles;
-    Fang_Tile * sizes;
-
-    Fang_Image skybox;
-    Fang_Image floor;
+    Fang_Texture skybox;
+    Fang_Texture floor;
 
     Fang_Color fog;
     float      fog_distance;
 } Fang_Map;
-
-enum {
-    temp_map_size = 8,
-};
-
-Fang_TileType temp_map_map[temp_map_size][temp_map_size] = {
-    {1, 1, 1, 0, 0, 0, 1, 1},
-    {1, 0, 0, 0, 0, 0, 2, 1},
-    {1, 0, 0, 0, 0, 0, 0, 1},
-    {1, 0, 0, 0, 0, 0, 0, 1},
-    {1, 2, 0, 0, 0, 0, 0, 1},
-    {1, 0, 0, 0, 0, 1, 0, 1},
-    {1, 1, 0, 0, 0, 0, 0, 1},
-    {1, 1, 1, 1, 1, 1, 1, 1},
-};
-
-Fang_Map temp_map = {
-    .tiles = &temp_map_map[0][0],
-    .size = temp_map_size,
-    .fog = FANG_BLACK,
-    .fog_distance = 16,
-};
-
-static inline int
-Fang_LoadMap(void)
-{
-    assert(!temp_map.skybox.pixels);
-    assert(!temp_map.floor.pixels);
-
-    for (Fang_Texture i = 0; i < FANG_NUM_TEXTURES; ++i)
-        Fang_AtlasLoad(&temp_map.textures, i);
-
-    temp_map.skybox = *Fang_AtlasQuery(
-        &temp_map.textures, FANG_TEXTURE_SKYBOX
-    );
-
-    temp_map.floor = *Fang_AtlasQuery(
-        &temp_map.textures, FANG_TEXTURE_FLOOR
-    );
-
-    return 0;
-}
-
-static inline void
-Fang_DestroyMap(void)
-{
-    Fang_AtlasFree(&temp_map.textures);
-}
 
 static inline const Fang_Tile *
 Fang_MapQuery(
@@ -84,16 +33,19 @@ Fang_MapQuery(
 {
     assert(map);
 
+    /* NOTE: Temporary */
+    assert(map->size == 8);
+
     static const Fang_Tile solid_tile = {
         .texture = FANG_TEXTURE_TILE,
         .y = 0.0f,
-        .h = 1.0f,
+        .h = 0.1f,
     };
 
     static const Fang_Tile floating_tile = {
         .texture = FANG_TEXTURE_TILE,
-        .y = 1.0f,
-        .h = 1.0f,
+        .y = 0.0f,
+        .h = 0.2f,
     };
 
     if (x < 0 || x >= map->size)
@@ -102,7 +54,18 @@ Fang_MapQuery(
     if (y < 0 || y >= map->size)
         return NULL;
 
-    const Fang_TileType type = map->tiles[y * map->size + x];
+    static const Fang_TileType temp_tiles[8 * 8] = {
+        1, 1, 1, 0, 0, 0, 1, 1,
+        1, 0, 0, 0, 0, 0, 2, 1,
+        1, 0, 0, 0, 0, 0, 0, 1,
+        1, 0, 0, 0, 0, 0, 0, 1,
+        1, 2, 0, 0, 0, 0, 0, 1,
+        1, 0, 0, 0, 0, 1, 0, 1,
+        1, 1, 0, 0, 0, 0, 0, 1,
+        1, 1, 1, 1, 1, 1, 1, 1,
+    };
+
+    const Fang_TileType type = temp_tiles[y * 8 + x];
 
     switch (type)
     {

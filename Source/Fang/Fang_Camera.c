@@ -32,20 +32,14 @@ Fang_CameraRotate(
         .y = sinf(angle),
     };
 
-    Fang_Vec3 * const dir = &camera->dir;
-    Fang_Vec3 * const cam = &camera->cam;
+    const Fang_Vec3 dir = camera->dir;
+    const Fang_Vec3 cam = camera->cam;
 
-    dir->x = dir->x * rotation.x - dir->y * rotation.y;
-    dir->y = dir->x * rotation.y + dir->y * rotation.x;
-    cam->x = cam->x * rotation.x - cam->y * rotation.y;
-    cam->y = cam->x * rotation.y + cam->y * rotation.x;
-    cam->z = clamp(cam->z + pitch, -1.0f, 1.0f);
-
-    *(Fang_Vec2*)dir = Fang_Vec2Normalize(*(Fang_Vec2*)dir);
-    *(Fang_Vec2*)cam = Fang_Vec2Normalize(*(Fang_Vec2*)cam);
-
-    cam->x *= 0.5f;
-    cam->y *= 0.5f;
+    camera->dir.x = dir.x * rotation.x - dir.y * rotation.y;
+    camera->dir.y = dir.x * rotation.y + dir.y * rotation.x;
+    camera->cam.x = cam.x * rotation.x - cam.y * rotation.y;
+    camera->cam.y = cam.x * rotation.y + cam.y * rotation.x;
+    camera->cam.z = clamp(camera->cam.z + pitch, -1.0f, 1.0f);
 }
 
 static inline Fang_Rect
@@ -61,7 +55,7 @@ Fang_CameraProjectTile(
     dist = viewport->h / dist;
 
     const float offset = (tile->y       * FANG_PROJECTION_RATIO) * dist;
-    const float size   = (tile->h       * FANG_PROJECTION_RATIO) * dist - dist;
+    const float size   = (tile->h       * FANG_PROJECTION_RATIO) * dist;
     const float height = (camera->pos.z * FANG_PROJECTION_RATIO) * dist;
     const float pitch  = (camera->cam.z * viewport->h);
 

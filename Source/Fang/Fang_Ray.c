@@ -42,19 +42,22 @@ typedef struct Fang_Ray {
 
 static inline void
 Fang_RayCast(
-    const Fang_Map    * const map,
     const Fang_Camera * const camera,
+    const Fang_Map    * const map,
           Fang_Ray    * const rays,
     const size_t              count)
 {
-    assert(map);
     assert(camera);
+    assert(map);
     assert(rays);
     assert(count);
 
     const Fang_Vec3 * const dir = &camera->dir;
     const Fang_Vec3 * const cam = &camera->cam;
-    const Fang_Vec2         pos = (Fang_Vec2){camera->pos.x, camera->pos.y};
+    const Fang_Vec2         pos = (Fang_Vec2){
+        .x = camera->pos.x,
+        .y = camera->pos.y
+    };
 
     memset(rays, 0, sizeof(Fang_Ray) * count);
 
@@ -122,13 +125,13 @@ Fang_RayCast(
 
             if (side_dist.x < side_dist.y)
             {
-                int_pos.x  += step_dist.x;
+                int_pos.x    += step_dist.x;
                 side_dist.x  += delta_dist.x;
                 hit->norm_dir = side_face_x;
             }
             else if (side_dist.x > side_dist.y)
             {
-                int_pos.y  += step_dist.y;
+                int_pos.y    += step_dist.y;
                 side_dist.y  += delta_dist.y;
                 hit->norm_dir = side_face_y;
             }
@@ -136,13 +139,13 @@ Fang_RayCast(
             {
                 if (step_dist.x < step_dist.y)
                 {
-                    int_pos.x  += step_dist.x;
+                    int_pos.x    += step_dist.x;
                     side_dist.x  += delta_dist.x;
                     hit->norm_dir = side_face_x;
                 }
                 else
                 {
-                    int_pos.y  += step_dist.y;
+                    int_pos.y    += step_dist.y;
                     side_dist.y  += delta_dist.y;
                     hit->norm_dir = side_face_y;
                 }

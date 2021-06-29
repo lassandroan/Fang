@@ -61,9 +61,9 @@ Fang_Mat3x3Multv(
     const Fang_Vec3   b)
 {
     return (Fang_Vec3){
-        a.m00 * b.x + a.m01 * b.y + a.m02 * b.z,
-        a.m10 * b.x + a.m11 * b.y + a.m12 * b.z,
-        a.m20 * b.x + a.m21 * b.y + a.m22 * b.z,
+        .x = a.m00 * b.x + a.m01 * b.y + a.m02 * b.z,
+        .y = a.m10 * b.x + a.m11 * b.y + a.m12 * b.z,
+        .z = a.m20 * b.x + a.m21 * b.y + a.m22 * b.z,
     };
 }
 

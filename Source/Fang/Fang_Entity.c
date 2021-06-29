@@ -13,6 +13,10 @@
 // You should have received a copy of the GNU General Public License along
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+enum {
+    FANG_MAX_ENTITIES = 2,
+};
+
 typedef struct Fang_Entity {
     Fang_Body body;
 } Fang_Entity;

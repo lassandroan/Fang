@@ -160,6 +160,12 @@ Fang_InputReset(
 {
     assert(input);
 
+    input->mouse.left.transitions = 0;
+    input->mouse.right.transitions = 0;
+    input->mouse.middle.transitions = 0;
+    input->mouse.relative.x = 0;
+    input->mouse.relative.y = 0;
+
     input->controller.start.transitions = 0;
     input->controller.back.transitions = 0;
     input->controller.joystick_left.button.transitions = 0;

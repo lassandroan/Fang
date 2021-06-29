@@ -13,16 +13,18 @@
 // You should have received a copy of the GNU General Public License along
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-typedef enum Fang_TileType {
-    FANG_TILETYPE_NONE,
-    FANG_TILETYPE_SOLID,
-    FANG_TILETYPE_FLOATING,
+typedef struct Fang_Clock {
+    uint32_t time;
+    uint32_t accumulator;
+} Fang_Clock;
 
-    FANG_NUM_TILETYPE,
-} Fang_TileType;
-
-typedef struct Fang_Tile {
-    Fang_Texture texture;
-    float y;
-    float h;
-} Fang_Tile;
+typedef struct Fang_State {
+    Fang_Map       map;
+    Fang_Atlas     textures;
+    Fang_Ray       raycast[FANG_WINDOW_SIZE];
+    Fang_Clock     clock;
+    Fang_Camera    camera;
+    Fang_Entity    player;
+    Fang_Interface interface;
+    Fang_Entity    entities[FANG_MAX_ENTITIES];
+} Fang_State;
