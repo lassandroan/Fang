@@ -241,6 +241,7 @@ Fang_Update(
     Fang_DrawEntities(
         framebuf,
         &gamestate.camera,
+        &gamestate.map,
         gamestate.entities,
         FANG_MAX_ENTITIES
     );

@@ -920,11 +920,13 @@ static void
 Fang_DrawEntities(
           Fang_Framebuffer * const framebuf,
     const Fang_Camera      * const camera,
+    const Fang_Map         * const map,
     const Fang_Entity      * const entities,
     const size_t                   count)
 {
     assert(framebuf);
     assert(camera);
+    assert(map);
     assert(entities);
 
     const Fang_Rect viewport = Fang_FramebufferGetViewport(framebuf);
@@ -949,10 +951,30 @@ Fang_DrawEntities(
         if (surface.y + surface.h <= 0 || surface.y >= viewport.h)
             continue;
 
-        Fang_FillRect(
-            framebuf,
-            &surface,
-            &FANG_PURPLE
-        );
+        if (framebuf->state.current_depth > map->fog_distance)
+            continue;
+
+        Fang_Color dest_color = FANG_PURPLE;
+
+        if (map->fog_distance != 0.0f)
+        {
+            dest_color = Fang_ColorBlend(
+                &(Fang_Color){
+                    .r = map->fog.r,
+                    .g = map->fog.g,
+                    .b = map->fog.b,
+                    .a = (uint8_t)(
+                        clamp(
+                            framebuf->state.current_depth / map->fog_distance,
+                            0.0f,
+                            1.0f
+                        ) * 255.0f
+                    ),
+                },
+                &dest_color
+            );
+        }
+
+        Fang_FillRect(framebuf, &surface, &dest_color);
     }
 }
