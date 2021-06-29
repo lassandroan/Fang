@@ -870,14 +870,14 @@ Fang_DrawMinimap(
         }
     }
 
-    const Fang_Point camera_pos = {
+    const Fang_Point minimap_pos = {
         .x = (int)((camera->pos.x / map->size) * bounds.w),
         .y = (int)((camera->pos.y / map->size) * bounds.h),
     };
 
 
-    if ((camera_pos.x >= 0 || camera_pos.x < bounds.w)
-    ||  (camera_pos.y >= 0 || camera_pos.y < bounds.h))
+    if ((minimap_pos.x >= 0 && minimap_pos.x < bounds.w)
+    &&  (minimap_pos.y >= 0 && minimap_pos.y < bounds.h))
     {
         for (size_t i = 0; i < count; ++i)
         {
@@ -890,12 +890,15 @@ Fang_DrawMinimap(
 
             Fang_DrawLine(
                 framebuf,
-                &camera_pos,
+                &minimap_pos,
                 &(Fang_Point){
                     .x = (int)((ray_pos.x / map->size) * bounds.w),
                     .y = (int)((ray_pos.y / map->size) * bounds.h),
                 },
-                &FANG_BLUE
+                &(Fang_Color){
+                    .b = 255,
+                    .a = 1,
+                }
             );
         }
     }
@@ -903,8 +906,8 @@ Fang_DrawMinimap(
     Fang_FillRect(
         framebuf,
         &(Fang_Rect){
-            .x = clamp(camera_pos.x, 0, bounds.w)  - 5,
-            .y = clamp(camera_pos.y, 0, bounds.h) - 5,
+            .x = clamp(minimap_pos.x, 0, bounds.w) - 5,
+            .y = clamp(minimap_pos.y, 0, bounds.h) - 5,
             .w = 10,
             .h = 10,
         },
