@@ -485,24 +485,7 @@ Fang_DrawMapFloor(
             Fang_Color dest_color = Fang_ImageQuery(texture, &tex_pos);
 
             /* Shortening the floor fog seems to align closer to tile fog */
-            if (map->fog_distance != 0.0f)
-            {
-                dest_color = Fang_ColorBlend(
-                    &(Fang_Color){
-                        .r = map->fog.r,
-                        .g = map->fog.g,
-                        .b = map->fog.b,
-                        .a = (uint8_t)(
-                            clamp(
-                                (row_dist * 2.0f) / map->fog_distance,
-                                0.0f,
-                                1.0f
-                            ) * 255.0f
-                        ),
-                    },
-                    &dest_color
-                );
-            }
+            dest_color = Fang_MapBlendFog(map, &dest_color, row_dist * 2.0f);
 
             Fang_FramebufferPutPixel(
                 framebuf,
@@ -549,6 +532,9 @@ Fang_DrawMapTiles(
                 continue;
 
             if (hit->front_dist <= 0.0f)
+                continue;
+
+            if (hit->front_dist > map->fog_distance)
                 continue;
 
             const Fang_Image * const wall_tex = Fang_AtlasQuery(
@@ -618,25 +604,10 @@ Fang_DrawMapTiles(
                     &dest_rect
                 );
 
-                if (map->fog_distance != 0.0f)
-                {
-                    Fang_FillRect(
-                        framebuf,
-                        &dest_rect,
-                        &(Fang_Color){
-                            .r = map->fog.r,
-                            .g = map->fog.g,
-                            .b = map->fog.b,
-                            .a = (uint8_t)(
-                                clamp(
-                                    face_dist / map->fog_distance,
-                                    0.0f,
-                                    1.0f
-                                ) * 255.0f
-                            ),
-                        }
-                    );
-                }
+                const Fang_Color fog = Fang_MapGetFog(map, face_dist);
+
+                if (fog.a != 0.0f)
+                    Fang_FillRect(framebuf, &dest_rect, &fog);
             }
 
             /* Draw top or bottom of tile based on front/back faces */
@@ -728,24 +699,7 @@ Fang_DrawMapTiles(
                     const float dist = ((1.0f - r_y) * dist_start)
                                      + (r_y * dist_end);
 
-                    if (map->fog_distance != 0.0f)
-                    {
-                        dest_color = Fang_ColorBlend(
-                            &(Fang_Color){
-                                .r = map->fog.r,
-                                .g = map->fog.g,
-                                .b = map->fog.b,
-                                .a = (uint8_t)(
-                                    clamp(
-                                        dist / map->fog_distance,
-                                        0.0f,
-                                        1.0f
-                                    ) * 255.0f
-                                ),
-                            },
-                            &dest_color
-                        );
-                    }
+                    dest_color = Fang_MapBlendFog(map, &dest_color, dist);
 
                     framebuf->state.current_depth = dist;
 
@@ -920,11 +874,13 @@ static void
 Fang_DrawEntities(
           Fang_Framebuffer * const framebuf,
     const Fang_Camera      * const camera,
+    const Fang_Map         * const map,
     const Fang_Entity      * const entities,
     const size_t                   count)
 {
     assert(framebuf);
     assert(camera);
+    assert(map);
     assert(entities);
 
     const Fang_Rect viewport = Fang_FramebufferGetViewport(framebuf);
@@ -949,10 +905,13 @@ Fang_DrawEntities(
         if (surface.y + surface.h <= 0 || surface.y >= viewport.h)
             continue;
 
-        Fang_FillRect(
-            framebuf,
-            &surface,
-            &FANG_PURPLE
+        if (framebuf->state.current_depth > map->fog_distance)
+            continue;
+
+        const Fang_Color dest_color = Fang_MapBlendFog(
+            map, &FANG_PURPLE, framebuf->state.current_depth
         );
+
+        Fang_FillRect(framebuf, &surface, &dest_color);
     }
 }
