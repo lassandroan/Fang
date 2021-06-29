@@ -14,10 +14,10 @@
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * A constant representing the width|height of a face in a tile-type texture.
+ * A constant representing the width|height of a texture frame.
 **/
 enum {
-    FANG_FACE_SIZE = 128,
+    FANG_TEXTURE_SIZE = 128,
 };
 
 /**
@@ -131,8 +131,8 @@ Fang_AtlasLoad(
     switch (texture_info[id].type)
     {
         case TILE_TEXTURE:
-            assert(result->width  == FANG_FACE_SIZE * 6);
-            assert(result->height == FANG_FACE_SIZE);
+            assert(result->width  == FANG_TEXTURE_SIZE * 6);
+            assert(result->height == FANG_TEXTURE_SIZE);
             break;
 
         case FONT_TEXTURE:

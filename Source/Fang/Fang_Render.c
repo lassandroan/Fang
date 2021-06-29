@@ -184,6 +184,9 @@ Fang_FillRect(
  * will be scaled to fit the destination rectangle. This scaling is linear, no
  * resampling is performed.
  *
+ * An optional shade color may be passed which, if supplied, is blended with the
+ * image pixels while drawing.
+ *
  * The source image may be flipped in the X or Y direction when being drawn.
 **/
 static void
@@ -192,6 +195,7 @@ Fang_DrawImageEx(
     const Fang_Image       * const image,
     const Fang_Rect        * const source,
     const Fang_Rect        * const dest,
+    const Fang_Color       * const shade,
     const bool                     flip_x,
     const bool                     flip_y)
 {
@@ -200,13 +204,10 @@ Fang_DrawImageEx(
 
     /* If the image is invalid we will supply a default size for
        Fang_ImageQuery() to use in creating the 'XOR Texture'.
-
-       Note that any smaller height value will cause the XOR texture to warp on
-       walls.
     */
     const Fang_Rect image_area = (Fang_ImageValid(image))
         ? (Fang_Rect){.w = image->width, .h = image->height}
-        : (Fang_Rect){.w = 0, .h = FANG_FACE_SIZE};
+        : (Fang_Rect){.w = FANG_TEXTURE_SIZE, .h = FANG_TEXTURE_SIZE};
 
     const Fang_Rect source_area = (source)
         ? Fang_RectClip(source, &image_area)
@@ -245,7 +246,10 @@ Fang_DrawImageEx(
                     : (int)(r_y * (source_area.h - 0)) + source_area.y,
             };
 
-            const Fang_Color dest_color = Fang_ImageQuery(image, &tex_pos);
+            Fang_Color dest_color = Fang_ImageQuery(image, &tex_pos);
+
+            if (shade)
+                dest_color = Fang_ColorBlend(shade, &dest_color);
 
             Fang_FramebufferPutPixel(
                 framebuf,
@@ -257,7 +261,8 @@ Fang_DrawImageEx(
 }
 
 /**
- * Shortcut function for Fang_DrawImageEx() without flipping the source image.
+ * Shortcut function for Fang_DrawImageEx() without flipping the source image or
+ * providing a shade color.
 **/
 static inline void
 Fang_DrawImage(
@@ -266,7 +271,7 @@ Fang_DrawImage(
     const Fang_Rect        * const source,
     const Fang_Rect        * const dest)
 {
-    Fang_DrawImageEx(framebuf, image, source, dest, false, false);
+    Fang_DrawImageEx(framebuf, image, source, dest, NULL, false, false);
 }
 
 /**
@@ -390,6 +395,7 @@ Fang_DrawMapSkybox(
                 .w = dest.w,
                 .h = dest.h,
             },
+            NULL,
             true,
             false
         );
@@ -591,23 +597,23 @@ Fang_DrawMapTiles(
 
                 framebuf->state.current_depth = face_dist;
 
-                Fang_DrawImage(
+                const Fang_Color fog = Fang_MapGetFog(map, face_dist);
+
+                Fang_DrawImageEx(
                     framebuf,
                     wall_tex,
                     &(Fang_Rect){
-                        .x = (int)floorf(tex_x * (FANG_FACE_SIZE - 1))
-                           + (int)      (face  * (FANG_FACE_SIZE - 1)),
+                        .x = (int)floorf(tex_x * (FANG_TEXTURE_SIZE - 1))
+                           + (int)      (face  * (FANG_TEXTURE_SIZE - 1)),
                         .y = 0,
                         .w = 1,
-                        .h = FANG_FACE_SIZE,
+                        .h = FANG_TEXTURE_SIZE,
                     },
-                    &dest_rect
+                    &dest_rect,
+                    &fog,
+                    false,
+                    false
                 );
-
-                const Fang_Color fog = Fang_MapGetFog(map, face_dist);
-
-                if (fog.a != 0.0f)
-                    Fang_FillRect(framebuf, &dest_rect, &fog);
             }
 
             /* Draw top or bottom of tile based on front/back faces */
@@ -686,11 +692,11 @@ Fang_DrawMapTiles(
                         if (y == start_y)
                             u = 1.0f;
 
-                        tex_pos.x = (int)(u * (FANG_FACE_SIZE  - 1));
-                        tex_pos.y = (int)(v * (FANG_FACE_SIZE - 1));
+                        tex_pos.x = (int)(u * (FANG_TEXTURE_SIZE  - 1));
+                        tex_pos.y = (int)(v * (FANG_TEXTURE_SIZE - 1));
                     }
 
-                    tex_pos.x += (int)face * FANG_FACE_SIZE;
+                    tex_pos.x += (int)face * FANG_TEXTURE_SIZE;
 
                     Fang_Color dest_color = Fang_ImageQuery(
                         wall_tex, &tex_pos
@@ -874,12 +880,14 @@ static void
 Fang_DrawEntities(
           Fang_Framebuffer * const framebuf,
     const Fang_Camera      * const camera,
+    const Fang_Atlas       * const textures,
     const Fang_Map         * const map,
     const Fang_Entity      * const entities,
     const size_t                   count)
 {
     assert(framebuf);
     assert(camera);
+    assert(textures);
     assert(map);
     assert(entities);
 
@@ -889,29 +897,37 @@ Fang_DrawEntities(
     {
         const Fang_Entity * const entity = &entities[i];
 
-        const Fang_Rect surface = Fang_CameraProjectBody(
+        const Fang_Rect dest_rect = Fang_CameraProjectBody(
             camera,
             &entity->body,
             &viewport,
             &framebuf->state.current_depth
         );
 
-        if (surface.h <= 0)
+        if (dest_rect.h <= 0)
             continue;
 
-        if (surface.x + surface.w <= 0 || surface.x >= viewport.w)
+        if (dest_rect.x + dest_rect.w <= 0 || dest_rect.x >= viewport.w)
             continue;
 
-        if (surface.y + surface.h <= 0 || surface.y >= viewport.h)
+        if (dest_rect.y + dest_rect.h <= 0 || dest_rect.y >= viewport.h)
             continue;
 
         if (framebuf->state.current_depth > map->fog_distance)
             continue;
 
-        const Fang_Color dest_color = Fang_MapBlendFog(
-            map, &FANG_PURPLE, framebuf->state.current_depth
+        const Fang_Color fog = Fang_MapGetFog(
+            map, framebuf->state.current_depth
         );
 
-        Fang_FillRect(framebuf, &surface, &dest_color);
+        Fang_DrawImageEx(
+            framebuf,
+            Fang_AtlasQuery(textures, entity->texture),
+            NULL,
+            &dest_rect,
+            &fog,
+            false,
+            false
+        );
     }
 }

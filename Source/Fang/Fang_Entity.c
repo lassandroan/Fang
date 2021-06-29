@@ -18,5 +18,6 @@ enum {
 };
 
 typedef struct Fang_Entity {
-    Fang_Body body;
+    Fang_Body    body;
+    Fang_Texture texture;
 } Fang_Entity;

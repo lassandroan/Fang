@@ -87,13 +87,15 @@ Fang_Init(void)
     {
         Fang_Entity entities [FANG_MAX_ENTITIES] = {
             [0] = (Fang_Entity){
-                (Fang_Body){
+                .texture = FANG_TEXTURE_NONE,
+                .body = (Fang_Body){
                     .pos  = (Fang_Vec3){.x = 2.0f, .y = 2.0f},
                     .size = 1,
                 },
             },
             [1] = (Fang_Entity){
-                (Fang_Body){
+                .texture = FANG_TEXTURE_NONE,
+                .body = (Fang_Body){
                     .pos  = (Fang_Vec3){.x = 6.0f, .y = 5.5f},
                     .size = 1,
                 },
@@ -241,6 +243,7 @@ Fang_Update(
     Fang_DrawEntities(
         framebuf,
         &gamestate.camera,
+        &gamestate.textures,
         &gamestate.map,
         gamestate.entities,
         FANG_MAX_ENTITIES
