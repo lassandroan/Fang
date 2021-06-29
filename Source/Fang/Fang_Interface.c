@@ -82,7 +82,10 @@ Fang_InterfaceUpdate(
     Fang_Interface * const interface)
 {
     assert(interface);
-    interface->hot = interface->next;
+
+    if (!interface->active)
+        interface->hot = interface->next;
+
     interface->id   = 0;
     interface->next = 0;
 }
@@ -236,14 +239,14 @@ Fang_InterfaceSlider(
 
         const bool active = interface->active == id;
         const bool hot    = interface->hot    == id;
-        const bool next   = interface->next   == id;
 
         Fang_Color color;
+
         if (active)
             color = interface->theme.colors.foreground;
         else if (hot)
             color = interface->theme.colors.highlight;
-        else if (!next)
+        else
             color = interface->theme.colors.disabled;
 
         Fang_DrawRect(framebuf, bounds, &color);
