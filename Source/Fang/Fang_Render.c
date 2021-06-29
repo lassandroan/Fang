@@ -534,6 +534,9 @@ Fang_DrawMapTiles(
             if (hit->front_dist <= 0.0f)
                 continue;
 
+            if (hit->front_dist > map->fog_distance)
+                continue;
+
             const Fang_Image * const wall_tex = Fang_AtlasQuery(
                 textures, hit->tile->texture
             );
