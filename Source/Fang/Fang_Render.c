@@ -485,24 +485,7 @@ Fang_DrawMapFloor(
             Fang_Color dest_color = Fang_ImageQuery(texture, &tex_pos);
 
             /* Shortening the floor fog seems to align closer to tile fog */
-            if (map->fog_distance != 0.0f)
-            {
-                dest_color = Fang_ColorBlend(
-                    &(Fang_Color){
-                        .r = map->fog.r,
-                        .g = map->fog.g,
-                        .b = map->fog.b,
-                        .a = (uint8_t)(
-                            clamp(
-                                (row_dist * 2.0f) / map->fog_distance,
-                                0.0f,
-                                1.0f
-                            ) * 255.0f
-                        ),
-                    },
-                    &dest_color
-                );
-            }
+            dest_color = Fang_MapBlendFog(map, &dest_color, row_dist * 2.0f);
 
             Fang_FramebufferPutPixel(
                 framebuf,
@@ -618,25 +601,10 @@ Fang_DrawMapTiles(
                     &dest_rect
                 );
 
-                if (map->fog_distance != 0.0f)
-                {
-                    Fang_FillRect(
-                        framebuf,
-                        &dest_rect,
-                        &(Fang_Color){
-                            .r = map->fog.r,
-                            .g = map->fog.g,
-                            .b = map->fog.b,
-                            .a = (uint8_t)(
-                                clamp(
-                                    face_dist / map->fog_distance,
-                                    0.0f,
-                                    1.0f
-                                ) * 255.0f
-                            ),
-                        }
-                    );
-                }
+                const Fang_Color fog = Fang_MapGetFog(map, face_dist);
+
+                if (fog.a != 0.0f)
+                    Fang_FillRect(framebuf, &dest_rect, &fog);
             }
 
             /* Draw top or bottom of tile based on front/back faces */
@@ -728,24 +696,7 @@ Fang_DrawMapTiles(
                     const float dist = ((1.0f - r_y) * dist_start)
                                      + (r_y * dist_end);
 
-                    if (map->fog_distance != 0.0f)
-                    {
-                        dest_color = Fang_ColorBlend(
-                            &(Fang_Color){
-                                .r = map->fog.r,
-                                .g = map->fog.g,
-                                .b = map->fog.b,
-                                .a = (uint8_t)(
-                                    clamp(
-                                        dist / map->fog_distance,
-                                        0.0f,
-                                        1.0f
-                                    ) * 255.0f
-                                ),
-                            },
-                            &dest_color
-                        );
-                    }
+                    dest_color = Fang_MapBlendFog(map, &dest_color, dist);
 
                     framebuf->state.current_depth = dist;
 
@@ -954,26 +905,9 @@ Fang_DrawEntities(
         if (framebuf->state.current_depth > map->fog_distance)
             continue;
 
-        Fang_Color dest_color = FANG_PURPLE;
-
-        if (map->fog_distance != 0.0f)
-        {
-            dest_color = Fang_ColorBlend(
-                &(Fang_Color){
-                    .r = map->fog.r,
-                    .g = map->fog.g,
-                    .b = map->fog.b,
-                    .a = (uint8_t)(
-                        clamp(
-                            framebuf->state.current_depth / map->fog_distance,
-                            0.0f,
-                            1.0f
-                        ) * 255.0f
-                    ),
-                },
-                &dest_color
-            );
-        }
+        const Fang_Color dest_color = Fang_MapBlendFog(
+            map, &FANG_PURPLE, framebuf->state.current_depth
+        );
 
         Fang_FillRect(framebuf, &surface, &dest_color);
     }
