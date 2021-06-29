@@ -410,7 +410,7 @@ Fang_DrawMapFloor(
 
     const Fang_Rect viewport = Fang_FramebufferGetViewport(framebuf);
 
-    if (camera->pos.z <= viewport.h / -2.0f)
+    if (camera->pos.z <= 0.0f)
         return;
 
     /* Calculate vertical offset in screen space */

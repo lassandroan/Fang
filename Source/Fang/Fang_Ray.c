@@ -54,7 +54,10 @@ Fang_RayCast(
 
     const Fang_Vec3 * const dir = &camera->dir;
     const Fang_Vec3 * const cam = &camera->cam;
-    const Fang_Vec2         pos = (Fang_Vec2){camera->pos.x, camera->pos.y};
+    const Fang_Vec2         pos = (Fang_Vec2){
+        .x = camera->pos.x,
+        .y = camera->pos.y
+    };
 
     memset(rays, 0, sizeof(Fang_Ray) * count);
 

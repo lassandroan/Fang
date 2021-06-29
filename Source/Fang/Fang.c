@@ -35,10 +35,10 @@
 #include "Fang_TGA.c"
 #include "Fang_Framebuffer.c"
 #include "Fang_Textures.c"
-#include "Fang_Body.c"
 #include "Fang_Tile.c"
-#include "Fang_Camera.c"
 #include "Fang_Map.c"
+#include "Fang_Body.c"
+#include "Fang_Camera.c"
 #include "Fang_Ray.c"
 #include "Fang_Entity.c"
 #include "Fang_Render.c"
@@ -69,26 +69,32 @@ Fang_Init(void)
     };
 
     gamestate.camera = (Fang_Camera){
-        .pos = {
-            .x = 2,
-            .y = 2,
-            .z = 0,
-        },
+        .pos = {.x = 2, .y = 2},
         .dir = {.x = -1.0f},
         .cam = {.y =  0.5f},
+    };
+
+    gamestate.player = (Fang_Entity){
+        .body = (Fang_Body){
+            .pos  = {.x = 2, .y = 2},
+            .acc  = {.x = FANG_RUN_SPEED * 7.5f, .y = FANG_RUN_SPEED * 7.5f},
+            .dir  = {.x = -1.0f},
+            .max  = {.x = FANG_RUN_SPEED, .y = FANG_RUN_SPEED, .z = 100000.0f},
+            .size = FANG_PLAYER_SIZE,
+        }
     };
 
     {
         Fang_Entity entities [FANG_MAX_ENTITIES] = {
             [0] = (Fang_Entity){
                 (Fang_Body){
-                    .pos  = (Fang_Vec2){.x = 2.0f, .y = 2.0f},
+                    .pos  = (Fang_Vec3){.x = 2.0f, .y = 2.0f},
                     .size = 1,
                 },
             },
             [1] = (Fang_Entity){
                 (Fang_Body){
-                    .pos  = (Fang_Vec2){.x = 6.0f, .y = 5.5f},
+                    .pos  = (Fang_Vec3){.x = 6.0f, .y = 5.5f},
                     .size = 1,
                 },
             },
@@ -115,6 +121,57 @@ Fang_Update(
     assert(input);
     assert(framebuf);
 
+    Fang_Vec3 move = {.x = 0.0f};
+    {
+        if (input->controller.direction_up.pressed)
+            move.x += 1.0f;
+
+        if (input->controller.direction_down.pressed)
+            move.x -= 1.0f;
+
+        if (input->controller.direction_left.pressed)
+            move.y += 1.0f;
+
+        if (input->controller.direction_right.pressed)
+            move.y -= 1.0f;
+
+        if (Fang_InputPressed(&input->controller.action_down))
+        {
+            if (gamestate.player.body.pos.z <= gamestate.player.body.size)
+                move.z = FANG_JUMP_SPEED;
+        }
+        else if (input->controller.joystick_left.button.pressed)
+        {
+            gamestate.player.body.max.x = FANG_RUN_SPEED * 1.5f;
+            gamestate.player.body.max.y = FANG_RUN_SPEED * 1.5f;
+        }
+        else if (input->controller.joystick_right.button.pressed)
+        {
+            gamestate.player.body.max.x = FANG_RUN_SPEED * 0.25f;
+            gamestate.player.body.max.y = FANG_RUN_SPEED * 0.25f;
+            gamestate.player.body.size  = FANG_PLAYER_SIZE * 0.5f;
+        }
+        else
+        {
+            gamestate.player.body.max.x = FANG_RUN_SPEED * 0.5f;
+            gamestate.player.body.max.y = FANG_RUN_SPEED * 0.5f;
+            gamestate.player.body.size  = FANG_PLAYER_SIZE;
+        }
+
+        move.y -= input->controller.joystick_left.x;
+        move.x -= input->controller.joystick_left.y;
+
+        Fang_CameraRotate(
+            &gamestate.camera,
+            ((float)input->mouse.relative.x / (float)FANG_WINDOW_SIZE)
+            + (input->controller.joystick_right.x /  10.0f),
+            ((float)input->mouse.relative.y / -(float)FANG_WINDOW_SIZE)
+            + (input->controller.joystick_right.y / -10.0f)
+        );
+
+        gamestate.player.body.dir = gamestate.camera.dir;
+    }
+
     {
         if (!gamestate.clock.time)
             gamestate.clock.time = time;
@@ -124,7 +181,21 @@ Fang_Update(
         gamestate.clock.accumulator += frame_time;
 
         while (gamestate.clock.accumulator >= update_dt)
+        {
+            Fang_BodyMove(
+                &gamestate.player.body,
+                &move,
+                (float)update_dt / 1000.0f
+            );
+
+            gamestate.camera.pos = (Fang_Vec3){
+                .x = gamestate.player.body.pos.x,
+                .y = gamestate.player.body.pos.y,
+                .z = gamestate.player.body.pos.z + gamestate.player.body.size,
+            };
+
             gamestate.clock.accumulator -= update_dt;
+        }
     }
 
     {
@@ -208,52 +279,6 @@ Fang_Update(
         FANG_FONT_HEIGHT,
         &(Fang_Point){.x = 5, .y = 3}
     );
-
-    static float height = 0.0f;
-    static float pitch  = 0.0f;
-    static float rotate = 0.0f;
-    static float move   = 0.0f;
-
-    if (Fang_InterfaceSlider(
-        &gamestate.interface, &height, "height",
-        &(Fang_Rect){.x = 256 - 100, .w = 100, .h = 15}))
-    {
-        gamestate.camera.pos.z = (height * 2.0f - 1.0f) * (1.0f);
-    }
-
-    if (Fang_InterfaceSlider(
-        &gamestate.interface, &pitch, "pitch",
-        &(Fang_Rect){.x = 256 - 100, .y = 20, .w = 100, .h = 15}))
-    {
-        gamestate.camera.cam.z = pitch * 2.0f - 1.0f;
-    }
-
-    if (Fang_InterfaceSlider(
-        &gamestate.interface, &rotate, "rotate",
-        &(Fang_Rect){.x = 256 - 100, .y = 40, .w = 100, .h = 15}))
-    {
-        Fang_CameraRotate(
-            &gamestate.camera,
-            (rotate * 2.0f - 1.0f) / 100.0f,
-            0
-        );
-    }
-
-    if (Fang_InterfaceSlider(
-        &gamestate.interface, &move, "move",
-        &(Fang_Rect){.x = 256 - 100, .y = 60, .w = 100, .h = 15}))
-    {
-        const float vel = (move * 2.0f - 1.0f) * 0.05f;
-
-        Fang_Vec3 * const pos = &gamestate.camera.pos;
-        Fang_Vec3 * const dir = &gamestate.camera.dir;
-
-        *pos = (Fang_Vec3){
-            .x = pos->x + (dir->x * vel),
-            .y = pos->y + (dir->y * vel),
-            .z = pos->z,
-        };
-    }
 }
 
 static inline void

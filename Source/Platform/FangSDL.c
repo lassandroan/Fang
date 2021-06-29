@@ -131,6 +131,8 @@ int Fang_Main(int argc, char** argv)
     SDL_JoystickEventState(SDL_ENABLE);
     SDL_GameControllerEventState(SDL_ENABLE);
 
+    SDL_SetRelativeMouseMode(1);
+
     SDL_RaiseWindow(window);
 
     Fang_Input input;
