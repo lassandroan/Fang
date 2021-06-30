@@ -184,9 +184,6 @@ Fang_FillRect(
  * will be scaled to fit the destination rectangle. This scaling is linear, no
  * resampling is performed.
  *
- * An optional shade color may be passed which, if supplied, is blended with the
- * image pixels while drawing.
- *
  * The source image may be flipped in the X or Y direction when being drawn.
 **/
 static void
@@ -195,7 +192,6 @@ Fang_DrawImageEx(
     const Fang_Image       * const image,
     const Fang_Rect        * const source,
     const Fang_Rect        * const dest,
-    const Fang_Color       * const shade,
     const bool                     flip_x,
     const bool                     flip_y)
 {
@@ -246,10 +242,7 @@ Fang_DrawImageEx(
                     : (int)(r_y * (source_area.h - 0)) + source_area.y,
             };
 
-            Fang_Color dest_color = Fang_ImageQuery(image, &tex_pos);
-
-            if (shade)
-                dest_color = Fang_ColorBlend(shade, &dest_color);
+            const Fang_Color dest_color = Fang_ImageQuery(image, &tex_pos);
 
             Fang_FramebufferPutPixel(
                 framebuf,
@@ -271,7 +264,7 @@ Fang_DrawImage(
     const Fang_Rect        * const source,
     const Fang_Rect        * const dest)
 {
-    Fang_DrawImageEx(framebuf, image, source, dest, NULL, false, false);
+    Fang_DrawImageEx(framebuf, image, source, dest, false, false);
 }
 
 /**
@@ -395,7 +388,6 @@ Fang_DrawMapSkybox(
                 .w = dest.w,
                 .h = dest.h,
             },
-            NULL,
             true,
             false
         );
@@ -488,10 +480,7 @@ Fang_DrawMapFloor(
             floor_pos.x += floor_step.x;
             floor_pos.y += floor_step.y;
 
-            Fang_Color dest_color = Fang_ImageQuery(texture, &tex_pos);
-
-            /* Shortening the floor fog seems to align closer to tile fog */
-            dest_color = Fang_MapBlendFog(map, &dest_color, row_dist * 2.0f);
+            const Fang_Color dest_color = Fang_ImageQuery(texture, &tex_pos);
 
             Fang_FramebufferPutPixel(
                 framebuf,
@@ -597,8 +586,6 @@ Fang_DrawMapTiles(
 
                 framebuf->state.current_depth = face_dist;
 
-                const Fang_Color fog = Fang_MapGetFog(map, face_dist);
-
                 Fang_DrawImageEx(
                     framebuf,
                     wall_tex,
@@ -610,7 +597,6 @@ Fang_DrawMapTiles(
                         .h = FANG_TEXTURE_SIZE,
                     },
                     &dest_rect,
-                    &fog,
                     false,
                     false
                 );
@@ -704,8 +690,6 @@ Fang_DrawMapTiles(
 
                     const float dist = ((1.0f - r_y) * dist_start)
                                      + (r_y * dist_end);
-
-                    dest_color = Fang_MapBlendFog(map, &dest_color, dist);
 
                     framebuf->state.current_depth = dist;
 
@@ -916,16 +900,11 @@ Fang_DrawEntities(
         if (framebuf->state.current_depth > map->fog_distance)
             continue;
 
-        const Fang_Color fog = Fang_MapGetFog(
-            map, framebuf->state.current_depth
-        );
-
         Fang_DrawImageEx(
             framebuf,
             Fang_AtlasQuery(textures, entity->texture),
             NULL,
             &dest_rect,
-            &fog,
             false,
             false
         );

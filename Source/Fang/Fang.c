@@ -249,6 +249,10 @@ Fang_Update(
         FANG_MAX_ENTITIES
     );
 
+    Fang_FramebufferShadeDepth(
+        framebuf, &gamestate.map.fog, gamestate.map.fog_distance
+    );
+
     {
         const Fang_FrameState state = Fang_FramebufferSetViewport(
             framebuf,

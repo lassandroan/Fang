@@ -56,7 +56,7 @@ Fang_FramebufferPutPixel(
     const Fang_Color       * const color)
 {
     assert(framebuf);
-    assert(framebuf->color.pixels);
+    assert(Fang_ImageValid(&framebuf->color));
     assert(framebuf->color.stride == 4);
 
     const Fang_Point trans_point = Fang_MatMult(
@@ -73,7 +73,8 @@ Fang_FramebufferPutPixel(
 
     if (framebuf->state.enable_depth)
     {
-        assert(framebuf->depth.pixels);
+        assert(Fang_ImageValid(&framebuf->depth));
+
         assert(framebuf->depth.width  == framebuf->color.width);
         assert(framebuf->depth.height == framebuf->color.height);
         assert(framebuf->depth.stride == 4);
@@ -94,8 +95,8 @@ Fang_FramebufferPutPixel(
     {
         uint32_t * const dest = (uint32_t*)(
             framebuf->color.pixels
-          + (trans_point.y * framebuf->color.pitch
-          +  trans_point.x * framebuf->color.stride)
+          + trans_point.y * framebuf->color.pitch
+          + trans_point.x * framebuf->color.stride
         );
 
         Fang_Color dest_color    = Fang_ColorFromRGBA(*dest);
@@ -104,6 +105,64 @@ Fang_FramebufferPutPixel(
     }
 
     return write;
+}
+
+/**
+ * Calculates a shade using the current depth buffer and blends the result into
+ * the framebuffer's color image.
+ *
+ * This is utilized for drawing fog at the end of the frame.
+**/
+static inline void
+Fang_FramebufferShadeDepth(
+          Fang_Framebuffer * const framebuf,
+    const Fang_Color       * const color,
+    const float                    dist)
+{
+    assert(framebuf);
+    assert(Fang_ImageValid(&framebuf->color));
+    assert(Fang_ImageValid(&framebuf->depth));
+    assert(framebuf->color.width  == framebuf->depth.width);
+    assert(framebuf->color.height == framebuf->depth.height);
+    assert(framebuf->color.stride == framebuf->depth.stride);
+    assert(framebuf->color.stride == 4);
+    assert(color);
+
+    for (int x = 0; x < framebuf->color.width; ++x)
+    {
+        for (int y = 0; y < framebuf->color.height; ++y)
+        {
+            float depth = *(float*)(
+                framebuf->depth.pixels
+              + y * framebuf->depth.pitch
+              + x * framebuf->depth.stride
+            );
+
+            if (depth == FLT_MAX)
+                continue;
+
+            depth = clamp(depth / dist, 0.0f, 1.0f);
+
+            uint32_t * const dest = (uint32_t*)(
+                framebuf->color.pixels
+              + y * framebuf->color.pitch
+              + x * framebuf->color.stride
+            );
+
+            Fang_Color dest_color    = Fang_ColorFromRGBA(*dest);
+            Fang_Color blended_color = Fang_ColorBlend(
+                &(Fang_Color){
+                    .r = color->r,
+                    .g = color->g,
+                    .b = color->b,
+                    .a = (uint8_t)(depth * 255.0f),
+                },
+                &dest_color
+            );
+
+            *dest = Fang_ColorToRGBA(&blended_color);
+        }
+    }
 }
 
 /**
