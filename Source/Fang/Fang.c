@@ -34,7 +34,7 @@
 #include "Fang_Image.c"
 #include "Fang_TGA.c"
 #include "Fang_Framebuffer.c"
-#include "Fang_Textures.c"
+#include "Fang_Texture.c"
 #include "Fang_Tile.c"
 #include "Fang_Map.c"
 #include "Fang_Body.c"
@@ -42,6 +42,7 @@
 #include "Fang_DDA.c"
 #include "Fang_Ray.c"
 #include "Fang_Entity.c"
+#include "Fang_Weapon.c"
 #include "Fang_Render.c"
 #include "Fang_Interface.c"
 #include "Fang_State.c"
@@ -84,6 +85,9 @@ Fang_Init(void)
             .size = FANG_PLAYER_SIZE,
         }
     };
+
+    gamestate.weapon = FANG_WEAPONTYPE_PISTOL;
+    memset(gamestate.ammo, 0, sizeof(gamestate.ammo));
 
     {
         Fang_Entity entities [FANG_MAX_ENTITIES] = {
@@ -141,6 +145,15 @@ Fang_Update(
         if (Fang_InputPressed(&input->controller.action_down))
             move.z = FANG_JUMP_SPEED;
 
+        if (Fang_InputPressed(&input->controller.shoulder_left)
+        ||  Fang_InputPressed(&input->controller.shoulder_right))
+        {
+            if (gamestate.weapon == FANG_WEAPONTYPE_NONE)
+                gamestate.weapon = FANG_WEAPONTYPE_PISTOL;
+            else
+                gamestate.weapon = FANG_WEAPONTYPE_NONE;
+        }
+
         if (input->controller.joystick_left.button.pressed)
         {
             gamestate.player.body.max.x = FANG_RUN_SPEED * 1.5f;
@@ -164,9 +177,9 @@ Fang_Update(
 
         Fang_CameraRotate(
             &gamestate.camera,
-            ((float)input->mouse.relative.x / (float)FANG_WINDOW_SIZE)
+            ((float)input->mouse.relative.x / (FANG_WINDOW_SIZE / 2.0f))
             + (input->controller.joystick_right.x /  10.0f),
-            ((float)input->mouse.relative.y / -(float)FANG_WINDOW_SIZE)
+            ((float)input->mouse.relative.y / -(FANG_WINDOW_SIZE / 2.0f))
             + (input->controller.joystick_right.y / -10.0f)
         );
 
@@ -178,6 +191,7 @@ Fang_Update(
             gamestate.clock.time = time;
 
         const uint32_t frame_time = time - gamestate.clock.time;
+
         gamestate.clock.time = time;
         gamestate.clock.accumulator += frame_time;
 
@@ -254,6 +268,48 @@ Fang_Update(
         framebuf, &gamestate.map.fog, gamestate.map.fog_distance
     );
 
+    framebuf->state.enable_depth = false;
+
+    {
+        const Fang_Weapon * const weapon = Fang_WeaponQuery(gamestate.weapon);
+
+        if (weapon)
+        {
+            Fang_DrawImage(
+                framebuf,
+                Fang_AtlasQuery(&gamestate.textures, weapon->texture),
+                NULL,
+                NULL
+            );
+
+            Fang_DrawText(
+                framebuf,
+                weapon->name,
+                Fang_AtlasQuery(&gamestate.textures, FANG_TEXTURE_FORMULA),
+                FANG_FONT_HEIGHT,
+                &(Fang_Point){.x = 5, .y = 3}
+            );
+
+            gamestate.ammo[gamestate.weapon] = 120;
+
+            char ammo_count[4];
+            snprintf(
+                ammo_count,
+                sizeof(ammo_count),
+                "%03d",
+                gamestate.ammo[gamestate.weapon]
+            );
+
+            Fang_DrawText(
+                framebuf,
+                ammo_count,
+                Fang_AtlasQuery(&gamestate.textures, FANG_TEXTURE_FORMULA),
+                FANG_FONT_HEIGHT,
+                &(Fang_Point){.x = 5, .y = 3 + FANG_FONT_HEIGHT}
+            );
+        }
+    }
+
     {
         const Fang_FrameState state = Fang_FramebufferSetViewport(
             framebuf,
@@ -264,8 +320,6 @@ Fang_Update(
                 .h = 32,
             }
         );
-
-        framebuf->state.enable_depth = false;
 
         Fang_DrawMinimap(
             framebuf,
@@ -280,12 +334,18 @@ Fang_Update(
 
     framebuf->state.current_depth = 0.0f;
 
-    Fang_DrawText(
+    Fang_FramebufferPutPixel(
         framebuf,
-        "FANG",
-        Fang_AtlasQuery(&gamestate.textures, FANG_TEXTURE_FORMULA),
-        FANG_FONT_HEIGHT,
-        &(Fang_Point){.x = 5, .y = 3}
+        &(Fang_Point){
+            .x = framebuf->color.width / 2,
+            .y = framebuf->color.height / 2,
+        },
+        &(Fang_Color){
+            .r = 255,
+            .g = 255,
+            .b = 255,
+            .a = 128,
+        }
     );
 }
 

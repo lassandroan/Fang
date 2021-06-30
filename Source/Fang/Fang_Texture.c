@@ -43,6 +43,9 @@ typedef enum Fang_Texture {
     /* Fonts */
     FANG_TEXTURE_FORMULA,
 
+    /* HUD */
+    FANG_TEXTURE_PISTOL_HUD,
+
     FANG_NUM_TEXTURES,
     FANG_TEXTURE_NONE,
 } Fang_Texture;
@@ -122,6 +125,12 @@ Fang_AtlasLoad(
             .path = "Fonts/Formula.tga",
             .type = FONT_TEXTURE,
         },
+
+        /* HUD */
+        [FANG_TEXTURE_PISTOL_HUD] = (Info){
+            .path = "Textures/Pistol_HUD.tga",
+            .type = OTHER_TEXTURE,
+        }
     };
 
     *result = Fang_TGALoad(texture_info[id].path);

@@ -13,20 +13,33 @@
 // You should have received a copy of the GNU General Public License along
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-typedef struct Fang_Clock {
-    uint32_t time;
-    uint32_t accumulator;
-} Fang_Clock;
+typedef enum Fang_WeaponType {
+    FANG_WEAPONTYPE_PISTOL,
 
-typedef struct Fang_State {
-    Fang_Map        map;
-    Fang_Atlas      textures;
-    Fang_Ray        raycast[FANG_WINDOW_SIZE];
-    Fang_Clock      clock;
-    Fang_Camera     camera;
-    Fang_Entity     player;
-    Fang_WeaponType weapon;
-    uint8_t         ammo[FANG_NUM_WEAPONTYPE];
-    Fang_Interface  interface;
-    Fang_Entity     entities[FANG_MAX_ENTITIES];
-} Fang_State;
+    FANG_NUM_WEAPONTYPE,
+    FANG_WEAPONTYPE_NONE,
+} Fang_WeaponType;
+
+typedef struct Fang_Weapon {
+    const char * const name;
+    Fang_Texture texture;
+} Fang_Weapon;
+
+static inline const Fang_Weapon *
+Fang_WeaponQuery(
+    const Fang_WeaponType type)
+{
+    if (type == FANG_WEAPONTYPE_NONE)
+        return NULL;
+
+    assert(type < FANG_NUM_WEAPONTYPE);
+
+    static const Fang_Weapon weapons[FANG_NUM_WEAPONTYPE] = {
+        [FANG_WEAPONTYPE_PISTOL] = (Fang_Weapon){
+            .name = "PISTOL",
+            .texture = FANG_TEXTURE_PISTOL_HUD,
+        },
+    };
+
+    return &weapons[type];
+}
