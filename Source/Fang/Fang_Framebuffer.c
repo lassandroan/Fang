@@ -128,6 +128,9 @@ Fang_FramebufferShadeDepth(
     assert(framebuf->color.stride == 4);
     assert(color);
 
+    if (dist == 0.0f)
+        return;
+
     for (int x = 0; x < framebuf->color.width; ++x)
     {
         for (int y = 0; y < framebuf->color.height; ++y)
