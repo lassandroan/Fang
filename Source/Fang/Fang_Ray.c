@@ -52,6 +52,14 @@ Fang_RayCast(
 
     memset(rays, 0, sizeof(Fang_Ray) * count);
 
+    const Fang_Tile * initial_tile = Fang_MapQuery(
+        map, (int)floorf(pos.x), (int)floorf(pos.y)
+    );
+
+    const bool standing_on_tile = (initial_tile)
+        ? initial_tile->y + initial_tile->h <= camera->pos.z
+        : false;
+
     for (size_t i = 0; i < count; ++i)
     {
         /* X coordinate in camera space, normalized -1.0f..1.0f */
@@ -68,7 +76,26 @@ Fang_RayCast(
 
         size_t hit_count = 0;
 
-        for (size_t step = 0; step < FANG_RAY_MAX_STEPS; ++step)
+        /* Add initial hit if player is on top of a tile */
+        if (standing_on_tile)
+        {
+            Fang_RayHit * const hit = &rays[i].hits[hit_count];
+
+            const Fang_DDAState old_dda = dda;
+
+            /* Front-face is not needed for rendering */
+            hit->tile      = initial_tile;
+            hit->back_dist = Fang_DDAStep(&dda);
+            hit->back_hit  = (Fang_Vec2){
+                .x = dda.pos.x - dda.start.x,
+                .y = dda.pos.y - dda.start.y,
+            };
+
+            dda = old_dda;
+            hit_count++;
+        }
+
+        for (size_t step = hit_count; step < FANG_RAY_MAX_STEPS; ++step)
         {
             Fang_RayHit * const hit = &rays[i].hits[hit_count];
 

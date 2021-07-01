@@ -526,9 +526,6 @@ Fang_DrawMapTiles(
             if (!hit->tile)
                 continue;
 
-            if (hit->front_dist <= 0.0f)
-                continue;
-
             if (hit->front_dist > map->fog_distance)
                 continue;
 
@@ -552,6 +549,13 @@ Fang_DrawMapTiles(
 
                 dest_rect.x = (int)i;
                 dest_rect.w = 1;
+
+                /* Player is standing on a tile, front-face is behind them */
+                if (face_dist <= 0.0f)
+                {
+                    dest_rect.y = viewport.h;
+                    dest_rect.h = 0;
+                }
 
                 if (k == 0)
                     front_face = dest_rect;
