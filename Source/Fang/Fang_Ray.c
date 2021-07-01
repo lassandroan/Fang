@@ -180,7 +180,7 @@ Fang_RayCast(
                     .y = pos.y + (hit->front_dist * cam_ray.y),
                 };
 
-                const Fang_Vec2 old_trunc_pos = int_pos;
+                const Fang_Vec2 old_int_pos = int_pos;
                 const Fang_Vec2 old_side_dist = side_dist;
 
                 /* Run an additional increment to calculate the back face hit */
@@ -241,7 +241,7 @@ Fang_RayCast(
                     };
                 }
 
-                int_pos = old_trunc_pos;
+                int_pos   = old_int_pos;
                 side_dist = old_side_dist;
 
                 hit_count++;
