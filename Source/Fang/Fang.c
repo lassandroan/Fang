@@ -39,6 +39,7 @@
 #include "Fang_Map.c"
 #include "Fang_Body.c"
 #include "Fang_Camera.c"
+#include "Fang_DDA.c"
 #include "Fang_Ray.c"
 #include "Fang_Entity.c"
 #include "Fang_Render.c"
