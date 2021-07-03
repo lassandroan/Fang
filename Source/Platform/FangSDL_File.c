@@ -94,7 +94,9 @@ Error_CantRead:
     goto Error;
 
 Error:
-    SDL_RWclose(file);
+    if (file)
+        SDL_RWclose(file);
+
     SDL_free(full_path);
     SDL_free(result->data);
 
