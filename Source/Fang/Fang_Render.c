@@ -467,10 +467,10 @@ Fang_DrawMapFloor(
         {
             Fang_Point tex_pos = {
                 .x = (int)roundf(
-                    texture_width * (floor_pos.x - (int)floor_pos.x)
+                    texture_width * (floor_pos.x - floorf(floor_pos.x))
                 ),
                 .y = (int)roundf(
-                    texture_height * (floor_pos.y - (int)floor_pos.y)
+                    texture_height * (floor_pos.y - floorf(floor_pos.y))
                 ),
             };
 
@@ -669,11 +669,17 @@ Fang_DrawMapTiles(
 
                     Fang_Point tex_pos;
                     {
-                        float u = ((1.0f - r_y) * hit_start.x)
-                                + (r_y * hit_end.x);
+                        float u = ((1.0f - r_y) * (hit_start.x / dist_start))
+                                + (r_y * (hit_end.x / dist_end));
 
-                        float v = ((1.0f - r_y) * hit_start.y)
-                                + (r_y * hit_end.y);
+                              u /= ((1.0f - r_y) * (1.0f / dist_start))
+                                + (r_y * (1.0f / dist_end));
+
+                        float v = ((1.0f - r_y) * (hit_start.y / dist_start))
+                                + (r_y * (hit_end.y / dist_end));
+
+                              v /= ((1.0f - r_y) * (1.0f / dist_start))
+                                + (r_y * (1.0f / dist_end));
 
                         float integral;
                         u = clamp(modff(u, &integral), 0.0f, 1.0f);
