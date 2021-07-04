@@ -449,9 +449,10 @@ Fang_DrawMapFloor(
             continue;
 
         /* Calculate row distance, based on perspective at our given height */
-        float row_dist = ((viewport.h / 2.0f) / p) / (1.0f / height);
+        const float row_dist = ((viewport.h / 2.0f) / p) * height;
 
-        framebuf->state.current_depth = row_dist * FANG_PROJECTION_RATIO;
+        framebuf->state.current_depth = row_dist * FANG_PROJECTION_RATIO
+                                      + (1.0f - camera->cam.z);
 
         const Fang_Vec2 floor_step = {
             .x = row_dist * (ray_end.x - ray_start.x) / viewport.w,
@@ -661,11 +662,11 @@ Fang_DrawMapTiles(
 
                 for (int y = start_y; y < end_y; ++y)
                 {
-                    const float r_y = (float)(y - start_y)
-                                    / (float)(end_y - start_y);
-
                     if (y < 0 || y >= viewport.h)
                         continue;
+
+                    const float r_y = (float)(y - start_y)
+                                    / (float)(end_y - start_y);
 
                     Fang_Point tex_pos;
                     {
