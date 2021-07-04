@@ -275,12 +275,12 @@ Fang_Update(
 
         if (weapon)
         {
-            Fang_DrawImage(
-                framebuf,
-                Fang_AtlasQuery(&gamestate.textures, weapon->texture),
-                NULL,
-                NULL
+            const Fang_Image * const weapon_texture = Fang_AtlasQuery(
+                &gamestate.textures, weapon->texture
             );
+
+            if (weapon_texture)
+                Fang_DrawImage(framebuf, weapon_texture, NULL, NULL);
 
             Fang_DrawText(
                 framebuf,

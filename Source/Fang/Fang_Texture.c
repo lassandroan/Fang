@@ -182,5 +182,11 @@ Fang_AtlasQuery(
         return NULL;
 
     assert(id < FANG_NUM_TEXTURES);
-    return &atlas->textures[id];
+
+    const Fang_Image * const result = &atlas->textures[id];
+
+    if (!Fang_ImageValid(result))
+        return NULL;
+
+    return result;
 }
