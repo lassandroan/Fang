@@ -29,6 +29,7 @@
 #include "Fang_Color.c"
 #include "Fang_Rect.c"
 #include "Fang_Vector.c"
+#include "Fang_Lerp.c"
 #include "Fang_Matrix.c"
 #include "Fang_Input.c"
 #include "Fang_Image.c"
@@ -46,8 +47,6 @@
 #include "Fang_Render.c"
 #include "Fang_Interface.c"
 #include "Fang_State.c"
-
-const uint32_t update_dt = 10;
 
 Fang_State gamestate;
 
@@ -85,6 +84,8 @@ Fang_Init(void)
             .size = FANG_PLAYER_SIZE,
         }
     };
+
+    gamestate.sway.delta = 0.1f;
 
     gamestate.weapon = FANG_WEAPONTYPE_PISTOL;
     memset(gamestate.ammo, 0, sizeof(gamestate.ammo));
@@ -129,6 +130,8 @@ Fang_Update(
     assert(framebuf);
 
     const Fang_Rect viewport = Fang_FramebufferGetViewport(framebuf);
+
+    gamestate.sway.target = (Fang_Vec2){.x = 0.0f, .y = 0.0f};
 
     Fang_Vec3 move = {.x = 0.0f};
     {
@@ -177,6 +180,8 @@ Fang_Update(
         move.y -= input->controller.joystick_left.x;
         move.x -= input->controller.joystick_left.y;
 
+        const float prev_pitch = gamestate.camera.cam.z;
+
         Fang_CameraRotate(
             &gamestate.camera,
             ((float)input->mouse.relative.x / (FANG_WINDOW_SIZE / 2.0f))
@@ -186,6 +191,30 @@ Fang_Update(
         );
 
         gamestate.player.body.dir = gamestate.camera.dir;
+
+        /* Sway based on player velocity */
+        gamestate.sway.target.x += gamestate.player.body.vel.y / 8.0f;
+        gamestate.sway.target.y += gamestate.player.body.vel.x / 16.0f;
+        gamestate.sway.target.y += gamestate.player.body.vel.z / 2.0f;
+
+        /* Sway based on camera movement */
+        gamestate.sway.target.x -= (input->mouse.relative.x / 8);
+        gamestate.sway.target.x -= input->controller.joystick_right.x;
+
+        if (fabsf(prev_pitch - gamestate.camera.cam.z) > FLT_EPSILON)
+        {
+            gamestate.sway.target.y -= (input->mouse.relative.y / 8);
+            gamestate.sway.target.y -= input->controller.joystick_right.y;
+        }
+
+        /* Bob if player is moving on a surface */
+        if (gamestate.player.body.vel.z == 0.0f
+        && (move.x != 0.0f || move.y != 0.0f))
+        {
+            gamestate.bob += ((float)M_PI / 20.0f);
+            gamestate.sway.target.x += cosf(gamestate.bob) * 0.5f;
+            gamestate.sway.target.y += fabsf(sinf(gamestate.bob)) * 0.5f;
+        }
     }
 
     {
@@ -197,13 +226,13 @@ Fang_Update(
         gamestate.clock.time = time;
         gamestate.clock.accumulator += frame_time;
 
-        while (gamestate.clock.accumulator >= update_dt)
+        while (gamestate.clock.accumulator >= FANG_DELTA_TIME_MS)
         {
             Fang_BodyMove(
                 &gamestate.player.body,
                 &gamestate.map,
                 &move,
-                (float)update_dt / 1000.0f
+                FANG_DELTA_TIME_S
             );
 
             gamestate.camera.pos = (Fang_Vec3){
@@ -212,7 +241,9 @@ Fang_Update(
                 .z = gamestate.player.body.pos.z + gamestate.player.body.size,
             };
 
-            gamestate.clock.accumulator -= update_dt;
+            Fang_Lerp(&gamestate.sway);
+
+            gamestate.clock.accumulator -= FANG_DELTA_TIME_MS;
         }
     }
 
@@ -282,7 +313,28 @@ Fang_Update(
             );
 
             if (weapon_texture)
-                Fang_DrawImage(framebuf, weapon_texture, NULL, NULL);
+            {
+                const Fang_Point offset = {
+                    .x = (int)roundf(
+                        clamp(gamestate.sway.value.x, -1.0f, 1.0f) * 20
+                    ),
+                    .y = (int)roundf(
+                        clamp(gamestate.sway.value.y, -1.0f, 1.0f) * 20
+                    ) + 20,
+                };
+
+                Fang_DrawImage(
+                    framebuf,
+                    weapon_texture,
+                    NULL,
+                    &(Fang_Rect){
+                        .x = offset.x,
+                        .y = offset.y,
+                        .w = viewport.w,
+                        .h = viewport.h
+                    }
+                );
+            }
 
             Fang_DrawText(
                 framebuf,

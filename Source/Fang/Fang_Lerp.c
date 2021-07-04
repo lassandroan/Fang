@@ -13,22 +13,29 @@
 // You should have received a copy of the GNU General Public License along
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-typedef struct Fang_Clock {
-    uint32_t time;
-    uint32_t accumulator;
-} Fang_Clock;
+typedef struct Fang_LerpVec2 {
+    Fang_Vec2 target;
+    Fang_Vec2 value;
+    float     delta;
+} Fang_LerpVec2;
 
-typedef struct Fang_State {
-    Fang_Map        map;
-    Fang_Atlas      textures;
-    Fang_Ray        raycast[FANG_WINDOW_SIZE];
-    Fang_Clock      clock;
-    Fang_Camera     camera;
-    Fang_Entity     player;
-    Fang_WeaponType weapon;
-    uint8_t         ammo[FANG_NUM_WEAPONTYPE];
-    Fang_Interface  interface;
-    Fang_Entity     entities[FANG_MAX_ENTITIES];
-    Fang_LerpVec2   sway;
-    float           bob;
-} Fang_State;
+#define Fang_Lerp(x) _Generic(x,  \
+    Fang_LerpVec2*: Fang_LerpStepVec2 \
+    )(x)
+
+static inline void
+Fang_LerpStepVec2(
+    Fang_LerpVec2 * const vec)
+{
+    assert(vec);
+
+    const float dt = FANG_DELTA_TIME_S / vec->delta;
+
+    vec->value.x = (fabsf(vec->value.x - vec->target.x) > vec->target.x * dt)
+        ? vec->value.x * (1.0f - dt) + vec->target.x * dt
+        : vec->target.x;
+
+    vec->value.y = (fabsf(vec->value.y - vec->target.y) > vec->target.y * dt)
+        ? vec->value.y * (1.0f - dt) + vec->target.y * dt
+        : vec->target.y;
+}
