@@ -128,6 +128,8 @@ Fang_Update(
     assert(input);
     assert(framebuf);
 
+    const Fang_Rect viewport = Fang_FramebufferGetViewport(framebuf);
+
     Fang_Vec3 move = {.x = 0.0f};
     {
         if (input->controller.direction_up.pressed)
@@ -222,9 +224,9 @@ Fang_Update(
 
     Fang_ImageClear(&framebuf->color);
 
-    for (int x = 0; x < framebuf->depth.width; ++x)
+    for (int x = 0; x < viewport.w; ++x)
     {
-        for (int y = 0; y < framebuf->depth.height; ++y)
+        for (int y = 0; y < viewport.h; ++y)
         {
             float * const depth = (float*)(
                 framebuf->depth.pixels
@@ -337,8 +339,8 @@ Fang_Update(
     Fang_FramebufferPutPixel(
         framebuf,
         &(Fang_Point){
-            .x = framebuf->color.width / 2,
-            .y = framebuf->color.height / 2,
+            .x = viewport.w / 2,
+            .y = viewport.h / 2,
         },
         &(Fang_Color){
             .r = 255,
