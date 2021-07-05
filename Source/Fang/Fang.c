@@ -91,19 +91,25 @@ Fang_Init(void)
     memset(gamestate.ammo, 0, sizeof(gamestate.ammo));
 
     {
-        Fang_Entity entities [FANG_MAX_ENTITIES] = {
+        Fang_Entity entities[FANG_MAX_ENTITIES] = {
             [0] = (Fang_Entity){
                 .texture = FANG_TEXTURE_NONE,
                 .body = (Fang_Body){
-                    .pos  = (Fang_Vec3){.x = 2.0f, .y = 2.0f},
-                    .size = 1,
+                    .pos  = (Fang_Vec3){.x = 4.0f, .y = 4.0f},
+                    .dir  = gamestate.player.body.dir,
+                    .acc  = gamestate.player.body.acc,
+                    .max  = gamestate.player.body.max,
+                    .size = 0.5f,
                 },
             },
             [1] = (Fang_Entity){
                 .texture = FANG_TEXTURE_NONE,
                 .body = (Fang_Body){
                     .pos  = (Fang_Vec3){.x = 6.0f, .y = 5.5f},
-                    .size = 1,
+                    .dir  = gamestate.player.body.dir,
+                    .acc  = gamestate.player.body.acc,
+                    .max  = gamestate.player.body.max,
+                    .size = 0.5f,
                 },
             },
         };
@@ -244,6 +250,20 @@ Fang_Update(
                 &gamestate.map,
                 &move,
                 FANG_DELTA_TIME_S
+            );
+
+            for (size_t i = 0; i < FANG_MAX_ENTITIES; ++i)
+            {
+                Fang_BodyMove(
+                    &gamestate.entities[i].body,
+                    &gamestate.map,
+                    &(Fang_Vec3){.x = 0.0f},
+                    FANG_DELTA_TIME_S
+                );
+            }
+
+            Fang_BodyCollideBody(
+                &gamestate.player.body, &gamestate.entities[0].body
             );
 
             gamestate.camera.pos = (Fang_Vec3){

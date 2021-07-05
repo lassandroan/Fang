@@ -109,6 +109,7 @@ Fang_CameraProjectBody(
           - size
           + offset
           + pitch
+          - (body->pos.z * FANG_PROJECTION_RATIO * dist)
         ),
         .w = (int)size,
         .h = (int)size,

@@ -26,6 +26,7 @@ typedef struct Fang_Body {
     Fang_Vec2 acc;  /* Acceleration Speeds  */
     Fang_Vec3 max;  /* Max Velocity Values  */
     float     size; /* Body Size (All Axes) */
+    Fang_Vec3 last; /* Previous Position    */
 } Fang_Body;
 
 static inline bool
@@ -140,6 +141,8 @@ Fang_BodyMove(
     assert(map);
     assert(move);
 
+    body->last = body->pos;
+
     for (size_t i = 0; i < 2; ++i)
     {
         float * const target = &body->vel.xyz[i];
@@ -227,4 +230,43 @@ Fang_BodyMove(
         if (body->pos.z <= standing_surface)
             body->pos.z = standing_surface;
     }
+}
+
+static inline bool
+Fang_BodyCollideBody(
+    Fang_Body * const a,
+    Fang_Body * const b)
+{
+    assert(a);
+    assert(b);
+
+    const float dx   = a->pos.x - b->pos.x;
+    const float dy   = a->pos.y - b->pos.y;
+    const float dist = sqrtf(dx * dx + dy * dy);
+
+    if (dist <= a->size + b->size)
+    {
+        const float a_z = a->vel.z;
+        const float b_z = b->vel.z;
+
+        a->pos = a->last;
+
+        {
+            const Fang_Vec3 temp = a->dir;
+            a->dir = b->dir;
+            b->dir = temp;
+        }
+
+        const Fang_Vec3 temp = Fang_Vec3Multf(a->vel, 10.0f);
+
+        a->vel = Fang_Vec3Multf(b->vel, 10.0f);
+        b->vel = temp;
+
+        a->vel.z = a_z;
+        b->vel.z = b_z;
+
+        return true;
+    }
+
+    return false;
 }
