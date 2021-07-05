@@ -240,6 +240,12 @@ Fang_BodyCollideBody(
     assert(a);
     assert(b);
 
+    const bool a_above_b = a->pos.z >= b->pos.z + b->size;
+    const bool b_above_a = b->pos.z >= a->pos.z + a->size;
+
+    if (a_above_b || b_above_a)
+        return false;
+
     const float dx   = a->pos.x - b->pos.x;
     const float dy   = a->pos.y - b->pos.y;
     const float dist = sqrtf(dx * dx + dy * dy);
