@@ -15,6 +15,12 @@
 
 typedef enum Fang_WeaponType {
     FANG_WEAPONTYPE_PISTOL,
+    FANG_WEAPONTYPE_CARBINE,
+    FANG_WEAPONTYPE_FLAKGUN,
+    FANG_WEAPONTYPE_CHAINGUN,
+    FANG_WEAPONTYPE_LRAD,
+    FANG_WEAPONTYPE_PLASTICANNON,
+    FANG_WEAPONTYPE_FAZER,
 
     FANG_NUM_WEAPONTYPE,
     FANG_WEAPONTYPE_NONE,
@@ -36,8 +42,32 @@ Fang_WeaponQuery(
 
     static const Fang_Weapon weapons[FANG_NUM_WEAPONTYPE] = {
         [FANG_WEAPONTYPE_PISTOL] = (Fang_Weapon){
-            .name = "PISTOL",
+            .name = "Pistol",
             .texture = FANG_TEXTURE_PISTOL_HUD,
+        },
+        [FANG_WEAPONTYPE_CARBINE] = (Fang_Weapon){
+            .name = "Cast-Iron Carbine",
+            .texture = FANG_TEXTURE_CARBINE_HUD,
+        },
+        [FANG_WEAPONTYPE_FLAKGUN] = (Fang_Weapon){
+            .name = "Flakgun",
+            .texture = FANG_TEXTURE_FLAKGUN_HUD,
+        },
+        [FANG_WEAPONTYPE_CHAINGUN] = (Fang_Weapon){
+            .name = "Chaingun",
+            .texture = FANG_TEXTURE_CHAINGUN_HUD,
+        },
+        [FANG_WEAPONTYPE_LRAD] = (Fang_Weapon){
+            .name = "LRAD",
+            .texture = FANG_TEXTURE_LRAD_HUD,
+        },
+        [FANG_WEAPONTYPE_PLASTICANNON] = (Fang_Weapon){
+            .name = "Plasti-cannon",
+            .texture = FANG_TEXTURE_PLASTICANNON_HUD,
+        },
+        [FANG_WEAPONTYPE_FAZER] = (Fang_Weapon){
+            .name = "Fazer",
+            .texture = FANG_TEXTURE_FAZER_HUD,
         },
     };
 

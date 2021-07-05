@@ -45,6 +45,12 @@ typedef enum Fang_Texture {
 
     /* HUD */
     FANG_TEXTURE_PISTOL_HUD,
+    FANG_TEXTURE_CARBINE_HUD,
+    FANG_TEXTURE_FLAKGUN_HUD,
+    FANG_TEXTURE_CHAINGUN_HUD,
+    FANG_TEXTURE_LRAD_HUD,
+    FANG_TEXTURE_PLASTICANNON_HUD,
+    FANG_TEXTURE_FAZER_HUD,
 
     FANG_NUM_TEXTURES,
     FANG_TEXTURE_NONE,
@@ -128,9 +134,33 @@ Fang_AtlasLoad(
 
         /* HUD */
         [FANG_TEXTURE_PISTOL_HUD] = (Info){
-            .path = "Textures/Pistol_HUD.tga",
+            .path = "Textures/Temporary.tga",
             .type = OTHER_TEXTURE,
-        }
+        },
+        [FANG_TEXTURE_CARBINE_HUD] = (Info){
+            .path = "Textures/Temporary.tga",
+            .type = OTHER_TEXTURE,
+        },
+        [FANG_TEXTURE_FLAKGUN_HUD] = (Info){
+            .path = "Textures/Temporary.tga",
+            .type = OTHER_TEXTURE,
+        },
+        [FANG_TEXTURE_CHAINGUN_HUD] = (Info){
+            .path = "Textures/Temporary.tga",
+            .type = OTHER_TEXTURE,
+        },
+        [FANG_TEXTURE_LRAD_HUD] = (Info){
+            .path = "Textures/Temporary.tga",
+            .type = OTHER_TEXTURE,
+        },
+        [FANG_TEXTURE_PLASTICANNON_HUD] = (Info){
+            .path = "Textures/Temporary.tga",
+            .type = OTHER_TEXTURE,
+        },
+        [FANG_TEXTURE_FAZER_HUD] = (Info){
+            .path = "Textures/Temporary.tga",
+            .type = OTHER_TEXTURE,
+        },
     };
 
     *result = Fang_TGALoad(texture_info[id].path);

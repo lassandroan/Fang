@@ -150,13 +150,24 @@ Fang_Update(
         if (Fang_InputPressed(&input->controller.action_down))
             move.z = FANG_JUMP_SPEED;
 
-        if (Fang_InputPressed(&input->controller.shoulder_left)
-        ||  Fang_InputPressed(&input->controller.shoulder_right))
+        if (Fang_InputPressed(&input->controller.shoulder_left))
         {
             if (gamestate.weapon == FANG_WEAPONTYPE_NONE)
+                gamestate.weapon = FANG_WEAPONTYPE_FAZER;
+            else if (gamestate.weapon == FANG_WEAPONTYPE_PISTOL)
+                gamestate.weapon = FANG_WEAPONTYPE_NONE;
+            else
+                gamestate.weapon--;
+        }
+
+        if (Fang_InputPressed(&input->controller.shoulder_right))
+        {
+            if (gamestate.weapon == FANG_WEAPONTYPE_FAZER)
+                gamestate.weapon = FANG_WEAPONTYPE_NONE;
+            else if (gamestate.weapon == FANG_WEAPONTYPE_NONE)
                 gamestate.weapon = FANG_WEAPONTYPE_PISTOL;
             else
-                gamestate.weapon = FANG_WEAPONTYPE_NONE;
+                gamestate.weapon++;
         }
 
         if (input->controller.joystick_left.button.pressed)
@@ -343,8 +354,6 @@ Fang_Update(
                 FANG_FONT_HEIGHT,
                 &(Fang_Point){.x = 5, .y = 3}
             );
-
-            gamestate.ammo[gamestate.weapon] = 120;
 
             char ammo_count[4];
             snprintf(
