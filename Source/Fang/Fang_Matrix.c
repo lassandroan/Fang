@@ -20,9 +20,9 @@ typedef struct Fang_Mat3x3 {
 } Fang_Mat3x3;
 
 #define Fang_MatMult(a, b) _Generic((b), \
-        Fang_Vec3:   Fang_Mat3x3Multv, \
-        Fang_Point:  Fang_Mat3x3Multp, \
-        Fang_Mat3x3: Fang_Mat3x3Mult   \
+        Fang_Vec3:   Fang_Mat3x3Multv,   \
+        Fang_Point:  Fang_Mat3x3Multp,   \
+        Fang_Mat3x3: Fang_Mat3x3Mult     \
     )(a, b)
 
 static inline Fang_Mat3x3

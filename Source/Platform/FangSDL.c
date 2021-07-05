@@ -292,6 +292,14 @@ int Fang_Main(int argc, char** argv)
                         button = &input.controller.direction_left;
                     else if (sym == SDLK_d)
                         button = &input.controller.direction_right;
+                    else if (sym == SDLK_q)
+                        button = &input.controller.shoulder_left;
+                    else if (sym == SDLK_e)
+                        button = &input.controller.shoulder_right;
+                    else if (sym == SDLK_SPACE)
+                        button = &input.controller.action_down;
+                    else if (sym == SDLK_LSHIFT)
+                        button = &input.controller.joystick_left.button;
 
                     if (button)
                     {
