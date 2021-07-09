@@ -27,6 +27,7 @@ typedef struct Fang_Body {
     Fang_Vec3 max;  /* Max Velocity Values  */
     float     size; /* Body Size (All Axes) */
     Fang_Vec3 last; /* Previous Position    */
+    bool      jump; /* Jump State           */
 } Fang_Body;
 
 static inline bool
@@ -175,18 +176,19 @@ Fang_BodyMove(
     }
 
     {
+        if (!body->jump && move->z > 0.0f)
+        {
+            if (body->vel.z >= -FANG_JUMP_TOLERANCE && body->vel.z <= 0.0f)
+            {
+                body->jump  = true;
+                body->vel.z = move->z;
+            }
+        }
+
         const float standing_surface = Fang_BodyFindFloor(body, map);
 
         if (body->pos.z > standing_surface)
             body->vel.z -= FANG_GRAVITY * delta;
-        else if (fabsf(move->z) > FLT_EPSILON)
-            body->vel.z = move->z;
-
-        if (body->pos.z + (body->vel.z * delta) <= standing_surface)
-        {
-            body->vel.z = 0.0f;
-            body->pos.z = standing_surface;
-        }
     }
 
     Fang_Vec3 new = body->pos;
@@ -218,9 +220,14 @@ Fang_BodyMove(
         test_body.pos.z     = new.z;
 
         if (!Fang_BodyCollideMap(&test_body, map))
+        {
             body->pos.z = new.z;
+        }
         else
+        {
             body->vel.z = 0.0f;
+            body->jump = false;
+        }
     }
 
     /* If we moved onto a short tile, step up onto it */
@@ -228,7 +235,11 @@ Fang_BodyMove(
         const float standing_surface = Fang_BodyFindStep(body, map);
 
         if (body->pos.z <= standing_surface)
+        {
+            body->vel.z = 0.0f;
             body->pos.z = standing_surface;
+            body->jump  = false;
+        }
     }
 }
 
