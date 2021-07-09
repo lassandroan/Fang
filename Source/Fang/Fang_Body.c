@@ -263,9 +263,6 @@ Fang_BodyCollideBody(
 
     if (dist <= a->size + b->size)
     {
-        const float a_z = a->vel.z;
-        const float b_z = b->vel.z;
-
         a->pos = a->last;
 
         {
@@ -279,8 +276,11 @@ Fang_BodyCollideBody(
         a->vel = Fang_Vec3Multf(b->vel, 10.0f);
         b->vel = temp;
 
-        a->vel.z = a_z;
-        b->vel.z = b_z;
+        a->vel.z = 0.0f;
+        b->vel.z = 0.0f;
+
+        a->jump = false;
+        b->jump = false;
 
         return true;
     }
