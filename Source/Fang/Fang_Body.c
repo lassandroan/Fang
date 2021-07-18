@@ -251,8 +251,8 @@ Fang_BodyCollideBody(
     assert(a);
     assert(b);
 
-    const bool a_above_b = a->pos.z >= b->pos.z + b->size;
-    const bool b_above_a = b->pos.z >= a->pos.z + a->size;
+    const bool a_above_b = a->pos.z > b->pos.z + b->size;
+    const bool b_above_a = b->pos.z > a->pos.z + a->size;
 
     if (a_above_b || b_above_a)
         return false;
@@ -263,24 +263,30 @@ Fang_BodyCollideBody(
 
     if (dist <= a->size + b->size)
     {
-        a->pos = a->last;
-
-        {
-            const Fang_Vec3 temp = a->dir;
-            a->dir = b->dir;
-            b->dir = temp;
-        }
-
-        const Fang_Vec3 temp = Fang_Vec3Multf(a->vel, 10.0f);
-
-        a->vel = Fang_Vec3Multf(b->vel, 10.0f);
-        b->vel = temp;
-
-        a->vel.z = 0.0f;
-        b->vel.z = 0.0f;
-
         a->jump = false;
         b->jump = false;
+
+        if (a->pos.z > b->pos.z && a->vel.z < 0.0f)
+        {
+            a->vel.z = 0.0f;
+            a->pos.z = b->pos.z + b->size;
+            return true;
+        }
+        else if (b->pos.z > a->pos.z && b->vel.z < 0.0f)
+        {
+            b->vel.z = 0.0f;
+            b->pos.z = a->pos.z + a->size;
+            return true;
+        }
+
+        a->pos.x = a->last.x;
+        a->pos.y = a->last.y;
+        b->pos.x = b->last.x;
+        b->pos.y = b->last.y;
+        a->vel.x = 0.0f;
+        a->vel.y = 0.0f;
+        b->vel.x = 0.0f;
+        b->vel.y = 0.0f;
 
         return true;
     }
