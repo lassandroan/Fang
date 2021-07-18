@@ -262,9 +262,24 @@ Fang_Update(
                 );
             }
 
-            Fang_BodyCollideBody(
-                &gamestate.player.body, &gamestate.entities[0].body
-            );
+            for (size_t i = 0; i < FANG_MAX_ENTITIES; ++i)
+            {
+                Fang_BodyCollideBody(
+                    &gamestate.player.body,
+                    &gamestate.entities[i].body
+                );
+            }
+
+            for (size_t i = 0; i < FANG_MAX_ENTITIES; ++i)
+            {
+                for (size_t j = i + 1; j < FANG_MAX_ENTITIES; ++j)
+                {
+                    Fang_BodyCollideBody(
+                        &gamestate.entities[i].body,
+                        &gamestate.entities[j].body
+                    );
+                }
+            }
 
             gamestate.camera.pos = (Fang_Vec3){
                 .x = gamestate.player.body.pos.x,
