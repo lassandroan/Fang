@@ -43,6 +43,14 @@ Fang_Vec2Multf(
     return (Fang_Vec2){.x = a.x * b, .y = a.y * b};
 }
 
+static inline Fang_Vec3
+Fang_Vec3Multf(
+    const Fang_Vec3 a,
+    const float     b)
+{
+    return (Fang_Vec3){.x = a.x * b, .y = a.y * b, .z = a.z * b};
+}
+
 static inline float
 Fang_Vec2Dot(
     const Fang_Vec2 a,

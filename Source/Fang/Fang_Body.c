@@ -26,6 +26,8 @@ typedef struct Fang_Body {
     Fang_Vec2 acc;  /* Acceleration Speeds  */
     Fang_Vec3 max;  /* Max Velocity Values  */
     float     size; /* Body Size (All Axes) */
+    Fang_Vec3 last; /* Previous Position    */
+    bool      jump; /* Jump State           */
 } Fang_Body;
 
 static inline bool
@@ -140,6 +142,8 @@ Fang_BodyMove(
     assert(map);
     assert(move);
 
+    body->last = body->pos;
+
     for (size_t i = 0; i < 2; ++i)
     {
         float * const target = &body->vel.xyz[i];
@@ -172,18 +176,19 @@ Fang_BodyMove(
     }
 
     {
+        if (!body->jump && move->z > 0.0f)
+        {
+            if (body->vel.z >= -FANG_JUMP_TOLERANCE && body->vel.z <= 0.0f)
+            {
+                body->jump  = true;
+                body->vel.z = move->z;
+            }
+        }
+
         const float standing_surface = Fang_BodyFindFloor(body, map);
 
         if (body->pos.z > standing_surface)
             body->vel.z -= FANG_GRAVITY * delta;
-        else if (fabsf(move->z) > FLT_EPSILON)
-            body->vel.z = move->z;
-
-        if (body->pos.z + (body->vel.z * delta) <= standing_surface)
-        {
-            body->vel.z = 0.0f;
-            body->pos.z = standing_surface;
-        }
     }
 
     Fang_Vec3 new = body->pos;
@@ -215,9 +220,14 @@ Fang_BodyMove(
         test_body.pos.z     = new.z;
 
         if (!Fang_BodyCollideMap(&test_body, map))
+        {
             body->pos.z = new.z;
+        }
         else
+        {
             body->vel.z = 0.0f;
+            body->jump = false;
+        }
     }
 
     /* If we moved onto a short tile, step up onto it */
@@ -225,6 +235,61 @@ Fang_BodyMove(
         const float standing_surface = Fang_BodyFindStep(body, map);
 
         if (body->pos.z <= standing_surface)
+        {
+            body->vel.z = 0.0f;
             body->pos.z = standing_surface;
+            body->jump  = false;
+        }
     }
+}
+
+static inline bool
+Fang_BodyCollideBody(
+    Fang_Body * const a,
+    Fang_Body * const b)
+{
+    assert(a);
+    assert(b);
+
+    const bool a_above_b = a->pos.z > b->pos.z + b->size;
+    const bool b_above_a = b->pos.z > a->pos.z + a->size;
+
+    if (a_above_b || b_above_a)
+        return false;
+
+    const float dx   = a->pos.x - b->pos.x;
+    const float dy   = a->pos.y - b->pos.y;
+    const float dist = sqrtf(dx * dx + dy * dy);
+
+    if (dist <= a->size + b->size)
+    {
+        a->jump = false;
+        b->jump = false;
+
+        if (a->pos.z > b->pos.z && a->vel.z < 0.0f)
+        {
+            a->vel.z = 0.0f;
+            a->pos.z = b->pos.z + b->size;
+            return true;
+        }
+        else if (b->pos.z > a->pos.z && b->vel.z < 0.0f)
+        {
+            b->vel.z = 0.0f;
+            b->pos.z = a->pos.z + a->size;
+            return true;
+        }
+
+        a->pos.x = a->last.x;
+        a->pos.y = a->last.y;
+        b->pos.x = b->last.x;
+        b->pos.y = b->last.y;
+        a->vel.x = 0.0f;
+        a->vel.y = 0.0f;
+        b->vel.x = 0.0f;
+        b->vel.y = 0.0f;
+
+        return true;
+    }
+
+    return false;
 }
