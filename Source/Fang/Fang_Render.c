@@ -877,8 +877,7 @@ Fang_DrawEntities(
     const Fang_Camera      * const camera,
     const Fang_Atlas       * const textures,
     const Fang_Map         * const map,
-    const Fang_Entity      * const entities,
-    const size_t                   count)
+          Fang_EntitySet   * const entities)
 {
     assert(framebuf);
     assert(camera);
@@ -888,9 +887,12 @@ Fang_DrawEntities(
 
     const Fang_Rect viewport = Fang_FramebufferGetViewport(framebuf);
 
-    for (size_t i = 0; i < count; ++i)
+    for (Fang_EntityId i = 0; i < FANG_MAX_ENTITIES; ++i)
     {
-        const Fang_Entity * const entity = &entities[i];
+        const Fang_Entity * const entity = Fang_EntitySetQuery(entities, i);
+
+        if (!entity)
+            continue;
 
         const Fang_Rect dest_rect = Fang_CameraProjectBody(
             camera,

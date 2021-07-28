@@ -90,32 +90,33 @@ Fang_Init(void)
     gamestate.weapon = FANG_WEAPONTYPE_PISTOL;
     memset(gamestate.ammo, 0, sizeof(gamestate.ammo));
 
-    {
-        Fang_Entity entities[FANG_MAX_ENTITIES] = {
-            [0] = (Fang_Entity){
-                .texture = FANG_TEXTURE_NONE,
-                .body = (Fang_Body){
-                    .pos  = (Fang_Vec3){.x = 4.0f, .y = 4.0f},
-                    .dir  = gamestate.player.body.dir,
-                    .acc  = gamestate.player.body.acc,
-                    .max  = gamestate.player.body.max,
-                    .size = 0.5f,
-                },
-            },
-            [1] = (Fang_Entity){
-                .texture = FANG_TEXTURE_NONE,
-                .body = (Fang_Body){
-                    .pos  = (Fang_Vec3){.x = 6.0f, .y = 5.5f},
-                    .dir  = gamestate.player.body.dir,
-                    .acc  = gamestate.player.body.acc,
-                    .max  = gamestate.player.body.max,
-                    .size = 0.5f,
-                },
-            },
-        };
+    Fang_EntitySetAdd(
+        &gamestate.entities,
+        (Fang_Entity){
+            .texture = FANG_TEXTURE_NONE,
+            .body = (Fang_Body){
+                .pos  = (Fang_Vec3){.x = 4.0f, .y = 4.0f},
+                .dir  = gamestate.player.body.dir,
+                .acc  = gamestate.player.body.acc,
+                .max  = gamestate.player.body.max,
+                .size = 0.5f,
+            }
+        }
+    );
 
-        memcpy(gamestate.entities, entities, sizeof(entities));
-    }
+    Fang_EntitySetAdd(
+        &gamestate.entities,
+        (Fang_Entity){
+            .texture = FANG_TEXTURE_NONE,
+            .body = (Fang_Body){
+                .pos  = (Fang_Vec3){.x = 6.0f, .y = 5.5f},
+                .dir  = gamestate.player.body.dir,
+                .acc  = gamestate.player.body.acc,
+                .max  = gamestate.player.body.max,
+                .size = 0.5f,
+            },
+        }
+    );
 
     gamestate.map = (Fang_Map){
         .size         = 8,
@@ -252,31 +253,53 @@ Fang_Update(
                 FANG_DELTA_TIME_S
             );
 
-            for (size_t i = 0; i < FANG_MAX_ENTITIES; ++i)
+            for (Fang_EntityId i = 0; i < FANG_MAX_ENTITIES; ++i)
             {
+                Fang_Entity * const entity = Fang_EntitySetQuery(
+                    &gamestate.entities, i
+                );
+
+                if (!entity)
+                    continue;
+
                 Fang_BodyMove(
-                    &gamestate.entities[i].body,
+                    &entity->body,
                     &gamestate.map,
                     &(Fang_Vec3){.x = 0.0f},
                     FANG_DELTA_TIME_S
                 );
             }
 
-            for (size_t i = 0; i < FANG_MAX_ENTITIES; ++i)
+            for (Fang_EntityId i = 0; i < FANG_MAX_ENTITIES; ++i)
             {
+                Fang_Entity * const entity = Fang_EntitySetQuery(
+                    &gamestate.entities, i
+                );
+
+                if (!entity)
+                    continue;
+
                 Fang_BodyCollideBody(
                     &gamestate.player.body,
-                    &gamestate.entities[i].body
+                    &entity->body
                 );
             }
 
-            for (size_t i = 0; i < FANG_MAX_ENTITIES; ++i)
+            for (Fang_EntityId i = 0; i < FANG_MAX_ENTITIES; ++i)
             {
-                for (size_t j = i + 1; j < FANG_MAX_ENTITIES; ++j)
+                for (Fang_EntityId j = i + 1; j < FANG_MAX_ENTITIES; ++j)
                 {
+                    Fang_Entity * const entities[2] = {
+                        Fang_EntitySetQuery(&gamestate.entities, i),
+                        Fang_EntitySetQuery(&gamestate.entities, j),
+                    };
+
+                    if (!entities[0] || !entities[1])
+                        continue;
+
                     Fang_BodyCollideBody(
-                        &gamestate.entities[i].body,
-                        &gamestate.entities[j].body
+                        &entities[0]->body,
+                        &entities[1]->body
                     );
                 }
             }
@@ -339,8 +362,7 @@ Fang_Update(
         &gamestate.camera,
         &gamestate.textures,
         &gamestate.map,
-        gamestate.entities,
-        FANG_MAX_ENTITIES
+        &gamestate.entities
     );
 
     Fang_FramebufferShadeDepth(
