@@ -54,7 +54,7 @@ static inline void
 Fang_Init(void)
 {
     for (Fang_Texture i = 0; i < FANG_NUM_TEXTURES; ++i)
-        Fang_AtlasLoad(&gamestate.textures, i);
+        Fang_TextureSetLoad(&gamestate.textures, i);
 
     gamestate.interface = (Fang_Interface){
         .textures = &gamestate.textures,
@@ -376,7 +376,7 @@ Fang_Update(
 
         if (weapon)
         {
-            const Fang_Image * const weapon_texture = Fang_AtlasQuery(
+            const Fang_Image * const weapon_texture = Fang_TextureSetQuery(
                 &gamestate.textures, weapon->texture
             );
 
@@ -407,7 +407,7 @@ Fang_Update(
             Fang_DrawText(
                 framebuf,
                 weapon->name,
-                Fang_AtlasQuery(&gamestate.textures, FANG_TEXTURE_FORMULA),
+                Fang_TextureSetQuery(&gamestate.textures, FANG_TEXTURE_FORMULA),
                 FANG_FONT_HEIGHT,
                 &(Fang_Point){.x = 5, .y = 3}
             );
@@ -423,7 +423,7 @@ Fang_Update(
             Fang_DrawText(
                 framebuf,
                 ammo_count,
-                Fang_AtlasQuery(&gamestate.textures, FANG_TEXTURE_FORMULA),
+                Fang_TextureSetQuery(&gamestate.textures, FANG_TEXTURE_FORMULA),
                 FANG_FONT_HEIGHT,
                 &(Fang_Point){.x = 5, .y = 3 + FANG_FONT_HEIGHT}
             );
@@ -472,5 +472,5 @@ Fang_Update(
 static inline void
 Fang_Quit(void)
 {
-    Fang_AtlasFree(&gamestate.textures);
+    Fang_TextureSetFree(&gamestate.textures);
 }

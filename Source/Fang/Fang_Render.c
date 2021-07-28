@@ -502,7 +502,7 @@ static void
 Fang_DrawMapTiles(
           Fang_Framebuffer * const framebuf,
     const Fang_Camera      * const camera,
-    const Fang_Atlas       * const textures,
+    const Fang_TextureSet       * const textures,
           Fang_Map         * const map,
     const Fang_Ray         * const rays,
     const size_t                   count)
@@ -530,7 +530,7 @@ Fang_DrawMapTiles(
             if (hit->front_dist > map->fog_distance)
                 continue;
 
-            const Fang_Image * const wall_tex = Fang_AtlasQuery(
+            const Fang_Image * const wall_tex = Fang_TextureSetQuery(
                 textures, hit->tile->texture
             );
 
@@ -730,7 +730,7 @@ static void
 Fang_DrawMap(
           Fang_Framebuffer * const framebuf,
     const Fang_Camera      * const camera,
-    const Fang_Atlas       * const textures,
+    const Fang_TextureSet       * const textures,
           Fang_Map         * const map,
     const Fang_Ray         * const rays,
     const size_t                   count)
@@ -748,14 +748,14 @@ Fang_DrawMap(
         framebuf,
         camera,
         map,
-        Fang_AtlasQuery(textures, map->skybox)
+        Fang_TextureSetQuery(textures, map->skybox)
     );
 
     Fang_DrawMapFloor(
         framebuf,
         camera,
         map,
-        Fang_AtlasQuery(textures, map->floor)
+        Fang_TextureSetQuery(textures, map->floor)
     );
 
     Fang_DrawMapTiles(
@@ -875,7 +875,7 @@ static void
 Fang_DrawEntities(
           Fang_Framebuffer * const framebuf,
     const Fang_Camera      * const camera,
-    const Fang_Atlas       * const textures,
+    const Fang_TextureSet       * const textures,
     const Fang_Map         * const map,
           Fang_EntitySet   * const entities)
 {
@@ -915,7 +915,7 @@ Fang_DrawEntities(
 
         Fang_DrawImageEx(
             framebuf,
-            Fang_AtlasQuery(textures, entity->texture),
+            Fang_TextureSetQuery(textures, entity->texture),
             NULL,
             &dest_rect,
             false,

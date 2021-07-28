@@ -20,7 +20,7 @@ typedef struct Fang_Clock {
 
 typedef struct Fang_State {
     Fang_Map        map;
-    Fang_Atlas      textures;
+    Fang_TextureSet textures;
     Fang_Ray        raycast[FANG_WINDOW_SIZE];
     Fang_Clock      clock;
     Fang_Camera     camera;
