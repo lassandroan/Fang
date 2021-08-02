@@ -41,7 +41,7 @@ Fang_BodyCanStep(
 }
 
 static inline bool
-Fang_BodyCollideMap(
+Fang_BodyCollidesMap(
     const Fang_Body * const body,
     const Fang_Map  * const map)
 {
@@ -201,7 +201,7 @@ Fang_BodyMove(
         Fang_Body test_body = *body;
         test_body.pos.x     = new.x;
 
-        if (!Fang_BodyCollideMap(&test_body, map))
+        if (!Fang_BodyCollidesMap(&test_body, map))
             body->pos.x = new.x;
     }
 
@@ -210,7 +210,7 @@ Fang_BodyMove(
         Fang_Body test_body = *body;
         test_body.pos.y     = new.y;
 
-        if (!Fang_BodyCollideMap(&test_body, map))
+        if (!Fang_BodyCollidesMap(&test_body, map))
             body->pos.y = new.y;
     }
 
@@ -219,7 +219,7 @@ Fang_BodyMove(
         Fang_Body test_body = *body;
         test_body.pos.z     = new.z;
 
-        if (!Fang_BodyCollideMap(&test_body, map))
+        if (!Fang_BodyCollidesMap(&test_body, map))
         {
             body->pos.z = new.z;
         }
@@ -244,7 +244,7 @@ Fang_BodyMove(
 }
 
 static inline bool
-Fang_BodyCollideBody(
+Fang_BodyCollidesBody(
     Fang_Body * const a,
     Fang_Body * const b)
 {
@@ -257,39 +257,8 @@ Fang_BodyCollideBody(
     if (a_above_b || b_above_a)
         return false;
 
-    const float dx   = a->pos.x - b->pos.x;
-    const float dy   = a->pos.y - b->pos.y;
-    const float dist = sqrtf(dx * dx + dy * dy);
+    const float dx = a->pos.x - b->pos.x;
+    const float dy = a->pos.y - b->pos.y;
 
-    if (dist <= a->size + b->size)
-    {
-        a->jump = false;
-        b->jump = false;
-
-        if (a->pos.z > b->pos.z && a->vel.z < 0.0f)
-        {
-            a->vel.z = 0.0f;
-            a->pos.z = b->pos.z + b->size;
-            return true;
-        }
-        else if (b->pos.z > a->pos.z && b->vel.z < 0.0f)
-        {
-            b->vel.z = 0.0f;
-            b->pos.z = a->pos.z + a->size;
-            return true;
-        }
-
-        a->pos.x = a->last.x;
-        a->pos.y = a->last.y;
-        b->pos.x = b->last.x;
-        b->pos.y = b->last.y;
-        a->vel.x = 0.0f;
-        a->vel.y = 0.0f;
-        b->vel.x = 0.0f;
-        b->vel.y = 0.0f;
-
-        return true;
-    }
-
-    return false;
+    return sqrtf(dx * dx + dy * dy) <= a->size + b->size;
 }
