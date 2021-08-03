@@ -78,8 +78,9 @@ Fang_Init(void)
     gamestate.player = Fang_EntitySetAdd(
         &gamestate.entities,
         (Fang_Entity){
-            .flags = FANG_ENTITYFLAG_COLLIDES,
-            .body  = (Fang_Body){
+            .flags  = FANG_ENTITYFLAG_COLLIDE,
+            .health = 100,
+            .body   = (Fang_Body){
                 .pos = {.x = 2, .y = 2},
                 .dir = {.x = -1.0f},
                 .acc = {
@@ -105,7 +106,8 @@ Fang_Init(void)
         &gamestate.entities,
         (Fang_Entity){
             .texture = FANG_TEXTURE_NONE,
-            .flags   = FANG_ENTITYFLAG_COLLIDES,
+            .flags   = FANG_ENTITYFLAG_COLLIDE | FANG_ENTITYFLAG_DAMAGE,
+            .damage  = 10,
             .body    = (Fang_Body){
                 .pos = (Fang_Vec3){.x = 4.0f, .y = 4.0f},
                 .dir = {.x = -1.0f},
@@ -127,7 +129,7 @@ Fang_Init(void)
         &gamestate.entities,
         (Fang_Entity){
             .texture = FANG_TEXTURE_NONE,
-            .flags   = FANG_ENTITYFLAG_COLLIDES,
+            .flags   = FANG_ENTITYFLAG_COLLIDE | FANG_ENTITYFLAG_PICKUP,
             .body    = (Fang_Body){
                 .pos = (Fang_Vec3){.x = 6.0f, .y = 5.5f},
                 .dir = {.x = -1.0f},
@@ -452,6 +454,27 @@ Fang_Update(
                 FANG_FONT_HEIGHT,
                 &(Fang_Point){.x = 5, .y = 3 + FANG_FONT_HEIGHT}
             );
+
+            if (player)
+            {
+                char health[6];
+                snprintf(
+                    health,
+                    sizeof(health),
+                    "%3d",
+                    player->health
+                );
+
+                Fang_DrawText(
+                    framebuf,
+                    health,
+                    Fang_TextureSetQuery(
+                        &gamestate.textures, FANG_TEXTURE_FORMULA
+                    ),
+                    FANG_FONT_HEIGHT,
+                    &(Fang_Point){.x = 5, .y = 3 + FANG_FONT_HEIGHT * 2}
+                );
+            }
         }
     }
 

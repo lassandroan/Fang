@@ -14,6 +14,17 @@
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
+ * Identifiers representing which player a given input set is for.
+ *
+ * This is used to in conjunction with the entity system to designate which
+ * inputs should control which entity.
+**/
+typedef enum Fang_InputId {
+    FANG_INPUT_ONE = 0,
+    FANG_INPUT_TWO = 0,
+} Fang_InputId;
+
+/**
  * A simple input button.
  *
  * To facilitate actions like double-tapping a button, the number of state
@@ -116,6 +127,7 @@ typedef struct Fang_InputText {
  * @see Fang_InputClear()
 **/
 typedef struct Fang_Input {
+    Fang_InputId         id;
     Fang_InputText       text;
     Fang_InputMouse      mouse;
     Fang_InputController controller;
