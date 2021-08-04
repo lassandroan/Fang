@@ -105,9 +105,8 @@ Fang_Init(void)
     Fang_EntitySetAdd(
         &gamestate.entities,
         (Fang_Entity){
-            .texture = FANG_TEXTURE_NONE,
-            .flags   = FANG_ENTITYFLAG_COLLIDE | FANG_ENTITYFLAG_DAMAGE,
-            .damage  = 10,
+            .flags   = FANG_ENTITYFLAG_PICKUP,
+            .type    = FANG_ENTITYTYPE_HEALTH_PICKUP,
             .body    = (Fang_Body){
                 .pos = (Fang_Vec3){.x = 4.0f, .y = 4.0f},
                 .dir = {.x = -1.0f},
@@ -120,7 +119,7 @@ Fang_Init(void)
                     .y = FANG_RUN_SPEED,
                     .z = 100000.0f,
                 },
-                .size = 0.5f,
+                .size = FANG_PICKUP_SIZE,
             }
         }
     );
@@ -128,7 +127,6 @@ Fang_Init(void)
     Fang_EntitySetAdd(
         &gamestate.entities,
         (Fang_Entity){
-            .texture = FANG_TEXTURE_NONE,
             .flags   = FANG_ENTITYFLAG_COLLIDE | FANG_ENTITYFLAG_PICKUP,
             .body    = (Fang_Body){
                 .pos = (Fang_Vec3){.x = 6.0f, .y = 5.5f},
@@ -142,7 +140,7 @@ Fang_Init(void)
                     .y = FANG_RUN_SPEED,
                     .z = 100000.0f,
                 },
-                .size = 0.5f,
+                .size = FANG_PLAYER_SIZE,
             },
         }
     );
@@ -327,6 +325,22 @@ Fang_Update(
             }
 
             Fang_EntitySetResolveCollisions(&gamestate.entities);
+
+            // Placeholder for entity update loop
+            for (Fang_EntityId i = 0; i < FANG_MAX_ENTITIES; ++i)
+            {
+                Fang_Entity * const entity = Fang_EntitySetQuery(
+                    &gamestate.entities, i
+                );
+
+                if (!entity)
+                    continue;
+
+                if (entity->state == FANG_ENTITYSTATE_CREATING)
+                    entity->state = FANG_ENTITYSTATE_ACTIVE;
+                else if (entity->state == FANG_ENTITYSTATE_REMOVING)
+                    Fang_EntitySetRemove(&gamestate.entities, i);
+            }
 
             if (player)
             {

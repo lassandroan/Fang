@@ -915,7 +915,7 @@ Fang_DrawEntities(
 
         Fang_DrawImageEx(
             framebuf,
-            Fang_TextureSetQuery(textures, entity->texture),
+            Fang_TextureSetQuery(textures, Fang_EntityQueryTexture(entity)),
             NULL,
             &dest_rect,
             false,

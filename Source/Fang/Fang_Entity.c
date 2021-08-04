@@ -58,7 +58,8 @@ typedef enum Fang_EntityState {
  * Textures, animations, sounds, and AI, are determined by the entity type.
 **/
 typedef enum Fang_EntityType {
-    FANG_ENTITYTYPE_PLAYER = 0,
+    FANG_ENTITYTYPE_PLAYER,
+    FANG_ENTITYTYPE_HEALTH_PICKUP,
 } Fang_EntityType;
 
 typedef size_t Fang_EntityId;
@@ -80,7 +81,6 @@ typedef struct Fang_Entity {
     Fang_EntityState state;
     int              flags;
     Fang_Body        body;
-    Fang_Texture     texture;
     int              health;
     int              damage;
 } Fang_Entity;
@@ -116,6 +116,28 @@ typedef struct Fang_EntitySet {
     Fang_CollisionSet collisions;
     Fang_CollisionSet last_collisions;
 } Fang_EntitySet;
+
+/**
+ * Returns the relevant texture for the entity's entity type.
+**/
+static inline Fang_Texture
+Fang_EntityQueryTexture(
+    const Fang_Entity * const entity)
+{
+    assert(entity);
+
+    switch (entity->type)
+    {
+        case FANG_ENTITYTYPE_PLAYER:
+            return FANG_TEXTURE_NONE;
+
+        case FANG_ENTITYTYPE_HEALTH_PICKUP:
+            return FANG_TEXTURE_HEALTH_PICKUP;
+
+        default:
+            return FANG_TEXTURE_NONE;
+    }
+}
 
 /**
  * Adds an entity to the world.
@@ -282,7 +304,7 @@ Fang_EntityPickup(
         first->state = FANG_ENTITYSTATE_REMOVING;
 
     if (second_pickup)
-        second->flags = FANG_ENTITYSTATE_REMOVING;
+        second->state = FANG_ENTITYSTATE_REMOVING;
 }
 
 /**

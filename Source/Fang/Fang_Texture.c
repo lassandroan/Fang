@@ -52,6 +52,9 @@ typedef enum Fang_Texture {
     FANG_TEXTURE_PLASTICANNON_HUD,
     FANG_TEXTURE_FAZER_HUD,
 
+    /* Sprites */
+    FANG_TEXTURE_HEALTH_PICKUP,
+
     FANG_NUM_TEXTURES,
     FANG_TEXTURE_NONE,
 } Fang_Texture;
@@ -133,32 +136,38 @@ Fang_TextureSetLoad(
         },
 
         /* HUD */
-        [FANG_TEXTURE_PISTOL_HUD] = (Info){
+        [FANG_TEXTURE_PISTOL_HUD] = {
             .path = NULL,
             .type = OTHER_TEXTURE,
         },
-        [FANG_TEXTURE_CARBINE_HUD] = (Info){
+        [FANG_TEXTURE_CARBINE_HUD] = {
             .path = NULL,
             .type = OTHER_TEXTURE,
         },
-        [FANG_TEXTURE_FLAKGUN_HUD] = (Info){
+        [FANG_TEXTURE_FLAKGUN_HUD] = {
             .path = NULL,
             .type = OTHER_TEXTURE,
         },
-        [FANG_TEXTURE_CHAINGUN_HUD] = (Info){
+        [FANG_TEXTURE_CHAINGUN_HUD] = {
             .path = NULL,
             .type = OTHER_TEXTURE,
         },
-        [FANG_TEXTURE_LRAD_HUD] = (Info){
+        [FANG_TEXTURE_LRAD_HUD] = {
             .path = NULL,
             .type = OTHER_TEXTURE,
         },
-        [FANG_TEXTURE_PLASTICANNON_HUD] = (Info){
+        [FANG_TEXTURE_PLASTICANNON_HUD] = {
             .path = NULL,
             .type = OTHER_TEXTURE,
         },
-        [FANG_TEXTURE_FAZER_HUD] = (Info){
+        [FANG_TEXTURE_FAZER_HUD] = {
             .path = NULL,
+            .type = OTHER_TEXTURE,
+        },
+
+        /* Sprites */
+        [FANG_TEXTURE_HEALTH_PICKUP] = {
+            .path = "Sprites/HealthPickup.tga",
             .type = OTHER_TEXTURE,
         },
     };
