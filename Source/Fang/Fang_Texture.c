@@ -52,6 +52,9 @@ typedef enum Fang_Texture {
     FANG_TEXTURE_PLASTICANNON_HUD,
     FANG_TEXTURE_FAZER_HUD,
 
+    /* Sprites */
+    FANG_TEXTURE_HEALTH_PICKUP,
+
     FANG_NUM_TEXTURES,
     FANG_TEXTURE_NONE,
 } Fang_Texture;
@@ -59,23 +62,23 @@ typedef enum Fang_Texture {
 /**
  * This structure is used for managing textures and fonts.
 **/
-typedef struct Fang_Atlas {
+typedef struct Fang_TextureSet {
     Fang_Image textures[FANG_NUM_TEXTURES];
-} Fang_Atlas;
+} Fang_TextureSet;
 
 /**
  * Frees a previously loaded texture.
 **/
 static inline void
-Fang_AtlasUnload(
-          Fang_Atlas   * const atlas,
-    const Fang_Texture         id)
+Fang_TextureSetUnload(
+          Fang_TextureSet * const textures,
+    const Fang_Texture            id)
 {
-    assert(atlas);
+    assert(textures);
     assert(id < FANG_NUM_TEXTURES);
-    assert(atlas->textures[id].pixels);
+    assert(Fang_ImageValid(&textures->textures[id]));
 
-    Fang_ImageFree(&atlas->textures[id]);
+    Fang_ImageFree(&textures->textures[id]);
 }
 
 /**
@@ -88,17 +91,17 @@ Fang_AtlasUnload(
  * may be checked for validation.
 **/
 static inline int
-Fang_AtlasLoad(
-          Fang_Atlas   * const atlas,
-    const Fang_Texture         id)
+Fang_TextureSetLoad(
+          Fang_TextureSet * const textures,
+    const Fang_Texture            id)
 {
-    assert(atlas);
+    assert(textures);
     assert(id < FANG_NUM_TEXTURES);
 
-    Fang_Image * const result = &atlas->textures[id];
+    Fang_Image * const result = &textures->textures[id];
 
     if (Fang_ImageValid(result))
-        Fang_AtlasUnload(atlas, id);
+        Fang_TextureSetUnload(textures, id);
 
     typedef enum {
         FONT_TEXTURE,
@@ -133,39 +136,53 @@ Fang_AtlasLoad(
         },
 
         /* HUD */
-        [FANG_TEXTURE_PISTOL_HUD] = (Info){
-            .path = "Textures/Temporary.tga",
+        [FANG_TEXTURE_PISTOL_HUD] = {
+            .path = NULL,
             .type = OTHER_TEXTURE,
         },
-        [FANG_TEXTURE_CARBINE_HUD] = (Info){
-            .path = "Textures/Temporary.tga",
+        [FANG_TEXTURE_CARBINE_HUD] = {
+            .path = NULL,
             .type = OTHER_TEXTURE,
         },
-        [FANG_TEXTURE_FLAKGUN_HUD] = (Info){
-            .path = "Textures/Temporary.tga",
+        [FANG_TEXTURE_FLAKGUN_HUD] = {
+            .path = NULL,
             .type = OTHER_TEXTURE,
         },
-        [FANG_TEXTURE_CHAINGUN_HUD] = (Info){
-            .path = "Textures/Temporary.tga",
+        [FANG_TEXTURE_CHAINGUN_HUD] = {
+            .path = NULL,
             .type = OTHER_TEXTURE,
         },
-        [FANG_TEXTURE_LRAD_HUD] = (Info){
-            .path = "Textures/Temporary.tga",
+        [FANG_TEXTURE_LRAD_HUD] = {
+            .path = NULL,
             .type = OTHER_TEXTURE,
         },
-        [FANG_TEXTURE_PLASTICANNON_HUD] = (Info){
-            .path = "Textures/Temporary.tga",
+        [FANG_TEXTURE_PLASTICANNON_HUD] = {
+            .path = NULL,
             .type = OTHER_TEXTURE,
         },
-        [FANG_TEXTURE_FAZER_HUD] = (Info){
-            .path = "Textures/Temporary.tga",
+        [FANG_TEXTURE_FAZER_HUD] = {
+            .path = NULL,
+            .type = OTHER_TEXTURE,
+        },
+
+        /* Sprites */
+        [FANG_TEXTURE_HEALTH_PICKUP] = {
+            .path = "Sprites/HealthPickup.tga",
             .type = OTHER_TEXTURE,
         },
     };
 
-    *result = Fang_TGALoad(texture_info[id].path);
-    if (!Fang_ImageValid(result))
-        return 1;
+    {
+        const Info info = texture_info[id];
+
+        if (info.path)
+        {
+            *result = Fang_TGALoad(texture_info[id].path);
+
+            if (!Fang_ImageValid(result))
+                return 1;
+        }
+    }
 
     switch (texture_info[id].type)
     {
@@ -188,32 +205,38 @@ Fang_AtlasLoad(
 }
 
 /**
- * Unloads all textures currently loaded in the atlas.
+ * Unloads all textures currently loaded in the texture set.
 **/
 static inline void
-Fang_AtlasFree(
-    Fang_Atlas * const atlas)
+Fang_TextureSetFree(
+    Fang_TextureSet * const textures)
 {
-    assert(atlas);
+    assert(textures);
 
     for (Fang_Texture i = 0; i < FANG_NUM_TEXTURES; ++i)
-        if (atlas->textures[i].pixels)
-            Fang_AtlasUnload(atlas, i);
+        if (textures->textures[i].pixels)
+            Fang_TextureSetUnload(textures, i);
 }
 
+/**
+ * Queries a texture from the set.
+ *
+ * If the id is FANG_TEXTURE_NONE or the target image is invalid this will
+ * return NULL.
+**/
 static inline const Fang_Image*
-Fang_AtlasQuery(
-    const Fang_Atlas   * const atlas,
-    const Fang_Texture         id)
+Fang_TextureSetQuery(
+    const Fang_TextureSet * const textures,
+    const Fang_Texture            id)
 {
-    assert(atlas);
+    assert(textures);
 
     if (id == FANG_TEXTURE_NONE)
         return NULL;
 
     assert(id < FANG_NUM_TEXTURES);
 
-    const Fang_Image * const result = &atlas->textures[id];
+    const Fang_Image * const result = &textures->textures[id];
 
     if (!Fang_ImageValid(result))
         return NULL;

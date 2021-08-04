@@ -20,15 +20,15 @@ typedef struct Fang_Clock {
 
 typedef struct Fang_State {
     Fang_Map        map;
-    Fang_Atlas      textures;
+    Fang_TextureSet textures;
     Fang_Ray        raycast[FANG_WINDOW_SIZE];
     Fang_Clock      clock;
     Fang_Camera     camera;
-    Fang_Entity     player;
+    Fang_EntityId   player;
     Fang_WeaponType weapon;
     uint8_t         ammo[FANG_NUM_WEAPONTYPE];
     Fang_Interface  interface;
-    Fang_Entity     entities[FANG_MAX_ENTITIES];
+    Fang_EntitySet  entities;
     Fang_LerpVec2   sway;
     float           bob;
 } Fang_State;

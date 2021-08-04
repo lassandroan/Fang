@@ -69,6 +69,9 @@ Fang_FramebufferPutPixel(
     if (trans_point.y < 0 || trans_point.y >= framebuf->color.height)
         return false;
 
+    if (!color->a)
+        return false;
+
     bool write = true;
 
     if (framebuf->state.enable_depth)
