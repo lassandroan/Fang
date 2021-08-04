@@ -134,38 +134,46 @@ Fang_TextureSetLoad(
 
         /* HUD */
         [FANG_TEXTURE_PISTOL_HUD] = (Info){
-            .path = "Textures/Temporary.tga",
+            .path = NULL,
             .type = OTHER_TEXTURE,
         },
         [FANG_TEXTURE_CARBINE_HUD] = (Info){
-            .path = "Textures/Temporary.tga",
+            .path = NULL,
             .type = OTHER_TEXTURE,
         },
         [FANG_TEXTURE_FLAKGUN_HUD] = (Info){
-            .path = "Textures/Temporary.tga",
+            .path = NULL,
             .type = OTHER_TEXTURE,
         },
         [FANG_TEXTURE_CHAINGUN_HUD] = (Info){
-            .path = "Textures/Temporary.tga",
+            .path = NULL,
             .type = OTHER_TEXTURE,
         },
         [FANG_TEXTURE_LRAD_HUD] = (Info){
-            .path = "Textures/Temporary.tga",
+            .path = NULL,
             .type = OTHER_TEXTURE,
         },
         [FANG_TEXTURE_PLASTICANNON_HUD] = (Info){
-            .path = "Textures/Temporary.tga",
+            .path = NULL,
             .type = OTHER_TEXTURE,
         },
         [FANG_TEXTURE_FAZER_HUD] = (Info){
-            .path = "Textures/Temporary.tga",
+            .path = NULL,
             .type = OTHER_TEXTURE,
         },
     };
 
-    *result = Fang_TGALoad(texture_info[id].path);
-    if (!Fang_ImageValid(result))
-        return 1;
+    {
+        const Info info = texture_info[id];
+
+        if (info.path)
+        {
+            *result = Fang_TGALoad(texture_info[id].path);
+
+            if (!Fang_ImageValid(result))
+                return 1;
+        }
+    }
 
     switch (texture_info[id].type)
     {
