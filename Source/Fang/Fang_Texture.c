@@ -53,7 +53,8 @@ typedef enum Fang_Texture {
     FANG_TEXTURE_FAZER_HUD,
 
     /* Sprites */
-    FANG_TEXTURE_HEALTH_PICKUP,
+    FANG_TEXTURE_AMMO,
+    FANG_TEXTURE_HEALTH,
 
     FANG_NUM_TEXTURES,
     FANG_TEXTURE_NONE,
@@ -166,8 +167,13 @@ Fang_TextureSetLoad(
         },
 
         /* Sprites */
-        [FANG_TEXTURE_HEALTH_PICKUP] = {
-            .path = "Sprites/HealthPickup.tga",
+        [FANG_TEXTURE_AMMO] = {
+            .path = "Sprites/Ammo.tga",
+            .type = OTHER_TEXTURE,
+        },
+
+        [FANG_TEXTURE_HEALTH] = {
+            .path = "Sprites/Health.tga",
             .type = OTHER_TEXTURE,
         },
     };

@@ -80,7 +80,8 @@ Fang_Init(void)
     gamestate.player = Fang_EntitySetAdd(
         &gamestate.entities,
         (Fang_Entity){
-            .props.player.health = 100,
+            .props.player.health = 90,
+            .props.player.weapon = FANG_WEAPONTYPE_PISTOL,
             .body = (Fang_Body){
                 .pos = {.x = 2, .y = 2},
                 .dir = {.x = -1.0f},
@@ -100,16 +101,36 @@ Fang_Init(void)
 
     gamestate.sway.delta = 0.1f;
 
-    gamestate.weapon = FANG_WEAPONTYPE_PISTOL;
-    memset(gamestate.ammo, 0, sizeof(gamestate.ammo));
-
     Fang_EntitySetAdd(
         &gamestate.entities,
         (Fang_Entity){
             .props.health.count = 10,
-            .type = FANG_ENTITYTYPE_HEALTH_PICKUP,
+            .type = FANG_ENTITYTYPE_HEALTH,
             .body = (Fang_Body){
                 .pos = (Fang_Vec3){.x = 4.0f, .y = 4.0f},
+                .dir = {.x = -1.0f},
+                .acc = {
+                    .x = FANG_RUN_SPEED * 7.5f,
+                    .y = FANG_RUN_SPEED * 7.5f,
+                },
+                .max = {
+                    .x = FANG_RUN_SPEED,
+                    .y = FANG_RUN_SPEED,
+                    .z = 100000.0f,
+                },
+                .size = FANG_PICKUP_SIZE,
+            }
+        }
+    );
+
+    Fang_EntitySetAdd(
+        &gamestate.entities,
+        (Fang_Entity){
+            .props.ammo.type  = FANG_WEAPONTYPE_PISTOL,
+            .props.ammo.count = 10,
+            .type = FANG_ENTITYTYPE_AMMO,
+            .body = (Fang_Body){
+                .pos = (Fang_Vec3){.x = 6.0f, .y = 4.0f},
                 .dir = {.x = -1.0f},
                 .acc = {
                     .x = FANG_RUN_SPEED * 7.5f,
@@ -190,24 +211,26 @@ Fang_Update(
         if (Fang_InputPressed(&input->controller.action_down))
             move.z = FANG_JUMP_SPEED;
 
+        Fang_WeaponType * const weapon = &player->props.player.weapon;
+
         if (Fang_InputPressed(&input->controller.shoulder_left))
         {
-            if (gamestate.weapon == FANG_WEAPONTYPE_NONE)
-                gamestate.weapon = FANG_WEAPONTYPE_FAZER;
-            else if (gamestate.weapon == FANG_WEAPONTYPE_PISTOL)
-                gamestate.weapon = FANG_WEAPONTYPE_NONE;
+            if (*weapon == FANG_WEAPONTYPE_NONE)
+                *weapon = FANG_WEAPONTYPE_FAZER;
+            else if (*weapon == FANG_WEAPONTYPE_PISTOL)
+                *weapon = FANG_WEAPONTYPE_NONE;
             else
-                gamestate.weapon--;
+                (*weapon)--;
         }
 
         if (Fang_InputPressed(&input->controller.shoulder_right))
         {
-            if (gamestate.weapon == FANG_WEAPONTYPE_FAZER)
-                gamestate.weapon = FANG_WEAPONTYPE_NONE;
-            else if (gamestate.weapon == FANG_WEAPONTYPE_NONE)
-                gamestate.weapon = FANG_WEAPONTYPE_PISTOL;
+            if (*weapon == FANG_WEAPONTYPE_FAZER)
+                *weapon = FANG_WEAPONTYPE_NONE;
+            else if (*weapon == FANG_WEAPONTYPE_NONE)
+                *weapon = FANG_WEAPONTYPE_PISTOL;
             else
-                gamestate.weapon++;
+                (*weapon)++;
         }
 
         if (input->controller.joystick_left.button.pressed)
@@ -337,11 +360,11 @@ Fang_Update(
                         Fang_PlayerUpdate(&gamestate, entity);
                         break;
 
-                    case FANG_ENTITYTYPE_AMMO_PICKUP:
+                    case FANG_ENTITYTYPE_AMMO:
                         Fang_AmmoUpdate(&gamestate, entity);
                         break;
 
-                    case FANG_ENTITYTYPE_HEALTH_PICKUP:
+                    case FANG_ENTITYTYPE_HEALTH:
                         Fang_HealthUpdate(&gamestate, entity);
                         break;
                 }
@@ -417,8 +440,11 @@ Fang_Update(
 
     framebuf->state.enable_depth = false;
 
+    if (player)
     {
-        const Fang_Weapon * const weapon = Fang_WeaponQuery(gamestate.weapon);
+        const Fang_Weapon * const weapon = Fang_WeaponQuery(
+            player->props.player.weapon
+        );
 
         if (weapon)
         {
@@ -463,7 +489,7 @@ Fang_Update(
                 ammo_count,
                 sizeof(ammo_count),
                 "%03d",
-                gamestate.ammo[gamestate.weapon]
+                player->props.player.ammo[player->props.player.weapon]
             );
 
             Fang_DrawText(
@@ -473,28 +499,32 @@ Fang_Update(
                 FANG_FONT_HEIGHT,
                 &(Fang_Point){.x = 5, .y = 3 + FANG_FONT_HEIGHT}
             );
-
-            if (player)
-            {
-                char health[6];
-                snprintf(
-                    health,
-                    sizeof(health),
-                    "%3d",
-                    player->props.player.health
-                );
-
-                Fang_DrawText(
-                    framebuf,
-                    health,
-                    Fang_TextureSetQuery(
-                        &gamestate.textures, FANG_TEXTURE_FORMULA
-                    ),
-                    FANG_FONT_HEIGHT,
-                    &(Fang_Point){.x = 5, .y = 3 + FANG_FONT_HEIGHT * 2}
-                );
-            }
         }
+
+        char health[4] = "000";
+
+        if (player)
+        {
+            snprintf(
+                health,
+                sizeof(health),
+                "%3d",
+                player->props.player.health
+            );
+        }
+
+        const int text_offset = 3 - (int)strlen(health);
+
+        Fang_DrawText(
+            framebuf,
+            health,
+            Fang_TextureSetQuery(&gamestate.textures, FANG_TEXTURE_FORMULA),
+            FANG_FONT_HEIGHT,
+            &(Fang_Point){
+                .x = viewport.w - 5 - (FANG_FONT_WIDTH * (3 - text_offset)),
+                .y = 3
+            }
+        );
     }
 
     {

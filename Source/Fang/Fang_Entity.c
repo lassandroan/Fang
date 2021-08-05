@@ -14,7 +14,7 @@
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 enum {
-    FANG_MAX_ENTITIES   = 4,
+    FANG_MAX_ENTITIES   = 8,
     FANG_MAX_COLLISIONS = FANG_MAX_ENTITIES * 64,
 };
 
@@ -43,8 +43,8 @@ typedef enum Fang_EntityState {
 **/
 typedef enum Fang_EntityType {
     FANG_ENTITYTYPE_PLAYER,
-    FANG_ENTITYTYPE_HEALTH_PICKUP,
-    FANG_ENTITYTYPE_AMMO_PICKUP,
+    FANG_ENTITYTYPE_HEALTH,
+    FANG_ENTITYTYPE_AMMO,
 } Fang_EntityType;
 
 typedef size_t Fang_EntityId;
@@ -141,11 +141,9 @@ Fang_EntityQueryTexture(
 
     switch (entity->type)
     {
-        case FANG_ENTITYTYPE_PLAYER:
-            return FANG_TEXTURE_NONE;
-
-        case FANG_ENTITYTYPE_HEALTH_PICKUP:
-            return FANG_TEXTURE_HEALTH_PICKUP;
+        case FANG_ENTITYTYPE_PLAYER: return FANG_TEXTURE_NONE;
+        case FANG_ENTITYTYPE_AMMO:   return FANG_TEXTURE_AMMO;
+        case FANG_ENTITYTYPE_HEALTH: return FANG_TEXTURE_HEALTH;
 
         default:
             return FANG_TEXTURE_NONE;
@@ -361,10 +359,10 @@ Fang_EntityResolveCollision(
 
     {
         const bool pickup_collision = (
-             first->state == FANG_ENTITYTYPE_AMMO_PICKUP
-         ||  first->state == FANG_ENTITYTYPE_HEALTH_PICKUP
-         || second->state == FANG_ENTITYTYPE_AMMO_PICKUP
-         || second->state == FANG_ENTITYTYPE_HEALTH_PICKUP
+             first->state == FANG_ENTITYTYPE_AMMO
+         ||  first->state == FANG_ENTITYTYPE_HEALTH
+         || second->state == FANG_ENTITYTYPE_AMMO
+         || second->state == FANG_ENTITYTYPE_HEALTH
         );
 
         if (!pickup_collision)
@@ -382,11 +380,11 @@ Fang_EntityResolveCollision(
                 Fang_PlayerCollide(entity, other, initial_collision);
                 break;
 
-            case FANG_ENTITYTYPE_AMMO_PICKUP:
+            case FANG_ENTITYTYPE_AMMO:
                 Fang_AmmoCollide(entity, other, initial_collision);
                 break;
 
-            case FANG_ENTITYTYPE_HEALTH_PICKUP:
+            case FANG_ENTITYTYPE_HEALTH:
                 Fang_HealthCollide(entity, other, initial_collision);
                 break;
 

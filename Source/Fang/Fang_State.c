@@ -25,8 +25,6 @@ typedef struct Fang_State {
     Fang_Clock      clock;
     Fang_Camera     camera;
     Fang_EntityId   player;
-    Fang_WeaponType weapon;
-    uint8_t         ammo[FANG_NUM_WEAPONTYPE];
     Fang_Interface  interface;
     Fang_EntitySet  entities;
     Fang_LerpVec2   sway;

@@ -21,7 +21,7 @@ Fang_AmmoUpdate(
     assert(state);
     assert(ammo);
     assert(ammo->state);
-    assert(ammo->type == FANG_ENTITYTYPE_AMMO_PICKUP);
+    assert(ammo->type == FANG_ENTITYTYPE_AMMO);
 
     if (ammo->state == FANG_ENTITYSTATE_CREATING)
         ammo->state = FANG_ENTITYSTATE_ACTIVE;
@@ -37,7 +37,7 @@ Fang_AmmoCollide(
 {
     assert(ammo);
     assert(entity);
-    assert(ammo->type == FANG_ENTITYTYPE_AMMO_PICKUP);
+    assert(ammo->type == FANG_ENTITYTYPE_AMMO);
 
     if (!initial_collision)
         return;
@@ -55,7 +55,7 @@ Fang_AmmoCollide(
             if (*inventory >= 100)
                 break;
 
-            *inventory = max(100, (*inventory) + ammo_props->count);
+            *inventory = min(100, (*inventory) + ammo_props->count);
 
             ammo->state = FANG_ENTITYSTATE_REMOVING;
 
@@ -75,7 +75,7 @@ Fang_HealthUpdate(
     assert(state);
     assert(health);
     assert(health->state);
-    assert(health->type == FANG_ENTITYTYPE_HEALTH_PICKUP);
+    assert(health->type == FANG_ENTITYTYPE_HEALTH);
 
     if (health->state == FANG_ENTITYSTATE_CREATING)
         health->state = FANG_ENTITYSTATE_ACTIVE;
@@ -91,7 +91,7 @@ Fang_HealthCollide(
 {
     assert(health);
     assert(entity);
-    assert(health->type == FANG_ENTITYTYPE_HEALTH_PICKUP);
+    assert(health->type == FANG_ENTITYTYPE_HEALTH);
 
     if (!initial_collision)
         return;
