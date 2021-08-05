@@ -14,25 +14,9 @@
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 enum {
-    FANG_MAX_ENTITIES   = 4,
+    FANG_MAX_ENTITIES   = 8,
     FANG_MAX_COLLISIONS = FANG_MAX_ENTITIES * 64,
 };
-
-/**
- * Flags that designate how an entity can interact with the world.
- *
- * These flags (which may be combined) inform the entity system what
- * interactions are allowed to happen on an entity, such as colliding with other
- * entities, dealing damage to other entities, being picked up by other
- * entities, etc.
-**/
-typedef enum Fang_EntityFlags {
-    FANG_ENTITYFLAG_NONE    = 0,
-    FANG_ENTITYFLAG_CONTROL = 1 << 0,
-    FANG_ENTITYFLAG_COLLIDE = 1 << 1,
-    FANG_ENTITYFLAG_PICKUP  = 1 << 2,
-    FANG_ENTITYFLAG_DAMAGE  = 1 << 3,
-} Fang_EntityFlags;
 
 /**
  * The life-cycle state that the entity is in.
@@ -59,10 +43,38 @@ typedef enum Fang_EntityState {
 **/
 typedef enum Fang_EntityType {
     FANG_ENTITYTYPE_PLAYER,
-    FANG_ENTITYTYPE_HEALTH_PICKUP,
+    FANG_ENTITYTYPE_HEALTH,
+    FANG_ENTITYTYPE_AMMO,
 } Fang_EntityType;
 
 typedef size_t Fang_EntityId;
+
+/**
+ * Properties specific to the health pickup entity type.
+**/
+typedef struct Fang_HealthProps {
+    int count;
+} Fang_HealthProps;
+
+/**
+ * Properties specific to the ammo pickup entity type.
+**/
+typedef struct Fang_AmmoProps {
+    Fang_WeaponType type;
+    int             count;
+} Fang_AmmoProps;
+
+/**
+ * Properties specific to player entity types.
+**/
+typedef struct Fang_PlayerProps {
+    Fang_InputId    input;
+    Fang_WeaponType weapon;
+    int             ammo[FANG_NUM_WEAPONTYPE];
+    int             health;
+    Fang_LerpVec2   sway;
+    float           bob;
+} Fang_PlayerProps;
 
 /**
  * The core "thing" to the game engine.
@@ -77,12 +89,13 @@ typedef size_t Fang_EntityId;
 typedef struct Fang_Entity {
     Fang_EntityId    id;
     Fang_EntityType  type;
-    Fang_InputId     input;
     Fang_EntityState state;
-    int              flags;
     Fang_Body        body;
-    int              health;
-    int              damage;
+    union {
+        Fang_AmmoProps   ammo;
+        Fang_HealthProps health;
+        Fang_PlayerProps player;
+    } props;
 } Fang_Entity;
 
 /**
@@ -128,15 +141,35 @@ Fang_EntityQueryTexture(
 
     switch (entity->type)
     {
-        case FANG_ENTITYTYPE_PLAYER:
-            return FANG_TEXTURE_NONE;
-
-        case FANG_ENTITYTYPE_HEALTH_PICKUP:
-            return FANG_TEXTURE_HEALTH_PICKUP;
+        case FANG_ENTITYTYPE_PLAYER: return FANG_TEXTURE_NONE;
+        case FANG_ENTITYTYPE_AMMO:   return FANG_TEXTURE_AMMO;
+        case FANG_ENTITYTYPE_HEALTH: return FANG_TEXTURE_HEALTH;
 
         default:
             return FANG_TEXTURE_NONE;
     }
+}
+
+/**
+ * Searches the entity array for a given entity.
+ *
+ * If the entity in the designated index is marked inactive, this will return
+ * a null pointer.
+**/
+static inline Fang_Entity *
+Fang_EntitySetQuery(
+          Fang_EntitySet * const entities,
+    const Fang_EntityId          entity_id)
+{
+    assert(entities);
+    assert(entity_id < FANG_MAX_ENTITIES);
+
+    Fang_Entity * result = &entities->entities[entity_id];
+
+    if (!result->state)
+        return NULL;
+
+    return result;
 }
 
 /**
@@ -170,9 +203,10 @@ Fang_EntitySetAdd(
     }
 
     // Attempt to grab the next array index, otherwise find the first available
-    if (result < FANG_MAX_ENTITIES - 1 && !entities->entities[result + 1].flags)
+    if (result < FANG_MAX_ENTITIES - 1)
     {
-        entities->last_index++;
+        if (!Fang_EntitySetQuery(entities, result + 1))
+            entities->last_index++;
     }
     else
     {
@@ -181,7 +215,7 @@ Fang_EntitySetAdd(
             if (i == result)
                 continue;
 
-            if (!entities->entities[i].flags)
+            if (!Fang_EntitySetQuery(entities, i))
             {
                 entities->last_index = i;
                 break;
@@ -193,28 +227,6 @@ Fang_EntitySetAdd(
 
     if (entities->last_index == result)
         entities->last_index = FANG_MAX_ENTITIES;
-
-    return result;
-}
-
-/**
- * Searches the entity array for a given entity.
- *
- * If the entity in the designated index is marked inactive, this will return
- * a null pointer.
-**/
-static inline Fang_Entity *
-Fang_EntitySetQuery(
-          Fang_EntitySet * const entities,
-    const Fang_EntityId          entity_id)
-{
-    assert(entities);
-    assert(entity_id < FANG_MAX_ENTITIES);
-
-    Fang_Entity * result = &entities->entities[entity_id];
-
-    if (!result->state)
-        return NULL;
 
     return result;
 }
@@ -266,73 +278,6 @@ Fang_CollisionSetAdd(
 }
 
 /**
- * Executes a "pick up" of one entity from another.
- *
- * When one entity picks up another, the entity that was picked up transitions
- * to a "removing" state. This allows entities to display animations or play
- * sounds when picked up before being removed from the world (if they are to be
- * removed).
- *
- * Only initial collisions are considered in this subroutine, as items should
- * not be considered to be "picked up" per each frame that they are colliding.
- *
- * If both entities are enabled for pick-up, this function does nothing.
-**/
-static inline void
-Fang_EntityPickup(
-          Fang_Entity * const first,
-          Fang_Entity * const second,
-    const bool                initial_collision)
-{
-    assert(first);
-    assert(second);
-    assert(first->id != second->id);
-
-    if (!initial_collision)
-        return;
-
-    const bool first_pickup  = first->flags  & FANG_ENTITYFLAG_PICKUP;
-    const bool second_pickup = second->flags & FANG_ENTITYFLAG_PICKUP;
-
-    assert(first_pickup || second_pickup);
-
-    // Don't allow pickups to pick up each other
-    if (first_pickup && second_pickup)
-        return;
-
-    if (first_pickup)
-        first->state = FANG_ENTITYSTATE_REMOVING;
-
-    if (second_pickup)
-        second->state = FANG_ENTITYSTATE_REMOVING;
-}
-
-/**
- * Calculates damage when one entity collides with another.
- *
- * This is used for things such as projectiles which should lower the health of
- * entities they come into contact with.
-**/
-static inline void
-Fang_EntityDamage(
-          Fang_Entity * const first,
-          Fang_Entity * const second,
-    const bool                initial_collision)
-{
-    assert(first);
-    assert(second);
-    assert(first->id != second->id);
-
-    (void)initial_collision;
-
-    if (first->flags & FANG_ENTITYFLAG_DAMAGE)
-        second->health -= first->damage;
-
-    if (second->flags & FANG_ENTITYFLAG_DAMAGE)
-        first->health -= second->damage;
-}
-
-/**
  * Calculates the new position for entities that have collided.
  *
  * When entities have the collideable flag enabled, they should not be able to
@@ -354,12 +299,6 @@ Fang_EntityCollide(
     assert(first->id != second->id);
 
     (void)initial_collision;
-
-    const bool first_collide  = first->flags  & FANG_ENTITYFLAG_COLLIDE;
-    const bool second_collide = second->flags & FANG_ENTITYFLAG_COLLIDE;
-
-    if (!(first_collide && second_collide))
-        return;
 
     first->body.jump  = false;
     second->body.jump = false;
@@ -408,16 +347,51 @@ Fang_EntityResolveCollision(
     assert(second);
     assert(first->id != second->id);
 
-    const int flags = first->flags | second->flags;
+    typedef void (CollisionFunc)(
+        Fang_Entity * const,
+        Fang_Entity * const,
+        const bool
+    );
 
-    if (flags & FANG_ENTITYFLAG_COLLIDE)
-        Fang_EntityCollide(first, second, initial_collision);
+    CollisionFunc Fang_AmmoCollide;
+    CollisionFunc Fang_HealthCollide;
+    CollisionFunc Fang_PlayerCollide;
 
-    if (flags & FANG_ENTITYFLAG_PICKUP)
-        Fang_EntityPickup(first, second, initial_collision);
+    {
+        const bool pickup_collision = (
+             first->state == FANG_ENTITYTYPE_AMMO
+         ||  first->state == FANG_ENTITYTYPE_HEALTH
+         || second->state == FANG_ENTITYTYPE_AMMO
+         || second->state == FANG_ENTITYTYPE_HEALTH
+        );
 
-    if (flags & FANG_ENTITYFLAG_DAMAGE)
-        Fang_EntityDamage(first, second, initial_collision);
+        if (!pickup_collision)
+            Fang_EntityCollide(first, second, initial_collision);
+    }
+
+    for (size_t i = 0; i < 2; ++i)
+    {
+        Fang_Entity * const entity = (i == 0) ?  first : second;
+        Fang_Entity * const  other = (i == 0) ? second :  first;
+
+        switch (entity->type)
+        {
+            case FANG_ENTITYTYPE_PLAYER:
+                Fang_PlayerCollide(entity, other, initial_collision);
+                break;
+
+            case FANG_ENTITYTYPE_AMMO:
+                Fang_AmmoCollide(entity, other, initial_collision);
+                break;
+
+            case FANG_ENTITYTYPE_HEALTH:
+                Fang_HealthCollide(entity, other, initial_collision);
+                break;
+
+            default:
+                break;
+        };
+    }
 }
 
 /**

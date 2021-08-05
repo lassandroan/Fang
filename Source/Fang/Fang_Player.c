@@ -13,20 +13,29 @@
 // You should have received a copy of the GNU General Public License along
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-typedef struct Fang_Clock {
-    uint32_t time;
-    uint32_t accumulator;
-} Fang_Clock;
+void
+Fang_PlayerUpdate(
+    Fang_State  * const state,
+    Fang_Entity * const player)
+{
+    assert(state);
+    assert(player);
 
-typedef struct Fang_State {
-    Fang_Map        map;
-    Fang_TextureSet textures;
-    Fang_Ray        raycast[FANG_WINDOW_SIZE];
-    Fang_Clock      clock;
-    Fang_Camera     camera;
-    Fang_EntityId   player;
-    Fang_Interface  interface;
-    Fang_EntitySet  entities;
-    Fang_LerpVec2   sway;
-    float           bob;
-} Fang_State;
+    if (player->state == FANG_ENTITYSTATE_CREATING)
+        player->state = FANG_ENTITYSTATE_ACTIVE;
+    else if (player->state == FANG_ENTITYSTATE_REMOVING)
+        Fang_EntitySetRemove(&state->entities, player->id);
+}
+
+void
+Fang_PlayerCollide(
+          Fang_Entity * const player,
+          Fang_Entity * const entity,
+    const bool                initial_collision)
+{
+    assert(player);
+    assert(entity);
+    assert(player->type == FANG_ENTITYTYPE_PLAYER);
+
+    (void)initial_collision;
+}

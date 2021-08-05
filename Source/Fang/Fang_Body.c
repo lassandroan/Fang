@@ -23,6 +23,7 @@ typedef struct Fang_Body {
     Fang_Vec3 pos;  /* Current Position     */
     Fang_Vec3 dir;  /* Current Direction    */
     Fang_Vec3 vel;  /* Current Velocity     */
+    Fang_Vec3 mov;  /* Movement Direction   */
     Fang_Vec2 acc;  /* Acceleration Speeds  */
     Fang_Vec3 max;  /* Max Velocity Values  */
     float     size; /* Body Size (All Axes) */
@@ -117,7 +118,7 @@ Fang_BodyFindStep(
 }
 
 /**
- * Moves a body using a given 'move' vector.
+ * Moves a body using its given 'move' vector.
  *
  * The X and Y values of the move vector will be multiplied with the body's
  * acceleration values to determine the increase/decrease in velocity.
@@ -135,12 +136,10 @@ static void
 Fang_BodyMove(
           Fang_Body * const body,
           Fang_Map  * const map,
-    const Fang_Vec3 * const move,
     const float             delta)
 {
     assert(body);
     assert(map);
-    assert(move);
 
     body->last = body->pos;
 
@@ -148,7 +147,7 @@ Fang_BodyMove(
     {
         float * const target = &body->vel.xyz[i];
 
-        if (fabsf(move->xyz[i]) < FLT_EPSILON)
+        if (fabsf(body->mov.xyz[i]) < FLT_EPSILON)
         {
             const float delta_acc = body->acc.xy[i] * delta;
 
@@ -169,19 +168,19 @@ Fang_BodyMove(
         }
 
         *target = clamp(
-            *target + ((body->acc.xy[i] * delta) * move->xyz[i]),
+            *target + ((body->acc.xy[i] * delta) * body->mov.xyz[i]),
             -body->max.xyz[i],
             body->max.xyz[i]
         );
     }
 
     {
-        if (!body->jump && move->z > 0.0f)
+        if (!body->jump && body->mov.z > 0.0f)
         {
             if (body->vel.z >= -FANG_JUMP_TOLERANCE && body->vel.z <= 0.0f)
             {
                 body->jump  = true;
-                body->vel.z = move->z;
+                body->vel.z = body->mov.z;
             }
         }
 

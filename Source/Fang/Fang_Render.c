@@ -875,7 +875,7 @@ static void
 Fang_DrawEntities(
           Fang_Framebuffer * const framebuf,
     const Fang_Camera      * const camera,
-    const Fang_TextureSet       * const textures,
+    const Fang_TextureSet  * const textures,
     const Fang_Map         * const map,
           Fang_EntitySet   * const entities)
 {
