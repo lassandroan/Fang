@@ -42,11 +42,13 @@
 #include "Fang_Camera.c"
 #include "Fang_DDA.c"
 #include "Fang_Ray.c"
-#include "Fang_Entity.c"
 #include "Fang_Weapon.c"
+#include "Fang_Entity.c"
 #include "Fang_Render.c"
 #include "Fang_Interface.c"
 #include "Fang_State.c"
+#include "Fang_Pickups.c"
+#include "Fang_Player.c"
 
 Fang_State gamestate;
 
@@ -78,9 +80,8 @@ Fang_Init(void)
     gamestate.player = Fang_EntitySetAdd(
         &gamestate.entities,
         (Fang_Entity){
-            .flags  = FANG_ENTITYFLAG_COLLIDE,
-            .health = 100,
-            .body   = (Fang_Body){
+            .props.player.health = 100,
+            .body = (Fang_Body){
                 .pos = {.x = 2, .y = 2},
                 .dir = {.x = -1.0f},
                 .acc = {
@@ -105,9 +106,9 @@ Fang_Init(void)
     Fang_EntitySetAdd(
         &gamestate.entities,
         (Fang_Entity){
-            .flags   = FANG_ENTITYFLAG_PICKUP,
-            .type    = FANG_ENTITYTYPE_HEALTH_PICKUP,
-            .body    = (Fang_Body){
+            .props.health.count = 10,
+            .type = FANG_ENTITYTYPE_HEALTH_PICKUP,
+            .body = (Fang_Body){
                 .pos = (Fang_Vec3){.x = 4.0f, .y = 4.0f},
                 .dir = {.x = -1.0f},
                 .acc = {
@@ -127,8 +128,7 @@ Fang_Init(void)
     Fang_EntitySetAdd(
         &gamestate.entities,
         (Fang_Entity){
-            .flags   = FANG_ENTITYFLAG_COLLIDE | FANG_ENTITYFLAG_PICKUP,
-            .body    = (Fang_Body){
+            .body = (Fang_Body){
                 .pos = (Fang_Vec3){.x = 6.0f, .y = 5.5f},
                 .dir = {.x = -1.0f},
                 .acc = {
@@ -171,10 +171,10 @@ Fang_Update(
 
     gamestate.sway.target = (Fang_Vec2){.x = 0.0f, .y = 0.0f};
 
-    Fang_Vec3 move = {.x = 0.0f};
-
     if (player)
     {
+        Fang_Vec3 move = {.x = 0.0f};
+
         if (input->controller.direction_up.pressed)
             move.x += 1.0f;
 
@@ -266,6 +266,8 @@ Fang_Update(
             gamestate.sway.target.x += cosf(gamestate.bob) * 0.5f;
             gamestate.sway.target.y += fabsf(sinf(gamestate.bob)) * 0.5f;
         }
+
+        player->body.mov = move;
     }
 
     {
@@ -288,14 +290,7 @@ Fang_Update(
                 if (!entity)
                     continue;
 
-                Fang_BodyMove(
-                    &entity->body,
-                    &gamestate.map,
-                    (i == gamestate.player)
-                        ? &move
-                        : &(Fang_Vec3){.x = 0.0f},
-                    FANG_DELTA_TIME_S
-                );
+                Fang_BodyMove(&entity->body, &gamestate.map, FANG_DELTA_TIME_S);
             }
 
             for (Fang_EntityId i = 0; i < FANG_MAX_ENTITIES; ++i)
@@ -336,10 +331,20 @@ Fang_Update(
                 if (!entity)
                     continue;
 
-                if (entity->state == FANG_ENTITYSTATE_CREATING)
-                    entity->state = FANG_ENTITYSTATE_ACTIVE;
-                else if (entity->state == FANG_ENTITYSTATE_REMOVING)
-                    Fang_EntitySetRemove(&gamestate.entities, i);
+                switch (entity->type)
+                {
+                    case FANG_ENTITYTYPE_PLAYER:
+                        Fang_PlayerUpdate(&gamestate, entity);
+                        break;
+
+                    case FANG_ENTITYTYPE_AMMO_PICKUP:
+                        Fang_AmmoUpdate(&gamestate, entity);
+                        break;
+
+                    case FANG_ENTITYTYPE_HEALTH_PICKUP:
+                        Fang_HealthUpdate(&gamestate, entity);
+                        break;
+                }
             }
 
             if (player)
@@ -476,7 +481,7 @@ Fang_Update(
                     health,
                     sizeof(health),
                     "%3d",
-                    player->health
+                    player->props.player.health
                 );
 
                 Fang_DrawText(
