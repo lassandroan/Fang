@@ -90,7 +90,7 @@ Fang_FramebufferPutPixel(
 
         if (*dest < framebuf->state.current_depth)
             write = false;
-        else
+        else if (*dest == FLT_MAX || color->a == UINT8_MAX)
             *dest = framebuf->state.current_depth;
     }
 

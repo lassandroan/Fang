@@ -14,21 +14,34 @@
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
+ * Flags that control the body behavior in the physics system.
+**/
+typedef enum Fang_BodyFlags {
+    FANG_BODYFLAG_NONE             = 0,
+    FANG_BODYFLAG_JUMP             = 1 << 1,
+    FANG_BODYFLAG_STEP             = 1 << 2,
+    FANG_BODYFLAG_FALL             = 1 << 3,
+    FANG_BODYFLAG_COLLIDE_WALLS    = 1 << 4,
+    FANG_BODYFLAG_COLLIDE_BODIES   = 1 << 5,
+} Fang_BodyFlags;
+
+/**
  * A structure representing a physical body in the game world.
  *
  * Body positions represent the bottom of the body, so effectively the "head"
  * would be at Fang_Body.pos.z + Fang_Body.size.
 **/
 typedef struct Fang_Body {
-    Fang_Vec3 pos;  /* Current Position     */
-    Fang_Vec3 dir;  /* Current Direction    */
-    Fang_Vec3 vel;  /* Current Velocity     */
-    Fang_Vec3 mov;  /* Movement Direction   */
-    Fang_Vec2 acc;  /* Acceleration Speeds  */
-    Fang_Vec3 max;  /* Max Velocity Values  */
-    float     size; /* Body Size (All Axes) */
-    Fang_Vec3 last; /* Previous Position    */
-    bool      jump; /* Jump State           */
+    int       flags; /* Body Behavior Flags  */
+    Fang_Vec3 pos;   /* Current Position     */
+    Fang_Vec3 dir;   /* Current Direction    */
+    Fang_Vec3 vel;   /* Current Velocity     */
+    Fang_Vec3 mov;   /* Movement Direction   */
+    Fang_Vec2 acc;   /* Acceleration Speeds  */
+    Fang_Vec3 max;   /* Max Velocity Values  */
+    float     size;  /* Body Size (All Axes) */
+    Fang_Vec3 last;  /* Previous Position    */
+    bool      jump;  /* Jump State           */
 } Fang_Body;
 
 static inline bool
@@ -37,6 +50,9 @@ Fang_BodyCanStep(
     const float             surface_top)
 {
     assert(body);
+
+    if (!(body->flags & FANG_BODYFLAG_STEP))
+        return false;
 
     return (surface_top <= body->pos.z + (body->size / 3.0f));
 }
@@ -48,6 +64,9 @@ Fang_BodyCollidesMap(
 {
     assert(body);
     assert(map);
+
+    if (!(body->flags & FANG_BODYFLAG_COLLIDE_WALLS))
+        return false;
 
     const Fang_Tile * const tile = Fang_MapQuery(
         map, (int)floorf(body->pos.x), (int)floorf(body->pos.y)
@@ -79,6 +98,9 @@ Fang_BodyFindFloor(
     assert(body);
     assert(map);
 
+    if (!(body->flags & FANG_BODYFLAG_COLLIDE_WALLS))
+        return 0.0f;
+
     const Fang_Tile * const tile = Fang_MapQuery(
         map, (int)floorf(body->pos.x), (int)floorf(body->pos.y)
     );
@@ -101,6 +123,9 @@ Fang_BodyFindStep(
 {
     assert(body);
     assert(map);
+
+    if (!(body->flags & FANG_BODYFLAG_COLLIDE_WALLS))
+        return 0.0f;
 
     const Fang_Tile * const tile = Fang_MapQuery(
         map, (int)floorf(body->pos.x), (int)floorf(body->pos.y)
@@ -184,16 +209,22 @@ Fang_BodyMove(
             }
         }
 
-        const float standing_surface = Fang_BodyFindFloor(body, map);
+        if (body->flags & FANG_BODYFLAG_FALL)
+        {
+            const float standing_surface = Fang_BodyFindFloor(body, map);
 
-        if (body->pos.z > standing_surface)
-            body->vel.z -= FANG_GRAVITY * delta;
+            if (body->pos.z > standing_surface)
+                body->vel.z -= FANG_GRAVITY * delta;
+        }
     }
 
     Fang_Vec3 new = body->pos;
     new.x += (body->dir.x * body->vel.x + body->dir.y * body->vel.y) * delta;
     new.y += (body->dir.y * body->vel.x - body->dir.x * body->vel.y) * delta;
-    new.z += body->vel.z * delta;
+    new.z += (body->vel.z * delta);
+
+    if (!(body->flags & FANG_BODYFLAG_COLLIDE_WALLS))
+        return;
 
     /* X velocity collision */
     {
@@ -242,8 +273,12 @@ Fang_BodyMove(
     }
 }
 
+/**
+ * Returns whether two bodies currently intersect, accounting for both height
+ * and size.
+**/
 static inline bool
-Fang_BodyCollidesBody(
+Fang_BodiesIntersect(
     Fang_Body * const a,
     Fang_Body * const b)
 {
@@ -260,4 +295,57 @@ Fang_BodyCollidesBody(
     const float dy = a->pos.y - b->pos.y;
 
     return sqrtf(dx * dx + dy * dy) <= a->size + b->size;
+}
+
+/**
+ * Calculates the new position for bodies that have collided.
+ *
+ * When bodies have the collide-body flag enabled, they should not be able to
+ * pass through one another. Collisions of this type stop both bodies from
+ * moving, and cancel the jump state of whichever bodies may have been jumping.
+ *
+ * This function also resolves discrepancies in Z positions, allowing falling
+ * bodies to land on top of other collideable bodies.
+**/
+static inline void
+Fang_BodiesResolveCollision(
+    Fang_Body * const a,
+    Fang_Body * const b)
+{
+    assert(a);
+    assert(b);
+
+    if (!(a->flags & FANG_BODYFLAG_COLLIDE_BODIES))
+        return;
+
+    if (!(b->flags & FANG_BODYFLAG_COLLIDE_BODIES))
+        return;
+
+    a->jump = false;
+    b->jump = false;
+
+    if (a->pos.z > b->pos.z && a->vel.z < 0.0f)
+    {
+        a->vel.z = 0.0f;
+        a->pos.z = b->pos.z + b->size;
+
+        return;
+    }
+
+    if (b->pos.z > a->pos.z && b->vel.z < 0.0f)
+    {
+        b->vel.z = 0.0f;
+        b->pos.z = a->pos.z + a->size;
+
+        return;
+    }
+
+    a->pos.x = a->last.x;
+    a->pos.y = a->last.y;
+    b->pos.x = b->last.x;
+    b->pos.y = b->last.y;
+    a->vel.x = 0.0f;
+    a->vel.y = 0.0f;
+    b->vel.x = 0.0f;
+    b->vel.y = 0.0f;
 }

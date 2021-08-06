@@ -13,7 +13,34 @@
 // You should have received a copy of the GNU General Public License along
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-void
+static inline Fang_EntityId
+Fang_AmmoCreate(
+          Fang_EntitySet  * const entities,
+    const Fang_WeaponType         type,
+    const int                     count,
+    const Fang_Vec3               pos)
+{
+    assert(entities);
+
+    return Fang_EntitySetAdd(
+        entities,
+        (Fang_Entity){
+            .type = FANG_ENTITYTYPE_AMMO,
+            .props.ammo.type  = type,
+            .props.ammo.count = count,
+            .body = (Fang_Body){
+                .pos   = pos,
+                .size  = FANG_PICKUP_SIZE,
+                .flags = (
+                    FANG_BODYFLAG_FALL
+                  | FANG_BODYFLAG_COLLIDE_WALLS
+                ),
+            },
+        }
+    );
+}
+
+static inline void
 Fang_AmmoUpdate(
     Fang_State  * const state,
     Fang_Entity * const ammo)
@@ -67,7 +94,32 @@ Fang_AmmoCollide(
     };
 }
 
-void
+static inline Fang_EntityId
+Fang_HealthCreate(
+          Fang_EntitySet * const entities,
+    const int                    count,
+    const Fang_Vec3              pos)
+{
+    assert(entities);
+
+    return Fang_EntitySetAdd(
+        entities,
+        (Fang_Entity){
+            .type = FANG_ENTITYTYPE_HEALTH,
+            .props.health.count = count,
+            .body = {
+                .pos   = pos,
+                .size  = FANG_PICKUP_SIZE,
+                .flags = (
+                    FANG_BODYFLAG_FALL
+                  | FANG_BODYFLAG_COLLIDE_WALLS
+                ),
+            }
+        }
+    );
+}
+
+static inline void
 Fang_HealthUpdate(
     Fang_State  * const state,
     Fang_Entity * const health)

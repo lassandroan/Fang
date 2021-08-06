@@ -14,7 +14,7 @@
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 enum {
-    FANG_MAX_ENTITIES   = 8,
+    FANG_MAX_ENTITIES   = 256,
     FANG_MAX_COLLISIONS = FANG_MAX_ENTITIES * 64,
 };
 
@@ -45,19 +45,20 @@ typedef enum Fang_EntityType {
     FANG_ENTITYTYPE_PLAYER,
     FANG_ENTITYTYPE_HEALTH,
     FANG_ENTITYTYPE_AMMO,
+    FANG_ENTITYTYPE_PROJECTILE,
 } Fang_EntityType;
 
 typedef size_t Fang_EntityId;
 
 /**
- * Properties specific to the health pickup entity type.
+ * Properties specific to health pickup entity types.
 **/
 typedef struct Fang_HealthProps {
     int count;
 } Fang_HealthProps;
 
 /**
- * Properties specific to the ammo pickup entity type.
+ * Properties specific to ammo pickup entity types.
 **/
 typedef struct Fang_AmmoProps {
     Fang_WeaponType type;
@@ -77,6 +78,17 @@ typedef struct Fang_PlayerProps {
 } Fang_PlayerProps;
 
 /**
+ * Properties specific to projectile entity types.
+**/
+typedef struct Fang_ProjectileProps {
+    Fang_WeaponType type;
+    Fang_EntityId   owner;
+    int             damage;
+    int             health;
+    int             richochets;
+} Fang_ProjectileProps;
+
+/**
  * The core "thing" to the game engine.
  *
  * Entities represent physical things in that world that can interact with each
@@ -92,9 +104,10 @@ typedef struct Fang_Entity {
     Fang_EntityState state;
     Fang_Body        body;
     union {
-        Fang_AmmoProps   ammo;
-        Fang_HealthProps health;
-        Fang_PlayerProps player;
+        Fang_AmmoProps       ammo;
+        Fang_HealthProps     health;
+        Fang_PlayerProps     player;
+        Fang_ProjectileProps projectile;
     } props;
 } Fang_Entity;
 
@@ -141,9 +154,10 @@ Fang_EntityQueryTexture(
 
     switch (entity->type)
     {
-        case FANG_ENTITYTYPE_PLAYER: return FANG_TEXTURE_NONE;
-        case FANG_ENTITYTYPE_AMMO:   return FANG_TEXTURE_AMMO;
-        case FANG_ENTITYTYPE_HEALTH: return FANG_TEXTURE_HEALTH;
+        case FANG_ENTITYTYPE_PLAYER:     return FANG_TEXTURE_NONE;
+        case FANG_ENTITYTYPE_AMMO:       return FANG_TEXTURE_AMMO;
+        case FANG_ENTITYTYPE_HEALTH:     return FANG_TEXTURE_HEALTH;
+        case FANG_ENTITYTYPE_PROJECTILE: return FANG_TEXTURE_PROJECTILE;
 
         default:
             return FANG_TEXTURE_NONE;
@@ -202,11 +216,15 @@ Fang_EntitySetAdd(
         entity->state = FANG_ENTITYSTATE_CREATING;
     }
 
+    const bool last_index_valid = result < FANG_MAX_ENTITIES - 1;
+    const bool last_index_open  = !Fang_EntitySetQuery(
+        entities, entities->last_index + 1
+    );
+
     // Attempt to grab the next array index, otherwise find the first available
-    if (result < FANG_MAX_ENTITIES - 1)
+    if (last_index_valid && last_index_open)
     {
-        if (!Fang_EntitySetQuery(entities, result + 1))
-            entities->last_index++;
+        entities->last_index++;
     }
     else
     {
@@ -223,10 +241,8 @@ Fang_EntitySetAdd(
         }
     }
 
+    // The entity limit has been reached!
     assert(entities->last_index != result);
-
-    if (entities->last_index == result)
-        entities->last_index = FANG_MAX_ENTITIES;
 
     return result;
 }
@@ -278,58 +294,6 @@ Fang_CollisionSetAdd(
 }
 
 /**
- * Calculates the new position for entities that have collided.
- *
- * When entities have the collideable flag enabled, they should not be able to
- * pass through one another. Collisions of this type stop both entities from
- * moving, and cancel the jump state of whichever entities may have been
- * jumping.
- *
- * This function also resolves discrepancies in Z positions, allowing falling
- * entities to land on top of other collideable entities.
-**/
-static inline void
-Fang_EntityCollide(
-          Fang_Entity * const first,
-          Fang_Entity * const second,
-    const bool                initial_collision)
-{
-    assert(first);
-    assert(second);
-    assert(first->id != second->id);
-
-    (void)initial_collision;
-
-    first->body.jump  = false;
-    second->body.jump = false;
-
-    if (first->body.pos.z > second->body.pos.z && first->body.vel.z < 0.0f)
-    {
-        first->body.vel.z = 0.0f;
-        first->body.pos.z = second->body.pos.z + second->body.size;
-
-        return;
-    }
-
-    if (second->body.pos.z > first->body.pos.z && second->body.vel.z < 0.0f)
-    {
-        second->body.vel.z = 0.0f;
-        second->body.pos.z = first->body.pos.z + first->body.size;
-
-        return;
-    }
-
-    first->body.pos.x   = first->body.last.x;
-    first->body.pos.y   = first->body.last.y;
-    second->body.pos.x  = second->body.last.x;
-    second->body.pos.y  = second->body.last.y;
-    first->body.vel.x   = 0.0f;
-    first->body.vel.y   = 0.0f;
-    second->body.vel.x  = 0.0f;
-    second->body.vel.y  = 0.0f;
-}
-
-/**
  * Executes the relevant entity behavior subroutines based on the flags from
  * both entities.
  *
@@ -357,17 +321,7 @@ Fang_EntityResolveCollision(
     CollisionFunc Fang_HealthCollide;
     CollisionFunc Fang_PlayerCollide;
 
-    {
-        const bool pickup_collision = (
-             first->state == FANG_ENTITYTYPE_AMMO
-         ||  first->state == FANG_ENTITYTYPE_HEALTH
-         || second->state == FANG_ENTITYTYPE_AMMO
-         || second->state == FANG_ENTITYTYPE_HEALTH
-        );
-
-        if (!pickup_collision)
-            Fang_EntityCollide(first, second, initial_collision);
-    }
+    Fang_BodiesResolveCollision(&first->body, &second->body);
 
     for (size_t i = 0; i < 2; ++i)
     {

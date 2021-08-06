@@ -55,6 +55,7 @@ typedef enum Fang_Texture {
     /* Sprites */
     FANG_TEXTURE_AMMO,
     FANG_TEXTURE_HEALTH,
+    FANG_TEXTURE_PROJECTILE,
 
     FANG_NUM_TEXTURES,
     FANG_TEXTURE_NONE,
@@ -121,10 +122,12 @@ Fang_TextureSetLoad(
             .path = "Textures/Skybox.tga",
             .type = OTHER_TEXTURE,
         },
+
         [FANG_TEXTURE_FLOOR] = (Info){
             .path = "Textures/Floor.tga",
             .type = OTHER_TEXTURE,
         },
+
         [FANG_TEXTURE_TILE] = (Info){
             .path = "Textures/Tile.tga",
             .type = TILE_TEXTURE,
@@ -141,26 +144,32 @@ Fang_TextureSetLoad(
             .path = NULL,
             .type = OTHER_TEXTURE,
         },
+
         [FANG_TEXTURE_CARBINE_HUD] = {
             .path = NULL,
             .type = OTHER_TEXTURE,
         },
+
         [FANG_TEXTURE_FLAKGUN_HUD] = {
             .path = NULL,
             .type = OTHER_TEXTURE,
         },
+
         [FANG_TEXTURE_CHAINGUN_HUD] = {
             .path = NULL,
             .type = OTHER_TEXTURE,
         },
+
         [FANG_TEXTURE_LRAD_HUD] = {
             .path = NULL,
             .type = OTHER_TEXTURE,
         },
+
         [FANG_TEXTURE_PLASTICANNON_HUD] = {
             .path = NULL,
             .type = OTHER_TEXTURE,
         },
+
         [FANG_TEXTURE_FAZER_HUD] = {
             .path = NULL,
             .type = OTHER_TEXTURE,
@@ -174,6 +183,11 @@ Fang_TextureSetLoad(
 
         [FANG_TEXTURE_HEALTH] = {
             .path = "Sprites/Health.tga",
+            .type = OTHER_TEXTURE,
+        },
+
+        [FANG_TEXTURE_PROJECTILE] = {
+            .path = "Sprites/Projectile.tga",
             .type = OTHER_TEXTURE,
         },
     };
