@@ -97,7 +97,7 @@ Fang_ProjectileCollide(
         &projectile->props.projectile
     );
 
-    if (!projectile_props->richochets && entity->id == projectile_props->owner)
+    if (!projectile_props->ricochets && entity->id == projectile_props->owner)
         return;
 
     switch (entity->type)

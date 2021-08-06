@@ -85,7 +85,7 @@ typedef struct Fang_ProjectileProps {
     Fang_EntityId   owner;
     int             damage;
     int             health;
-    int             richochets;
+    int             ricochets;
 } Fang_ProjectileProps;
 
 /**
