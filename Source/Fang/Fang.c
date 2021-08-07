@@ -161,8 +161,14 @@ Fang_Update(
         if (Fang_InputPressed(&input->controller.action_down))
             up = FANG_JUMP_SPEED;
 
-        if (Fang_InputPressed(&input->mouse.left))
-            Fang_PlayerFireWeapon(player, &gamestate.entities);
+        if (input->mouse.left.pressed)
+        {
+            Fang_PlayerFireWeapon(
+                player,
+                &gamestate.entities,
+                Fang_InputPressed(&input->mouse.left)
+            );
+        }
 
         Fang_WeaponType * const weapon_type = &player->props.player.weapon;
 
@@ -271,7 +277,7 @@ Fang_Update(
                 switch (entity->type)
                 {
                     case FANG_ENTITYTYPE_PLAYER:
-                        Fang_PlayerUpdate(&gamestate, entity);
+                        Fang_PlayerUpdate(&gamestate, entity, FANG_DELTA_TIME_MS);
                         break;
 
                     case FANG_ENTITYTYPE_AMMO:

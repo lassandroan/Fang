@@ -30,6 +30,8 @@ typedef struct Fang_Weapon {
     const char         * const name;
           Fang_Texture         texture;
           int                  damage;
+          bool                 automatic;
+          uint32_t             cooldown;
 } Fang_Weapon;
 
 static inline const Fang_Weapon *
@@ -43,39 +45,53 @@ Fang_WeaponQuery(
 
     static const Fang_Weapon weapons[FANG_NUM_WEAPONTYPE] = {
         [FANG_WEAPONTYPE_PISTOL] = (Fang_Weapon){
-            .name    = "Pistol",
-            .damage  = 10,
-            .texture = FANG_TEXTURE_PISTOL_HUD,
+            .name      = "Pistol",
+            .damage    = 10,
+            .texture   = FANG_TEXTURE_PISTOL_HUD,
+            .automatic = false,
+            .cooldown  = 250,
         },
         [FANG_WEAPONTYPE_CARBINE] = (Fang_Weapon){
-            .name    = "Cast-Iron Carbine",
-            .damage  = 10,
-            .texture = FANG_TEXTURE_CARBINE_HUD,
+            .name      = "Cast-Iron Carbine",
+            .damage    = 10,
+            .texture   = FANG_TEXTURE_CARBINE_HUD,
+            .automatic = false,
+            .cooldown  = 1000,
         },
         [FANG_WEAPONTYPE_FLAKGUN] = (Fang_Weapon){
-            .name    = "Flakgun",
-            .damage  = 10,
-            .texture = FANG_TEXTURE_FLAKGUN_HUD,
+            .name      = "Flakgun",
+            .damage    = 10,
+            .texture   = FANG_TEXTURE_FLAKGUN_HUD,
+            .automatic = false,
+            .cooldown  = 500,
         },
         [FANG_WEAPONTYPE_CHAINGUN] = (Fang_Weapon){
-            .name    = "Chaingun",
-            .damage  = 10,
-            .texture = FANG_TEXTURE_CHAINGUN_HUD,
+            .name      = "Chaingun",
+            .damage    = 10,
+            .texture   = FANG_TEXTURE_CHAINGUN_HUD,
+            .automatic = true,
+            .cooldown  = 50,
         },
         [FANG_WEAPONTYPE_LRAD] = (Fang_Weapon){
-            .name    = "LRAD",
-            .damage  = 10,
-            .texture = FANG_TEXTURE_LRAD_HUD,
+            .name      = "LRAD",
+            .damage    = 10,
+            .texture   = FANG_TEXTURE_LRAD_HUD,
+            .automatic = false,
+            .cooldown  = 3000,
         },
         [FANG_WEAPONTYPE_PLASTICANNON] = (Fang_Weapon){
-            .name    = "Plasti-cannon",
-            .damage  = 10,
-            .texture = FANG_TEXTURE_PLASTICANNON_HUD,
+            .name      = "Plasti-cannon",
+            .damage    = 10,
+            .texture   = FANG_TEXTURE_PLASTICANNON_HUD,
+            .automatic = false,
+            .cooldown  = 1000,
         },
         [FANG_WEAPONTYPE_FAZER] = (Fang_Weapon){
-            .name    = "Fazer",
-            .damage  = 10,
-            .texture = FANG_TEXTURE_FAZER_HUD,
+            .name      = "Fazer",
+            .damage    = 10,
+            .texture   = FANG_TEXTURE_FAZER_HUD,
+            .automatic = true,
+            .cooldown  = 100,
         },
     };
 

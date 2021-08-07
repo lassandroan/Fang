@@ -54,20 +54,30 @@ Fang_PlayerCreate(
 
 void
 Fang_PlayerUpdate(
-    Fang_State  * const state,
-    Fang_Entity * const player)
+          Fang_State  * const state,
+          Fang_Entity * const player,
+    const uint32_t            delta)
 {
     assert(state);
     assert(player);
 
-    if (player->state == FANG_ENTITYSTATE_CREATING)
-    {
-        player->state = FANG_ENTITYSTATE_ACTIVE;
-    }
-    else if (player->state == FANG_ENTITYSTATE_REMOVING)
+    Fang_PlayerProps * const props = &player->props.player;
+
+    if (player->state == FANG_ENTITYSTATE_REMOVING)
     {
         Fang_EntitySetRemove(&state->entities, player->id);
         return;
+    }
+
+    if (player->state == FANG_ENTITYSTATE_CREATING)
+        player->state = FANG_ENTITYSTATE_ACTIVE;
+
+    if (props->cooldown)
+    {
+        if (delta >= props->cooldown)
+            props->cooldown = 0;
+        else
+            props->cooldown -= delta;
     }
 }
 
@@ -93,24 +103,34 @@ Fang_PlayerCollideEntity(
 
 void
 Fang_PlayerFireWeapon(
-    Fang_Entity    * const player,
-    Fang_EntitySet * const entities)
+          Fang_Entity    * const player,
+          Fang_EntitySet * const entities,
+    const bool                   initial_fire)
 {
     assert(player);
     assert(player->state == FANG_ENTITYSTATE_ACTIVE);
     assert(entities);
 
-    Fang_WeaponType * const weapon_type = &player->props.player.weapon;
+          Fang_PlayerProps * const props  = &player->props.player;
+    const Fang_Weapon      * const weapon = Fang_WeaponQuery(props->weapon);
 
-    if (*weapon_type == FANG_WEAPONTYPE_NONE)
+    if (!weapon)
         return;
 
-    int * const inventory = &player->props.player.ammo[*weapon_type];
+    if (!initial_fire && !weapon->automatic)
+        return;
+
+    if (props->cooldown > 0)
+        return;
+
+    int * const inventory = &player->props.player.ammo[props->weapon];
 
     if (!*inventory)
         return;
 
     (*inventory)--;
 
-    Fang_ProjectileCreate(entities, *weapon_type, player->id);
+    props->cooldown = weapon->cooldown;
+
+    Fang_ProjectileCreate(entities, props->weapon, player->id);
 }

@@ -72,6 +72,7 @@ typedef struct Fang_PlayerProps {
     Fang_InputId    input;
     Fang_WeaponType weapon;
     int             ammo[FANG_NUM_WEAPONTYPE];
+    uint32_t        cooldown;
     int             health;
     Fang_LerpVec2   sway;
     float           bob;
