@@ -15,20 +15,29 @@
 
 static inline Fang_EntityId
 Fang_ProjectileCreate(
-          Fang_EntitySet       * const entities,
-    const Fang_ProjectileProps         props)
+          Fang_EntitySet  * const entities,
+    const Fang_WeaponType         type,
+    const Fang_EntityId           owner_id)
 {
     assert(entities);
 
-    Fang_Entity * const owner = Fang_EntitySetQuery(entities, props.owner);
+    const Fang_Entity * const owner  = Fang_EntitySetQuery(entities, owner_id);
+    const Fang_Weapon * const weapon = Fang_WeaponQuery(type);
 
+    assert(weapon);
     assert(owner);
+    assert(owner->state);
 
     return Fang_EntitySetAdd(
         entities,
         (Fang_Entity){
             .type = FANG_ENTITYTYPE_PROJECTILE,
-            .props.projectile = props,
+            .props.projectile = (Fang_ProjectileProps){
+                .type   = type,
+                .owner  = owner->id,
+                .health = weapon->damage,
+                .damage = weapon->damage,
+            },
             .body = {
                 .pos = {
                     .x = owner->body.pos.x,
@@ -66,14 +75,9 @@ Fang_ProjectileUpdate(
         projectile->state = FANG_ENTITYSTATE_REMOVING;
 
     if (projectile->state == FANG_ENTITYSTATE_CREATING)
-    {
         projectile->state = FANG_ENTITYSTATE_ACTIVE;
-    }
     else if (projectile->state == FANG_ENTITYSTATE_REMOVING)
-    {
         Fang_EntitySetRemove(&state->entities, projectile->id);
-        return;
-    }
 }
 
 void

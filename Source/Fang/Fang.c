@@ -48,8 +48,8 @@
 #include "Fang_Interface.c"
 #include "Fang_State.c"
 #include "Fang_Pickups.c"
-#include "Fang_Player.c"
 #include "Fang_Projectiles.c"
+#include "Fang_Player.c"
 
 Fang_State gamestate;
 
@@ -161,46 +161,29 @@ Fang_Update(
         if (Fang_InputPressed(&input->controller.action_down))
             up = FANG_JUMP_SPEED;
 
-        Fang_WeaponType * const weapon = &player->props.player.weapon;
+        if (Fang_InputPressed(&input->mouse.left))
+            Fang_PlayerFireWeapon(player, &gamestate.entities);
 
-        if (*weapon != FANG_WEAPONTYPE_NONE)
-        {
-            int * const inventory = &player->props.player.ammo[*weapon];
-
-            if (*inventory && Fang_InputPressed(&input->mouse.left))
-            {
-                (*inventory)--;
-
-                Fang_ProjectileCreate(
-                    &gamestate.entities,
-                    (Fang_ProjectileProps){
-                        .type   = *weapon,
-                        .owner  = player->id,
-                        .health = 20,
-                        .damage = 10,
-                    }
-                );
-            }
-        }
+        Fang_WeaponType * const weapon_type = &player->props.player.weapon;
 
         if (Fang_InputPressed(&input->controller.shoulder_left))
         {
-            if (*weapon == FANG_WEAPONTYPE_NONE)
-                *weapon = FANG_WEAPONTYPE_FAZER;
-            else if (*weapon == FANG_WEAPONTYPE_PISTOL)
-                *weapon = FANG_WEAPONTYPE_NONE;
+            if (*weapon_type == FANG_WEAPONTYPE_NONE)
+                *weapon_type = FANG_WEAPONTYPE_FAZER;
+            else if (*weapon_type == FANG_WEAPONTYPE_PISTOL)
+                *weapon_type = FANG_WEAPONTYPE_NONE;
             else
-                (*weapon)--;
+                (*weapon_type)--;
         }
 
         if (Fang_InputPressed(&input->controller.shoulder_right))
         {
-            if (*weapon == FANG_WEAPONTYPE_FAZER)
-                *weapon = FANG_WEAPONTYPE_NONE;
-            else if (*weapon == FANG_WEAPONTYPE_NONE)
-                *weapon = FANG_WEAPONTYPE_PISTOL;
+            if (*weapon_type == FANG_WEAPONTYPE_FAZER)
+                *weapon_type = FANG_WEAPONTYPE_NONE;
+            else if (*weapon_type == FANG_WEAPONTYPE_NONE)
+                *weapon_type = FANG_WEAPONTYPE_PISTOL;
             else
-                (*weapon)++;
+                (*weapon_type)++;
         }
 
         left    -= input->controller.joystick_left.x * FANG_RUN_SPEED;

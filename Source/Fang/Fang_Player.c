@@ -90,3 +90,27 @@ Fang_PlayerCollideEntity(
 
     (void)initial_collision;
 }
+
+void
+Fang_PlayerFireWeapon(
+    Fang_Entity    * const player,
+    Fang_EntitySet * const entities)
+{
+    assert(player);
+    assert(player->state == FANG_ENTITYSTATE_ACTIVE);
+    assert(entities);
+
+    Fang_WeaponType * const weapon_type = &player->props.player.weapon;
+
+    if (*weapon_type == FANG_WEAPONTYPE_NONE)
+        return;
+
+    int * const inventory = &player->props.player.ammo[*weapon_type];
+
+    if (!*inventory)
+        return;
+
+    (*inventory)--;
+
+    Fang_ProjectileCreate(entities, *weapon_type, player->id);
+}

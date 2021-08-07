@@ -27,8 +27,9 @@ typedef enum Fang_WeaponType {
 } Fang_WeaponType;
 
 typedef struct Fang_Weapon {
-    const char * const name;
-    Fang_Texture texture;
+    const char         * const name;
+          Fang_Texture         texture;
+          int                  damage;
 } Fang_Weapon;
 
 static inline const Fang_Weapon *
@@ -42,31 +43,38 @@ Fang_WeaponQuery(
 
     static const Fang_Weapon weapons[FANG_NUM_WEAPONTYPE] = {
         [FANG_WEAPONTYPE_PISTOL] = (Fang_Weapon){
-            .name = "Pistol",
+            .name    = "Pistol",
+            .damage  = 10,
             .texture = FANG_TEXTURE_PISTOL_HUD,
         },
         [FANG_WEAPONTYPE_CARBINE] = (Fang_Weapon){
-            .name = "Cast-Iron Carbine",
+            .name    = "Cast-Iron Carbine",
+            .damage  = 10,
             .texture = FANG_TEXTURE_CARBINE_HUD,
         },
         [FANG_WEAPONTYPE_FLAKGUN] = (Fang_Weapon){
-            .name = "Flakgun",
+            .name    = "Flakgun",
+            .damage  = 10,
             .texture = FANG_TEXTURE_FLAKGUN_HUD,
         },
         [FANG_WEAPONTYPE_CHAINGUN] = (Fang_Weapon){
-            .name = "Chaingun",
+            .name    = "Chaingun",
+            .damage  = 10,
             .texture = FANG_TEXTURE_CHAINGUN_HUD,
         },
         [FANG_WEAPONTYPE_LRAD] = (Fang_Weapon){
-            .name = "LRAD",
+            .name    = "LRAD",
+            .damage  = 10,
             .texture = FANG_TEXTURE_LRAD_HUD,
         },
         [FANG_WEAPONTYPE_PLASTICANNON] = (Fang_Weapon){
-            .name = "Plasti-cannon",
+            .name    = "Plasti-cannon",
+            .damage  = 10,
             .texture = FANG_TEXTURE_PLASTICANNON_HUD,
         },
         [FANG_WEAPONTYPE_FAZER] = (Fang_Weapon){
-            .name = "Fazer",
+            .name    = "Fazer",
+            .damage  = 10,
             .texture = FANG_TEXTURE_FAZER_HUD,
         },
     };
