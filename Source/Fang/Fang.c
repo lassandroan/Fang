@@ -277,19 +277,27 @@ Fang_Update(
                 switch (entity->type)
                 {
                     case FANG_ENTITYTYPE_PLAYER:
-                        Fang_PlayerUpdate(&gamestate, entity, FANG_DELTA_TIME_MS);
+                        Fang_PlayerUpdate(
+                            &gamestate, entity, FANG_DELTA_TIME_MS
+                        );
                         break;
 
                     case FANG_ENTITYTYPE_AMMO:
-                        Fang_AmmoUpdate(&gamestate, entity);
+                        Fang_AmmoUpdate(
+                            &gamestate, entity, FANG_DELTA_TIME_MS
+                        );
                         break;
 
                     case FANG_ENTITYTYPE_HEALTH:
-                        Fang_HealthUpdate(&gamestate, entity);
+                        Fang_HealthUpdate(
+                            &gamestate, entity, FANG_DELTA_TIME_MS
+                        );
                         break;
 
                     case FANG_ENTITYTYPE_PROJECTILE:
-                        Fang_ProjectileUpdate(&gamestate, entity);
+                        Fang_ProjectileUpdate(
+                            &gamestate, entity, FANG_DELTA_TIME_MS
+                        );
                         break;
                 }
             }

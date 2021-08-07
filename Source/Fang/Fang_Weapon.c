@@ -33,6 +33,7 @@ typedef struct Fang_Weapon {
           bool                 automatic;
           uint32_t             cooldown;
           float                speed;
+          uint32_t             lifespan;
 } Fang_Weapon;
 
 static inline const Fang_Weapon *
@@ -52,6 +53,7 @@ Fang_WeaponQuery(
             .automatic = false,
             .cooldown  = 250,
             .speed     = 10.0f,
+            .lifespan  = 1000,
         },
         [FANG_WEAPONTYPE_CARBINE] = (Fang_Weapon){
             .name      = "Cast-Iron Carbine",
@@ -60,6 +62,7 @@ Fang_WeaponQuery(
             .automatic = false,
             .cooldown  = 1000,
             .speed     = 20.0f,
+            .lifespan  = 1000,
         },
         [FANG_WEAPONTYPE_FLAKGUN] = (Fang_Weapon){
             .name      = "Flakgun",
@@ -68,6 +71,7 @@ Fang_WeaponQuery(
             .automatic = false,
             .cooldown  = 500,
             .speed     = 5.0f,
+            .lifespan  = 1000,
         },
         [FANG_WEAPONTYPE_CHAINGUN] = (Fang_Weapon){
             .name      = "Chaingun",
@@ -76,6 +80,7 @@ Fang_WeaponQuery(
             .automatic = true,
             .cooldown  = 50,
             .speed     = 15.0f,
+            .lifespan  = 1000,
         },
         [FANG_WEAPONTYPE_LRAD] = (Fang_Weapon){
             .name      = "LRAD",
@@ -84,6 +89,7 @@ Fang_WeaponQuery(
             .automatic = false,
             .cooldown  = 3000,
             .speed     = 10.0f,
+            .lifespan  = 1000,
         },
         [FANG_WEAPONTYPE_PLASTICANNON] = (Fang_Weapon){
             .name      = "Plasti-cannon",
@@ -92,6 +98,7 @@ Fang_WeaponQuery(
             .automatic = false,
             .cooldown  = 1000,
             .speed     = 3.5f,
+            .lifespan  = 10000,
         },
         [FANG_WEAPONTYPE_FAZER] = (Fang_Weapon){
             .name      = "Fazer",
@@ -100,6 +107,7 @@ Fang_WeaponQuery(
             .automatic = true,
             .cooldown  = 100,
             .speed     = 17.5f,
+            .lifespan  = 1000,
         },
     };
 

@@ -86,6 +86,7 @@ typedef struct Fang_ProjectileProps {
     Fang_EntityId   owner;
     int             damage;
     int             health;
+    uint32_t        lifespan;
     int             ricochets;
     float           speed;
 } Fang_ProjectileProps;
@@ -383,6 +384,7 @@ Fang_EntitySetResolveCollisions(
     CollisionFunc Fang_AmmoCollideMap;
     CollisionFunc Fang_HealthCollideMap;
     CollisionFunc Fang_PlayerCollideMap;
+    CollisionFunc Fang_ProjectileCollideMap;
 
     for (Fang_EntityId i = 0; i < FANG_MAX_ENTITIES; ++i)
     {
@@ -405,6 +407,10 @@ Fang_EntitySetResolveCollisions(
 
                 case FANG_ENTITYTYPE_HEALTH:
                     Fang_HealthCollideMap(entity);
+                    break;
+
+                case FANG_ENTITYTYPE_PROJECTILE:
+                    Fang_ProjectileCollideMap(entity);
                     break;
 
                 default:

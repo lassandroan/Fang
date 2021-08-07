@@ -33,11 +33,12 @@ Fang_ProjectileCreate(
         (Fang_Entity){
             .type = FANG_ENTITYTYPE_PROJECTILE,
             .props.projectile = (Fang_ProjectileProps){
-                .type   = type,
-                .owner  = owner->id,
-                .health = weapon->damage,
-                .damage = weapon->damage,
-                .speed  = weapon->speed,
+                .type     = type,
+                .owner    = owner->id,
+                .health   = weapon->damage,
+                .damage   = weapon->damage,
+                .speed    = weapon->speed,
+                .lifespan = weapon->lifespan,
             },
             .body = {
                 .pos = {
@@ -60,8 +61,9 @@ Fang_ProjectileCreate(
 
 static inline void
 Fang_ProjectileUpdate(
-    Fang_State  * const state,
-    Fang_Entity * const projectile)
+          Fang_State  * const state,
+          Fang_Entity * const projectile,
+    const uint32_t            delta)
 {
     assert(state);
     assert(projectile);
@@ -70,13 +72,22 @@ Fang_ProjectileUpdate(
 
     Fang_ProjectileProps * const props = &projectile->props.projectile;
 
-    if (props->health <= 0)
+    if (props->health <= 0 || props->lifespan == 0)
         projectile->state = FANG_ENTITYSTATE_REMOVING;
+
+    if (projectile->state == FANG_ENTITYSTATE_REMOVING)
+    {
+        Fang_EntitySetRemove(&state->entities, projectile->id);
+        return;
+    }
 
     if (projectile->state == FANG_ENTITYSTATE_CREATING)
         projectile->state = FANG_ENTITYSTATE_ACTIVE;
-    else if (projectile->state == FANG_ENTITYSTATE_REMOVING)
-        Fang_EntitySetRemove(&state->entities, projectile->id);
+
+    if (delta >= props->lifespan)
+        props->lifespan = 0;
+    else
+        props->lifespan -= delta;
 
     projectile->body.vel.target = Fang_Vec3Translate(
         projectile->body.dir, props->speed, 0.0f, 0.0f
@@ -88,6 +99,8 @@ Fang_ProjectileCollideMap(
     Fang_Entity * const projectile)
 {
     assert(projectile);
+
+    projectile->state = FANG_ENTITYSTATE_REMOVING;
 }
 
 void

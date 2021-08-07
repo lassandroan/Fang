@@ -43,18 +43,25 @@ Fang_AmmoCreate(
 
 static inline void
 Fang_AmmoUpdate(
-    Fang_State  * const state,
-    Fang_Entity * const ammo)
+          Fang_State  * const state,
+          Fang_Entity * const ammo,
+    const uint32_t            delta)
 {
     assert(state);
     assert(ammo);
     assert(ammo->state);
     assert(ammo->type == FANG_ENTITYTYPE_AMMO);
 
+    (void)delta;
+
+    if (ammo->state == FANG_ENTITYSTATE_REMOVING)
+    {
+        Fang_EntitySetRemove(&state->entities, ammo->id);
+        return;
+    }
+
     if (ammo->state == FANG_ENTITYSTATE_CREATING)
         ammo->state = FANG_ENTITYSTATE_ACTIVE;
-    else if (ammo->state == FANG_ENTITYSTATE_REMOVING)
-        Fang_EntitySetRemove(&state->entities, ammo->id);
 }
 
 void
@@ -130,18 +137,25 @@ Fang_HealthCreate(
 
 static inline void
 Fang_HealthUpdate(
-    Fang_State  * const state,
-    Fang_Entity * const health)
+          Fang_State  * const state,
+          Fang_Entity * const health,
+    const uint32_t            delta)
 {
     assert(state);
     assert(health);
     assert(health->state);
     assert(health->type == FANG_ENTITYTYPE_HEALTH);
 
+    (void)delta;
+
+    if (health->state == FANG_ENTITYSTATE_REMOVING)
+    {
+        Fang_EntitySetRemove(&state->entities, health->id);
+        return;
+    }
+
     if (health->state == FANG_ENTITYSTATE_CREATING)
         health->state = FANG_ENTITYSTATE_ACTIVE;
-    else if (health->state == FANG_ENTITYSTATE_REMOVING)
-        Fang_EntitySetRemove(&state->entities, health->id);
 }
 
 void
