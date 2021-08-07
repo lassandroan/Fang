@@ -31,18 +31,16 @@ Fang_PlayerCreate(
             .props.player.health = 100,
             .props.player.weapon = FANG_WEAPONTYPE_NONE,
             .body = (Fang_Body){
-                .pos = pos,
-                .dir = dir,
-                .acc = {
-                    .x = FANG_RUN_SPEED * 7.5f,
-                    .y = FANG_RUN_SPEED * 7.5f,
+                .pos       = pos,
+                .dir       = dir,
+                .vel.delta = {
+                    .x = FANG_RUN_SPEED / 100.0f,
+                    .y = FANG_RUN_SPEED / 100.0f,
+                    .z = FANG_GRAVITY,
                 },
-                .max = {
-                    .x = FANG_RUN_SPEED,
-                    .y = FANG_RUN_SPEED,
-                    .z = 100000.0f,
-                },
-                .flags = (
+                .width     = FANG_PLAYER_WIDTH,
+                .height    = FANG_PLAYER_HEIGHT,
+                .flags     = (
                     FANG_BODYFLAG_JUMP
                   | FANG_BODYFLAG_FALL
                   | FANG_BODYFLAG_STEP

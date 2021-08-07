@@ -32,16 +32,14 @@ typedef enum Fang_BodyFlags {
  * would be at Fang_Body.pos.z + Fang_Body.size.
 **/
 typedef struct Fang_Body {
-    int       flags; /* Body Behavior Flags  */
-    Fang_Vec3 pos;   /* Current Position     */
-    Fang_Vec3 dir;   /* Current Direction    */
-    Fang_Vec3 vel;   /* Current Velocity     */
-    Fang_Vec3 mov;   /* Movement Direction   */
-    Fang_Vec2 acc;   /* Acceleration Speeds  */
-    Fang_Vec3 max;   /* Max Velocity Values  */
-    float     size;  /* Body Size (All Axes) */
-    Fang_Vec3 last;  /* Previous Position    */
-    bool      jump;  /* Jump State           */
+    int           flags;
+    Fang_Vec3     pos;
+    Fang_Vec3     last;
+    Fang_Vec3     dir;
+    Fang_LerpVec3 vel;
+    float         height;
+    float         width;
+    bool          jump;
 } Fang_Body;
 
 static inline bool
@@ -54,7 +52,7 @@ Fang_BodyCanStep(
     if (!(body->flags & FANG_BODYFLAG_STEP))
         return false;
 
-    return (surface_top <= body->pos.z + (body->size / 3.0f));
+    return (surface_top <= body->pos.z + (body->height / 3.0f));
 }
 
 static inline bool
@@ -75,7 +73,7 @@ Fang_BodyCollidesMap(
     if (!tile)
         return false;
 
-    const float body_top = body->pos.z + body->size;
+    const float body_top = body->pos.z + body->height;
     const float tile_top = tile->y + tile->h;
 
     if (tile->y >= body_top)
@@ -168,94 +166,67 @@ Fang_BodyMove(
 
     body->last = body->pos;
 
-    for (size_t i = 0; i < 2; ++i)
+    Fang_LerpVec3 * const vel = &body->vel;
+
+    if (!body->jump && vel->target.z > 0.0f)
     {
-        float * const target = &body->vel.xyz[i];
-
-        if (fabsf(body->mov.xyz[i]) < FLT_EPSILON)
+        if (vel->value.z >= -FANG_JUMP_TOLERANCE && vel->value.z <= 0.0f)
         {
-            const float delta_acc = body->acc.xy[i] * delta;
-
-            if (*target < 0.0f)
-            {
-                if (*target + delta_acc < 0.0f)
-                    *target += delta_acc;
-                else
-                    *target = 0.0f;
-            }
-            else if (*target > 0.0f)
-            {
-                if (*target - delta_acc > 0.0f)
-                    *target -= delta_acc;
-                else
-                    *target = 0.0f;
-            }
-        }
-
-        *target = clamp(
-            *target + ((body->acc.xy[i] * delta) * body->mov.xyz[i]),
-            -body->max.xyz[i],
-            body->max.xyz[i]
-        );
-    }
-
-    {
-        if (!body->jump && body->mov.z > 0.0f)
-        {
-            if (body->vel.z >= -FANG_JUMP_TOLERANCE && body->vel.z <= 0.0f)
-            {
-                body->jump  = true;
-                body->vel.z = body->mov.z;
-            }
-        }
-
-        if (body->flags & FANG_BODYFLAG_FALL)
-        {
-            const float standing_surface = Fang_BodyFindFloor(body, map);
-
-            if (body->pos.z > standing_surface)
-                body->vel.z -= FANG_GRAVITY * delta;
+            body->jump = true;
+            body->vel.value.z = body->vel.target.z;
         }
     }
 
-    Fang_Vec3 new = body->pos;
-    new.x += (body->dir.x * body->vel.x + body->dir.y * body->vel.y) * delta;
-    new.y += (body->dir.y * body->vel.x - body->dir.x * body->vel.y) * delta;
-    new.z += (body->vel.z * delta);
+    if (body->flags & FANG_BODYFLAG_FALL)
+    {
+        const float standing_surface = Fang_BodyFindFloor(body, map);
+
+        if (body->pos.z > standing_surface)
+            vel->value.z -= FANG_GRAVITY * delta;
+    }
+
+    Fang_Lerp(vel);
+
+    const Fang_Vec3 new_pos = Fang_Vec3Add(
+        body->pos, Fang_Vec3Multf(vel->value, delta)
+    );
 
     if (!(body->flags & FANG_BODYFLAG_COLLIDE_WALLS))
+    {
+        body->pos = new_pos;
         return;
+    }
 
     /* X velocity collision */
     {
         Fang_Body test_body = *body;
-        test_body.pos.x     = new.x;
+        test_body.pos.x     = new_pos.x;
 
         if (!Fang_BodyCollidesMap(&test_body, map))
-            body->pos.x = new.x;
+            body->pos.x = new_pos.x;
     }
 
     /* Y velocity collision */
     {
         Fang_Body test_body = *body;
-        test_body.pos.y     = new.y;
+        test_body.pos.y     = new_pos.y;
 
         if (!Fang_BodyCollidesMap(&test_body, map))
-            body->pos.y = new.y;
+            body->pos.y = new_pos.y;
     }
 
     /* Z velocity collision */
     {
         Fang_Body test_body = *body;
-        test_body.pos.z     = new.z;
+        test_body.pos.z     = new_pos.z;
 
         if (!Fang_BodyCollidesMap(&test_body, map))
         {
-            body->pos.z = new.z;
+            body->pos.z = new_pos.z;
         }
         else
         {
-            body->vel.z = 0.0f;
+            vel->value.z = 0.0f;
             body->jump = false;
         }
     }
@@ -266,9 +237,9 @@ Fang_BodyMove(
 
         if (body->pos.z <= standing_surface)
         {
-            body->vel.z = 0.0f;
-            body->pos.z = standing_surface;
-            body->jump  = false;
+            body->jump   = false;
+            body->pos.z  = standing_surface;
+            vel->value.z = 0.0f;
         }
     }
 }
@@ -285,8 +256,8 @@ Fang_BodiesIntersect(
     assert(a);
     assert(b);
 
-    const bool a_above_b = a->pos.z > b->pos.z + b->size;
-    const bool b_above_a = b->pos.z > a->pos.z + a->size;
+    const bool a_above_b = a->pos.z > b->pos.z + b->height;
+    const bool b_above_a = b->pos.z > a->pos.z + a->height;
 
     if (a_above_b || b_above_a)
         return false;
@@ -294,7 +265,7 @@ Fang_BodiesIntersect(
     const float dx = a->pos.x - b->pos.x;
     const float dy = a->pos.y - b->pos.y;
 
-    return sqrtf(dx * dx + dy * dy) <= a->size + b->size;
+    return sqrtf(dx * dx + dy * dy) <= a->width + b->width;
 }
 
 /**
@@ -324,18 +295,18 @@ Fang_BodiesResolveCollision(
     a->jump = false;
     b->jump = false;
 
-    if (a->pos.z > b->pos.z && a->vel.z < 0.0f)
+    if (a->pos.z > b->pos.z && a->vel.value.z < 0.0f)
     {
-        a->vel.z = 0.0f;
-        a->pos.z = b->pos.z + b->size;
+        a->vel.value.z = 0.0f;
+        a->pos.z = b->pos.z + b->height;
 
         return;
     }
 
-    if (b->pos.z > a->pos.z && b->vel.z < 0.0f)
+    if (b->pos.z > a->pos.z && b->vel.value.z < 0.0f)
     {
-        b->vel.z = 0.0f;
-        b->pos.z = a->pos.z + a->size;
+        b->vel.value.z = 0.0f;
+        b->pos.z = a->pos.z + a->height;
 
         return;
     }
@@ -344,8 +315,8 @@ Fang_BodiesResolveCollision(
     a->pos.y = a->last.y;
     b->pos.x = b->last.x;
     b->pos.y = b->last.y;
-    a->vel.x = 0.0f;
-    a->vel.y = 0.0f;
-    b->vel.x = 0.0f;
-    b->vel.y = 0.0f;
+    a->vel.value.x = 0.0f;
+    a->vel.value.y = 0.0f;
+    b->vel.value.x = 0.0f;
+    b->vel.value.y = 0.0f;
 }

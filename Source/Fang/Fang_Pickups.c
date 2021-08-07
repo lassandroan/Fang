@@ -29,9 +29,10 @@ Fang_AmmoCreate(
             .props.ammo.type  = type,
             .props.ammo.count = count,
             .body = (Fang_Body){
-                .pos   = pos,
-                .size  = FANG_PICKUP_SIZE,
-                .flags = (
+                .pos    = pos,
+                .width  = FANG_PICKUP_WIDTH,
+                .height = FANG_PICKUP_HEIGHT,
+                .flags  = (
                     FANG_BODYFLAG_FALL
                   | FANG_BODYFLAG_COLLIDE_WALLS
                 ),
@@ -108,9 +109,10 @@ Fang_HealthCreate(
             .type = FANG_ENTITYTYPE_HEALTH,
             .props.health.count = count,
             .body = {
-                .pos   = pos,
-                .size  = FANG_PICKUP_SIZE,
-                .flags = (
+                .pos    = pos,
+                .width  = FANG_PICKUP_WIDTH,
+                .height = FANG_PICKUP_HEIGHT,
+                .flags  = (
                     FANG_BODYFLAG_FALL
                   | FANG_BODYFLAG_COLLIDE_WALLS
                 ),

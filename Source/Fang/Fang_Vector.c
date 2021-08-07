@@ -28,11 +28,43 @@ typedef union Fang_Vec3 {
 } Fang_Vec3;
 
 static inline Fang_Vec2
+Fang_Vec2Add(
+    const Fang_Vec2 a,
+    const Fang_Vec2 b)
+{
+    return (Fang_Vec2){.x = a.x + b.x, .y = a.y + b.y};
+}
+
+static inline Fang_Vec3
+Fang_Vec3Add(
+    const Fang_Vec3 a,
+    const Fang_Vec3 b)
+{
+    return (Fang_Vec3){.x = a.x + b.x, .y = a.y + b.y, .z = a.z + b.z};
+}
+
+static inline Fang_Vec2
 Fang_Vec2Divf(
     const Fang_Vec2 a,
     const float     b)
 {
     return (Fang_Vec2){.x = a.x / b, .y = a.y / b};
+}
+
+static inline Fang_Vec3
+Fang_Vec3Divf(
+    const Fang_Vec3 a,
+    const float     b)
+{
+    return (Fang_Vec3){.x = a.x / b, .y = a.y / b, .z = a.z / b};
+}
+
+static inline Fang_Vec3
+Fang_Vec3Mult(
+    const Fang_Vec3 a,
+    const Fang_Vec3 b)
+{
+    return (Fang_Vec3){.x = a.x * b.x, .y = a.y * b.y, .z = a.z * b.z};
 }
 
 static inline Fang_Vec2
@@ -82,9 +114,49 @@ Fang_Vec2Norm(
     return sqrtf(a.x * a.x + a.y * a.y);
 }
 
+static inline float
+Fang_Vec3Norm(
+    const Fang_Vec3 a)
+{
+    return sqrtf(a.x * a.x + a.y * a.y + a.z * a.z);
+}
+
 static inline Fang_Vec2
 Fang_Vec2Normalize(
     const Fang_Vec2 a)
 {
     return Fang_Vec2Divf(a, Fang_Vec2Norm(a));
+}
+
+static inline Fang_Vec3
+Fang_Vec3Normalize(
+    const Fang_Vec3 a)
+{
+    return Fang_Vec3Divf(a, Fang_Vec3Norm(a));
+}
+
+static inline Fang_Vec3
+Fang_Vec3Translate(
+    const Fang_Vec3 dir,
+    const float     forward,
+    const float     left,
+    const float     up)
+{
+    Fang_Vec2 result = Fang_Vec2Multf(
+        Fang_Vec2Normalize((Fang_Vec2){.x = dir.x, .y = dir.y}),
+        forward
+    );
+
+    result = Fang_Vec2Add(
+        result,
+        Fang_Vec2Multf(
+            Fang_Vec2Normalize((Fang_Vec2){.x = dir.y, .y = -dir.x}), left
+        )
+    );
+
+    return (Fang_Vec3){
+        .x = result.x,
+        .y = result.y,
+        .z = up,
+    };
 }

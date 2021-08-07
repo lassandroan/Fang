@@ -33,20 +33,16 @@ Fang_ProjectileCreate(
                 .pos = {
                     .x = owner->body.pos.x,
                     .y = owner->body.pos.y,
-                    .z = owner->body.pos.z + owner->body.size / 2,
+                    .z = owner->body.pos.z + owner->body.height / 2,
                 },
-                .acc = {
+                .vel.delta = {
                     .x = FANG_RUN_SPEED * 100,
                     .y = FANG_RUN_SPEED * 100,
                 },
-                .max = {
-                    .x = FANG_RUN_SPEED * 4,
-                    .y = FANG_RUN_SPEED * 4,
-                },
-                .dir = owner->body.dir,
-                .mov = owner->body.dir,
-                .size = owner->body.size / 4,
-                .flags = FANG_BODYFLAG_COLLIDE_WALLS,
+                .dir    = owner->body.dir,
+                .width  = owner->body.width / 4,
+                .height = owner->body.width / 4,
+                .flags  = FANG_BODYFLAG_COLLIDE_WALLS,
             },
         }
     );

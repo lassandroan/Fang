@@ -94,7 +94,8 @@ Fang_CameraProjectBody(
     const float dist = (viewport->h / plane_pos.y)
                      * (1.0f / FANG_PROJECTION_RATIO);
 
-    const float size   = (body->size    * FANG_PROJECTION_RATIO) * dist;
+    const float width  = (body->width   * FANG_PROJECTION_RATIO) * dist;
+    const float height = (body->height  * FANG_PROJECTION_RATIO) * dist;
     const float offset = (camera->pos.z * FANG_PROJECTION_RATIO) * dist;
     const float pitch  = (camera->cam.z * viewport->h);
 
@@ -102,16 +103,16 @@ Fang_CameraProjectBody(
         .x = (int)(
             (viewport->w / 2.0f)
           * (1.0f - plane_pos.x / plane_pos.y)
-          - (size / 2.0f)
+          - (width / 2.0f)
         ),
         .y = (int)(
             (viewport->h / 2.0f)
-          - size
+          - height
           + offset
           + pitch
           - (body->pos.z * FANG_PROJECTION_RATIO * dist)
         ),
-        .w = (int)size,
-        .h = (int)size,
+        .w = (int)width,
+        .h = (int)height,
     };
 }

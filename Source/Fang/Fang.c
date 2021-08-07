@@ -85,7 +85,7 @@ Fang_Init(void)
         (Fang_Vec3){.x = -1.0f}
     );
 
-    gamestate.sway.delta = 0.1f;
+    gamestate.sway.delta = (Fang_Vec2){.x = 0.1f, .y = 0.1f};
 
     Fang_EntitySetAdd(
         &gamestate.entities,
@@ -94,17 +94,9 @@ Fang_Init(void)
             .body = (Fang_Body){
                 .pos = (Fang_Vec3){.x = 4.0f, .y = 4.0f},
                 .dir = {.x = -1.0f},
-                .acc = {
-                    .x = FANG_RUN_SPEED * 7.5f,
-                    .y = FANG_RUN_SPEED * 7.5f,
-                },
-                .max = {
-                    .x = FANG_RUN_SPEED,
-                    .y = FANG_RUN_SPEED,
-                    .z = 100000.0f,
-                },
-                .size = FANG_PLAYER_SIZE,
-                .flags = FANG_BODYFLAG_COLLIDE_BODIES,
+                .width  = FANG_PLAYER_WIDTH,
+                .height = FANG_PLAYER_HEIGHT,
+                .flags  = FANG_BODYFLAG_COLLIDE_BODIES,
             }
         }
     );
@@ -150,22 +142,24 @@ Fang_Update(
 
     if (player)
     {
-        Fang_Vec3 move = {.x = 0.0f};
+        float forward = 0.0f;
+        float left    = 0.0f;
+        float up      = 0.0f;
 
         if (input->controller.direction_up.pressed)
-            move.x += 1.0f;
+            forward += FANG_RUN_SPEED;
 
         if (input->controller.direction_down.pressed)
-            move.x -= 1.0f;
+            forward -= FANG_RUN_SPEED;
 
         if (input->controller.direction_left.pressed)
-            move.y += 1.0f;
+            left += FANG_RUN_SPEED;
 
         if (input->controller.direction_right.pressed)
-            move.y -= 1.0f;
+            left -= FANG_RUN_SPEED;
 
         if (Fang_InputPressed(&input->controller.action_down))
-            move.z = FANG_JUMP_SPEED;
+            up = FANG_JUMP_SPEED;
 
         Fang_WeaponType * const weapon = &player->props.player.weapon;
 
@@ -209,26 +203,8 @@ Fang_Update(
                 (*weapon)++;
         }
 
-        if (input->controller.joystick_left.button.pressed)
-        {
-            player->body.max.x = FANG_RUN_SPEED * 1.5f;
-            player->body.max.y = FANG_RUN_SPEED * 1.5f;
-        }
-        else if (input->controller.joystick_right.button.pressed)
-        {
-            player->body.max.x = FANG_RUN_SPEED * 0.25f;
-            player->body.max.y = FANG_RUN_SPEED * 0.25f;
-            player->body.size  = FANG_PLAYER_SIZE * 0.5f;
-        }
-        else
-        {
-            player->body.max.x = FANG_RUN_SPEED * 0.5f;
-            player->body.max.y = FANG_RUN_SPEED * 0.5f;
-            player->body.size  = FANG_PLAYER_SIZE;
-        }
-
-        move.y -= input->controller.joystick_left.x;
-        move.x -= input->controller.joystick_left.y;
+        left    -= input->controller.joystick_left.x * FANG_RUN_SPEED;
+        forward -= input->controller.joystick_left.y * FANG_RUN_SPEED;
 
         const float prev_pitch = gamestate.camera.cam.z;
 
@@ -243,9 +219,9 @@ Fang_Update(
         player->body.dir = gamestate.camera.dir;
 
         /* Sway based on player velocity */
-        gamestate.sway.target.x += player->body.vel.y / 8.0f;
-        gamestate.sway.target.y += player->body.vel.x / 16.0f;
-        gamestate.sway.target.y += player->body.vel.z / 2.0f;
+        gamestate.sway.target.x += player->body.vel.value.y / 8.0f;
+        gamestate.sway.target.y += player->body.vel.value.x / 16.0f;
+        gamestate.sway.target.y += player->body.vel.value.z / 2.0f;
 
         /* Sway based on camera movement */
         gamestate.sway.target.x -= (input->mouse.relative.x / 8);
@@ -258,15 +234,17 @@ Fang_Update(
         }
 
         /* Bob if player is moving on a surface */
-        if (player->body.vel.z == 0.0f
-        && (move.x != 0.0f || move.y != 0.0f))
+        if (player->body.vel.value.z == 0.0f
+        && (forward != 0.0f || left != 0.0f))
         {
             gamestate.bob += ((float)M_PI / 20.0f);
             gamestate.sway.target.x += cosf(gamestate.bob) * 0.5f;
             gamestate.sway.target.y += fabsf(sinf(gamestate.bob)) * 0.5f;
         }
 
-        player->body.mov = move;
+        player->body.vel.target = Fang_Vec3Translate(
+            player->body.dir, forward, left, up
+        );
     }
 
     {
@@ -355,7 +333,7 @@ Fang_Update(
                 gamestate.camera.pos = (Fang_Vec3){
                     .x = player->body.pos.x,
                     .y = player->body.pos.y,
-                    .z = player->body.pos.z + player->body.size,
+                    .z = player->body.pos.z + player->body.height,
                 };
 
                 Fang_Lerp(&gamestate.sway);
