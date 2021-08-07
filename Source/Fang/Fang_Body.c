@@ -187,61 +187,7 @@ Fang_BodyMove(
 
     Fang_Lerp(vel);
 
-    const Fang_Vec3 new_pos = Fang_Vec3Add(
-        body->pos, Fang_Vec3Multf(vel->value, delta)
-    );
-
-    if (!(body->flags & FANG_BODYFLAG_COLLIDE_WALLS))
-    {
-        body->pos = new_pos;
-        return;
-    }
-
-    /* X velocity collision */
-    {
-        Fang_Body test_body = *body;
-        test_body.pos.x     = new_pos.x;
-
-        if (!Fang_BodyCollidesMap(&test_body, map))
-            body->pos.x = new_pos.x;
-    }
-
-    /* Y velocity collision */
-    {
-        Fang_Body test_body = *body;
-        test_body.pos.y     = new_pos.y;
-
-        if (!Fang_BodyCollidesMap(&test_body, map))
-            body->pos.y = new_pos.y;
-    }
-
-    /* Z velocity collision */
-    {
-        Fang_Body test_body = *body;
-        test_body.pos.z     = new_pos.z;
-
-        if (!Fang_BodyCollidesMap(&test_body, map))
-        {
-            body->pos.z = new_pos.z;
-        }
-        else
-        {
-            vel->value.z = 0.0f;
-            body->jump = false;
-        }
-    }
-
-    /* If we moved onto a short tile, step up onto it */
-    {
-        const float standing_surface = Fang_BodyFindStep(body, map);
-
-        if (body->pos.z <= standing_surface)
-        {
-            body->jump   = false;
-            body->pos.z  = standing_surface;
-            vel->value.z = 0.0f;
-        }
-    }
+    body->pos = Fang_Vec3Add(body->pos, Fang_Vec3Multf(vel->value, delta));
 }
 
 /**
@@ -269,6 +215,77 @@ Fang_BodiesIntersect(
 }
 
 /**
+ * Resolves collisions between a body and the map tiles.
+ *
+ * This accounts for wall collisions as well as keeping the body standing on
+ * the surface below it (if it is below said surface).
+ *
+ * If the body can step onto short tiles, this finds potential steps and applies
+ * them to the body.
+ *
+ * If the body cannot collide with walls, this function does nothing.
+**/
+static inline bool
+Fang_BodyResolveMapCollision(
+          Fang_Body * const body,
+    const Fang_Map  * const map)
+{
+    assert(body);
+    assert(map);
+
+    if (!(body->flags & FANG_BODYFLAG_COLLIDE_WALLS))
+        return false;
+
+    Fang_Body test_body = *body;
+    test_body.pos = test_body.last;
+
+    bool result = false;
+
+    /* X collision */
+    test_body.pos.x = body->pos.x;
+
+    if (Fang_BodyCollidesMap(&test_body, map))
+    {
+        result = true;
+        test_body.pos.x = test_body.last.x;
+    }
+
+    /* Y collision */
+    test_body.pos.y = body->pos.y;
+
+    if (Fang_BodyCollidesMap(&test_body, map))
+    {
+        result = true;
+        test_body.pos.y = test_body.last.y;
+    }
+
+    /* Z collision */
+    test_body.pos.z = body->pos.z;
+
+    if (Fang_BodyCollidesMap(&test_body, map))
+    {
+        result = true;
+        body->jump        = false;
+        body->vel.value.z = 0.0f;
+        test_body.pos.z   = test_body.last.z;
+    }
+
+    body->pos = test_body.pos;
+
+    /* If we moved onto a short tile, step up onto it */
+    const float standing_surface = Fang_BodyFindStep(body, map);
+
+    if (body->pos.z <= standing_surface)
+    {
+        body->jump        = false;
+        body->pos.z       = standing_surface;
+        body->vel.value.z = 0.0f;
+    }
+
+    return result;
+}
+
+/**
  * Calculates the new position for bodies that have collided.
  *
  * When bodies have the collide-body flag enabled, they should not be able to
@@ -279,7 +296,7 @@ Fang_BodiesIntersect(
  * bodies to land on top of other collideable bodies.
 **/
 static inline void
-Fang_BodiesResolveCollision(
+Fang_BodyResolveBodyCollision(
     Fang_Body * const a,
     Fang_Body * const b)
 {

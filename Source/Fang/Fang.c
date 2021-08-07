@@ -270,33 +270,10 @@ Fang_Update(
                 Fang_BodyMove(&entity->body, &gamestate.map, FANG_DELTA_TIME_S);
             }
 
-            for (Fang_EntityId i = 0; i < FANG_MAX_ENTITIES; ++i)
-            {
-                for (Fang_EntityId j = i + 1; j < FANG_MAX_ENTITIES; ++j)
-                {
-                    Fang_Entity * const entities[2] = {
-                        Fang_EntitySetQuery(&gamestate.entities, i),
-                        Fang_EntitySetQuery(&gamestate.entities, j),
-                    };
-
-                    if (!entities[0] || !entities[1])
-                        continue;
-
-                    const bool collides = Fang_BodiesIntersect(
-                        &entities[0]->body, &entities[1]->body
-                    );
-
-                    if (collides)
-                    {
-                        Fang_CollisionSetAdd(
-                            &gamestate.entities.collisions,
-                            (Fang_EntityPair){{i, j}}
-                        );
-                    }
-                }
-            }
-
-            Fang_EntitySetResolveCollisions(&gamestate.entities);
+            Fang_EntitySetResolveCollisions(
+                &gamestate.entities,
+                &gamestate.map
+            );
 
             // Placeholder for entity update loop
             for (Fang_EntityId i = 0; i < FANG_MAX_ENTITIES; ++i)

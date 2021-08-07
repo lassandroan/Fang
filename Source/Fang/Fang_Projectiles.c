@@ -77,7 +77,14 @@ Fang_ProjectileUpdate(
 }
 
 void
-Fang_ProjectileCollide(
+Fang_ProjectileCollideMap(
+    Fang_Entity * const projectile)
+{
+    assert(projectile);
+}
+
+void
+Fang_ProjectileCollideEntity(
           Fang_Entity * const projectile,
           Fang_Entity * const entity,
     const bool                initial_collision)

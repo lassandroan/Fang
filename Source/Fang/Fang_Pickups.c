@@ -58,7 +58,14 @@ Fang_AmmoUpdate(
 }
 
 void
-Fang_AmmoCollide(
+Fang_AmmoCollideMap(
+    Fang_Entity * const ammo)
+{
+    assert(ammo);
+}
+
+void
+Fang_AmmoCollideEntity(
           Fang_Entity * const ammo,
           Fang_Entity * const entity,
     const bool                initial_collision)
@@ -138,7 +145,14 @@ Fang_HealthUpdate(
 }
 
 void
-Fang_HealthCollide(
+Fang_HealthCollideMap(
+    Fang_Entity * const health)
+{
+    assert(health);
+}
+
+void
+Fang_HealthCollideEntity(
           Fang_Entity * const health,
           Fang_Entity * const entity,
     const bool                initial_collision)

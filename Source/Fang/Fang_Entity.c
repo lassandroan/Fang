@@ -317,11 +317,11 @@ Fang_EntityResolveCollision(
         const bool
     );
 
-    CollisionFunc Fang_AmmoCollide;
-    CollisionFunc Fang_HealthCollide;
-    CollisionFunc Fang_PlayerCollide;
+    CollisionFunc Fang_AmmoCollideEntity;
+    CollisionFunc Fang_HealthCollideEntity;
+    CollisionFunc Fang_PlayerCollideEntity;
 
-    Fang_BodiesResolveCollision(&first->body, &second->body);
+    Fang_BodyResolveBodyCollision(&first->body, &second->body);
 
     for (size_t i = 0; i < 2; ++i)
     {
@@ -331,15 +331,15 @@ Fang_EntityResolveCollision(
         switch (entity->type)
         {
             case FANG_ENTITYTYPE_PLAYER:
-                Fang_PlayerCollide(entity, other, initial_collision);
+                Fang_PlayerCollideEntity(entity, other, initial_collision);
                 break;
 
             case FANG_ENTITYTYPE_AMMO:
-                Fang_AmmoCollide(entity, other, initial_collision);
+                Fang_AmmoCollideEntity(entity, other, initial_collision);
                 break;
 
             case FANG_ENTITYTYPE_HEALTH:
-                Fang_HealthCollide(entity, other, initial_collision);
+                Fang_HealthCollideEntity(entity, other, initial_collision);
                 break;
 
             default:
@@ -349,7 +349,7 @@ Fang_EntityResolveCollision(
 }
 
 /**
- * Resolves current-frame collisions for entities in the set.
+ * Calculates and resolves current-frame collisions for entities in the set.
  *
  * The results of the current-frame collision table are compared with those of
  * the previous-frame collision table to determine if the current collision is
@@ -367,9 +367,72 @@ Fang_EntityResolveCollision(
 **/
 static inline void
 Fang_EntitySetResolveCollisions(
-    Fang_EntitySet * const entities)
+          Fang_EntitySet * const entities,
+    const Fang_Map       * const map)
 {
     assert(entities);
+    assert(!entities->collisions.count);
+    assert(map);
+
+    typedef void (CollisionFunc)(
+        Fang_Entity * const
+    );
+
+    CollisionFunc Fang_AmmoCollideMap;
+    CollisionFunc Fang_HealthCollideMap;
+    CollisionFunc Fang_PlayerCollideMap;
+
+    for (Fang_EntityId i = 0; i < FANG_MAX_ENTITIES; ++i)
+    {
+        Fang_Entity * const entity = Fang_EntitySetQuery(entities, i);
+
+        if (!entity)
+            continue;
+
+        if (Fang_BodyResolveMapCollision(&entity->body, map))
+        {
+            switch (entity->type)
+            {
+                case FANG_ENTITYTYPE_PLAYER:
+                    Fang_PlayerCollideMap(entity);
+                    break;
+
+                case FANG_ENTITYTYPE_AMMO:
+                    Fang_AmmoCollideMap(entity);
+                    break;
+
+                case FANG_ENTITYTYPE_HEALTH:
+                    Fang_HealthCollideMap(entity);
+                    break;
+
+                default:
+                    break;
+            };
+        }
+    }
+
+    for (Fang_EntityId i = 0; i < FANG_MAX_ENTITIES; ++i)
+    {
+        for (Fang_EntityId j = i + 1; j < FANG_MAX_ENTITIES; ++j)
+        {
+            Fang_Entity * const pair[2] = {
+                Fang_EntitySetQuery(entities, i),
+                Fang_EntitySetQuery(entities, j),
+            };
+
+            if (!pair[0] || !pair[1])
+                continue;
+
+            if (Fang_BodiesIntersect(&pair[0]->body, &pair[1]->body))
+            {
+                Fang_CollisionSetAdd(
+                    &entities->collisions,
+                    (Fang_EntityPair){{i, j}}
+                );
+            }
+        }
+    }
+
     assert(entities->collisions.count < FANG_MAX_COLLISIONS);
 
     Fang_CollisionSet * const collisions      = &entities->collisions;

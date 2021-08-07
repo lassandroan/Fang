@@ -72,7 +72,14 @@ Fang_PlayerUpdate(
 }
 
 void
-Fang_PlayerCollide(
+Fang_PlayerCollideMap(
+    Fang_Entity * const player)
+{
+    assert(player);
+}
+
+void
+Fang_PlayerCollideEntity(
           Fang_Entity * const player,
           Fang_Entity * const entity,
     const bool                initial_collision)
