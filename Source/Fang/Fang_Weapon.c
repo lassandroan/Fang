@@ -32,6 +32,7 @@ typedef struct Fang_Weapon {
           int                  damage;
           bool                 automatic;
           uint32_t             cooldown;
+          float                speed;
 } Fang_Weapon;
 
 static inline const Fang_Weapon *
@@ -50,6 +51,7 @@ Fang_WeaponQuery(
             .texture   = FANG_TEXTURE_PISTOL_HUD,
             .automatic = false,
             .cooldown  = 250,
+            .speed     = 10.0f,
         },
         [FANG_WEAPONTYPE_CARBINE] = (Fang_Weapon){
             .name      = "Cast-Iron Carbine",
@@ -57,6 +59,7 @@ Fang_WeaponQuery(
             .texture   = FANG_TEXTURE_CARBINE_HUD,
             .automatic = false,
             .cooldown  = 1000,
+            .speed     = 20.0f,
         },
         [FANG_WEAPONTYPE_FLAKGUN] = (Fang_Weapon){
             .name      = "Flakgun",
@@ -64,6 +67,7 @@ Fang_WeaponQuery(
             .texture   = FANG_TEXTURE_FLAKGUN_HUD,
             .automatic = false,
             .cooldown  = 500,
+            .speed     = 5.0f,
         },
         [FANG_WEAPONTYPE_CHAINGUN] = (Fang_Weapon){
             .name      = "Chaingun",
@@ -71,6 +75,7 @@ Fang_WeaponQuery(
             .texture   = FANG_TEXTURE_CHAINGUN_HUD,
             .automatic = true,
             .cooldown  = 50,
+            .speed     = 15.0f,
         },
         [FANG_WEAPONTYPE_LRAD] = (Fang_Weapon){
             .name      = "LRAD",
@@ -78,6 +83,7 @@ Fang_WeaponQuery(
             .texture   = FANG_TEXTURE_LRAD_HUD,
             .automatic = false,
             .cooldown  = 3000,
+            .speed     = 10.0f,
         },
         [FANG_WEAPONTYPE_PLASTICANNON] = (Fang_Weapon){
             .name      = "Plasti-cannon",
@@ -85,6 +91,7 @@ Fang_WeaponQuery(
             .texture   = FANG_TEXTURE_PLASTICANNON_HUD,
             .automatic = false,
             .cooldown  = 1000,
+            .speed     = 3.5f,
         },
         [FANG_WEAPONTYPE_FAZER] = (Fang_Weapon){
             .name      = "Fazer",
@@ -92,6 +99,7 @@ Fang_WeaponQuery(
             .texture   = FANG_TEXTURE_FAZER_HUD,
             .automatic = true,
             .cooldown  = 100,
+            .speed     = 17.5f,
         },
     };
 

@@ -37,6 +37,7 @@ Fang_ProjectileCreate(
                 .owner  = owner->id,
                 .health = weapon->damage,
                 .damage = weapon->damage,
+                .speed  = weapon->speed,
             },
             .body = {
                 .pos = {
@@ -45,8 +46,8 @@ Fang_ProjectileCreate(
                     .z = owner->body.pos.z + owner->body.height / 2,
                 },
                 .vel.delta = {
-                    .x = FANG_RUN_SPEED * 100,
-                    .y = FANG_RUN_SPEED * 100,
+                    .x = FANG_RUN_SPEED / 100,
+                    .y = FANG_RUN_SPEED / 100,
                 },
                 .dir    = owner->body.dir,
                 .width  = owner->body.width / 4,
@@ -67,17 +68,19 @@ Fang_ProjectileUpdate(
     assert(projectile->state);
     assert(projectile->type == FANG_ENTITYTYPE_PROJECTILE);
 
-    Fang_ProjectileProps * const projectile_props = (
-        &projectile->props.projectile
-    );
+    Fang_ProjectileProps * const props = &projectile->props.projectile;
 
-    if (projectile_props->health <= 0)
+    if (props->health <= 0)
         projectile->state = FANG_ENTITYSTATE_REMOVING;
 
     if (projectile->state == FANG_ENTITYSTATE_CREATING)
         projectile->state = FANG_ENTITYSTATE_ACTIVE;
     else if (projectile->state == FANG_ENTITYSTATE_REMOVING)
         Fang_EntitySetRemove(&state->entities, projectile->id);
+
+    projectile->body.vel.target = Fang_Vec3Translate(
+        projectile->body.dir, props->speed, 0.0f, 0.0f
+    );
 }
 
 void
