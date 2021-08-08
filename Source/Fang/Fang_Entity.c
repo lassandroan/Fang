@@ -87,7 +87,6 @@ typedef struct Fang_ProjectileProps {
     int             damage;
     int             health;
     uint32_t        lifespan;
-    int             ricochets;
     float           speed;
 } Fang_ProjectileProps;
 
