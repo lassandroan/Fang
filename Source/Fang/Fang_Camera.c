@@ -16,7 +16,7 @@
 typedef struct Fang_Camera {
     Fang_Vec3 pos;
     Fang_Vec3 dir;
-    Fang_Vec3 cam;
+    Fang_Vec2 cam;
 } Fang_Camera;
 
 static inline void
@@ -33,13 +33,13 @@ Fang_CameraRotate(
     };
 
     const Fang_Vec3 dir = camera->dir;
-    const Fang_Vec3 cam = camera->cam;
+    const Fang_Vec2 cam = camera->cam;
 
     camera->dir.x = dir.x * rotation.x - dir.y * rotation.y;
     camera->dir.y = dir.x * rotation.y + dir.y * rotation.x;
     camera->cam.x = cam.x * rotation.x - cam.y * rotation.y;
     camera->cam.y = cam.x * rotation.y + cam.y * rotation.x;
-    camera->cam.z = clamp(camera->cam.z + pitch, -1.0f, 1.0f);
+    camera->dir.z = clamp(camera->dir.z + pitch, -1.0f, 1.0f);
 }
 
 static inline Fang_Rect
@@ -57,7 +57,7 @@ Fang_CameraProjectTile(
     const float offset = (tile->y       * FANG_PROJECTION_RATIO) * dist;
     const float size   = (tile->h       * FANG_PROJECTION_RATIO) * dist;
     const float height = (camera->pos.z * FANG_PROJECTION_RATIO) * dist;
-    const float pitch  = (camera->cam.z * viewport->h);
+    const float pitch  = (camera->dir.z * viewport->h);
 
     return (Fang_Rect){
         .y = (int)roundf((viewport->h / 2) - offset - size + height + pitch),
@@ -94,10 +94,11 @@ Fang_CameraProjectBody(
     const float dist = (viewport->h / plane_pos.y)
                      * (1.0f / FANG_PROJECTION_RATIO);
 
+    const float z_pos  = (body->pos.z   * FANG_PROJECTION_RATIO) * dist;
     const float width  = (body->width   * FANG_PROJECTION_RATIO) * dist;
     const float height = (body->height  * FANG_PROJECTION_RATIO) * dist;
     const float offset = (camera->pos.z * FANG_PROJECTION_RATIO) * dist;
-    const float pitch  = (camera->cam.z * viewport->h);
+    const float pitch  = (camera->dir.z * viewport->h);
 
     return (Fang_Rect){
         .x = (int)(
@@ -110,7 +111,7 @@ Fang_CameraProjectBody(
           - height
           + offset
           + pitch
-          - (body->pos.z * FANG_PROJECTION_RATIO * dist)
+          - z_pos
         ),
         .w = (int)width,
         .h = (int)height,

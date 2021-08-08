@@ -44,7 +44,7 @@ Fang_RayCast(
     assert(count);
 
     const Fang_Vec3 * const dir = &camera->dir;
-    const Fang_Vec3 * const cam = &camera->cam;
+    const Fang_Vec2 * const cam = &camera->cam;
     const Fang_Vec2         pos = (Fang_Vec2){
         .x = camera->pos.x,
         .y = camera->pos.y

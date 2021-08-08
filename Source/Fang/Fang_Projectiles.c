@@ -44,11 +44,16 @@ Fang_ProjectileCreate(
                 .pos = {
                     .x = owner->body.pos.x,
                     .y = owner->body.pos.y,
-                    .z = owner->body.pos.z + owner->body.height / 2,
+                    .z = (
+                        owner->body.pos.z
+                      + owner->body.height
+                      - owner->body.width / 4
+                    ),
                 },
                 .vel.delta = {
                     .x = 1.0f,
                     .y = 1.0f,
+                    .z = 1.0f,
                 },
                 .dir    = owner->body.dir,
                 .width  = owner->body.width / 4,
@@ -75,6 +80,9 @@ Fang_ProjectileUpdate(
     if (props->health <= 0 || props->lifespan == 0)
         projectile->state = FANG_ENTITYSTATE_REMOVING;
 
+    if (projectile->body.pos.z == 0.0f)
+        projectile->state = FANG_ENTITYSTATE_REMOVING;
+
     if (projectile->state == FANG_ENTITYSTATE_REMOVING)
     {
         Fang_EntitySetRemove(&state->entities, projectile->id);
@@ -89,7 +97,7 @@ Fang_ProjectileUpdate(
     else
         props->lifespan -= delta;
 
-    Fang_BodySetTargetVelocity(&projectile->body, props->speed, 0.0f, 0.0f);
+    Fang_BodySetTargetVelocity(&projectile->body, props->speed, 0.0f);
 }
 
 void

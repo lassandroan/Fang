@@ -46,20 +46,20 @@ static inline void
 Fang_BodySetTargetVelocity(
           Fang_Body * const body,
     const float             forward,
-    const float             left,
-    const float             up)
+    const float             left)
 {
     assert(body);
 
-    const Fang_Vec2 dir       = {.x = body->dir.x, .y =  body->dir.y};
-    const Fang_Vec2 dir_cross = {.x = body->dir.y, .y = -body->dir.x};
+    const Fang_Vec3 dir_cross = {
+        .x =  body->dir.y,
+        .y = -body->dir.x,
+        .z =  body->dir.z,
+    };
 
-    const Fang_Vec2 result = Fang_Vec2Add(
-        Fang_Vec2Multf(Fang_Vec2Normalize(dir),    forward),
-        Fang_Vec2Multf(Fang_Vec2Normalize(dir_cross), left)
+    body->vel.target = Fang_Vec3Add(
+        Fang_Vec3Multf(Fang_Vec3Normalize(body->dir), forward),
+        Fang_Vec3Multf(Fang_Vec3Normalize(dir_cross),    left)
     );
-
-    body->vel.target = (Fang_Vec3){.x = result.x, .y = result.y, .z = up};
 }
 
 static inline bool

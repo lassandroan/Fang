@@ -360,7 +360,7 @@ Fang_DrawMapSkybox(
         return;
     }
 
-    const int pitch = (int)roundf(camera->cam.z * viewport.h);
+    const int pitch = (int)roundf(camera->dir.z * viewport.h);
 
     const float angle = Fang_Vec2Angle(
         *(Fang_Vec2*)(&camera->dir),
@@ -417,7 +417,7 @@ Fang_DrawMapFloor(
         return;
 
     /* Calculate vertical offset in screen space */
-    const float pitch  = camera->cam.z * viewport.h;
+    const float pitch  = camera->dir.z * viewport.h;
     const float height = camera->pos.z * FANG_PROJECTION_RATIO;
     const int   offset = (int)(pitch + height);
 
@@ -452,7 +452,7 @@ Fang_DrawMapFloor(
         const float row_dist = ((viewport.h / 2.0f) / p) * height;
 
         framebuf->state.current_depth = row_dist * FANG_PROJECTION_RATIO
-                                      + (1.0f - camera->cam.z);
+                                      + (1.0f - camera->dir.z);
 
         const Fang_Vec2 floor_step = {
             .x = row_dist * (ray_end.x - ray_start.x) / viewport.w,

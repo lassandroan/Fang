@@ -195,17 +195,31 @@ Fang_Update(
         left    -= input->controller.joystick_left.x * FANG_RUN_SPEED;
         forward -= input->controller.joystick_left.y * FANG_RUN_SPEED;
 
-        const float prev_pitch = gamestate.camera.cam.z;
+        const float prev_pitch = gamestate.camera.dir.z;
 
-        Fang_CameraRotate(
-            &gamestate.camera,
-            ((float)input->mouse.relative.x / (FANG_WINDOW_SIZE / 2.0f))
-            + (input->controller.joystick_right.x /  10.0f),
-            ((float)input->mouse.relative.y / -(FANG_WINDOW_SIZE / 2.0f))
-            + (input->controller.joystick_right.y / -10.0f)
-        );
+        {
+            const Fang_Vec2 mouse_rotate = {
+                .x = input->mouse.relative.x /  (FANG_WINDOW_SIZE / 2.0f),
+                .y = input->mouse.relative.y / -(FANG_WINDOW_SIZE / 2.0f),
+            };
 
-        player->body.dir = gamestate.camera.dir;
+            const Fang_Vec2 joystick_rotate = {
+                .x = input->controller.joystick_right.x /  10.0f,
+                .y = input->controller.joystick_right.y / -10.0f,
+            };
+
+            Fang_CameraRotate(
+                &gamestate.camera,
+                mouse_rotate.x + joystick_rotate.x,
+                mouse_rotate.y + joystick_rotate.y
+            );
+
+            player->body.dir = (Fang_Vec3){
+                .x = gamestate.camera.dir.x,
+                .y = gamestate.camera.dir.y,
+                .z = gamestate.camera.dir.z / FANG_PROJECTION_RATIO,
+            };
+        }
 
         /* Sway based on player velocity */
         gamestate.sway.target.x += player->body.vel.value.y / 8.0f;
@@ -216,7 +230,7 @@ Fang_Update(
         gamestate.sway.target.x -= (input->mouse.relative.x / 8);
         gamestate.sway.target.x -= input->controller.joystick_right.x;
 
-        if (fabsf(prev_pitch - gamestate.camera.cam.z) > FLT_EPSILON)
+        if (fabsf(prev_pitch - gamestate.camera.dir.z) > FLT_EPSILON)
         {
             gamestate.sway.target.y -= (input->mouse.relative.y / 8);
             gamestate.sway.target.y -= input->controller.joystick_right.y;
@@ -231,7 +245,8 @@ Fang_Update(
             gamestate.sway.target.y += fabsf(sinf(gamestate.bob)) * 0.5f;
         }
 
-        Fang_BodySetTargetVelocity(&player->body, forward, left, up);
+        Fang_BodySetTargetVelocity(&player->body, forward, left);
+        player->body.vel.target.z = up;
     }
 
     {
