@@ -47,8 +47,8 @@ Fang_ProjectileCreate(
                     .z = owner->body.pos.z + owner->body.height / 2,
                 },
                 .vel.delta = {
-                    .x = FANG_RUN_SPEED / 100,
-                    .y = FANG_RUN_SPEED / 100,
+                    .x = 1.0f,
+                    .y = 1.0f,
                 },
                 .dir    = owner->body.dir,
                 .width  = owner->body.width / 4,

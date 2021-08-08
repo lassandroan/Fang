@@ -25,20 +25,21 @@ typedef struct Fang_LerpVec3 {
     Fang_Vec3 delta;
 } Fang_LerpVec3;
 
-#define Fang_Lerp(x) _Generic(x,  \
+#define Fang_Lerp(value, delta) _Generic(value,  \
     Fang_LerpVec2*: Fang_LerpStepVec2, \
     Fang_LerpVec3*: Fang_LerpStepVec3  \
-    )(x)
+    )(value, delta)
 
 static inline void
 Fang_LerpStepVec2(
-    Fang_LerpVec2 * const vec)
+          Fang_LerpVec2 * const vec,
+    const float                 delta)
 {
     assert(vec);
 
     const Fang_Vec2 dt = (Fang_Vec2){
-        .x = FANG_DELTA_TIME_S / vec->delta.x,
-        .y = FANG_DELTA_TIME_S / vec->delta.y,
+        .x = vec->delta.x * delta,
+        .y = vec->delta.y * delta,
     };
 
     vec->value.x = (fabsf(vec->value.x - vec->target.x) > vec->target.x * dt.x)
@@ -52,14 +53,15 @@ Fang_LerpStepVec2(
 
 static inline void
 Fang_LerpStepVec3(
-    Fang_LerpVec3 * const vec)
+          Fang_LerpVec3 * const vec,
+    const float                 delta)
 {
     assert(vec);
 
     const Fang_Vec3 dt = (Fang_Vec3){
-        .x = FANG_DELTA_TIME_S / vec->delta.x,
-        .y = FANG_DELTA_TIME_S / vec->delta.y,
-        .z = FANG_DELTA_TIME_S / vec->delta.z,
+        .x = vec->delta.x * delta,
+        .y = vec->delta.y * delta,
+        .z = vec->delta.z * delta,
     };
 
     vec->value.x = (fabsf(vec->value.x - vec->target.x) > vec->target.x * dt.x)

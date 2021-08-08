@@ -34,9 +34,9 @@ Fang_PlayerCreate(
                 .pos       = pos,
                 .dir       = dir,
                 .vel.delta = {
-                    .x = FANG_RUN_SPEED / 100.0f,
-                    .y = FANG_RUN_SPEED / 100.0f,
-                    .z = FANG_GRAVITY,
+                    .x = FANG_RUN_SPEED,
+                    .y = FANG_RUN_SPEED,
+                    .z = 0.0f,
                 },
                 .width     = FANG_PLAYER_WIDTH,
                 .height    = FANG_PLAYER_HEIGHT,

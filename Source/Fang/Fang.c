@@ -310,7 +310,7 @@ Fang_Update(
                     .z = player->body.pos.z + player->body.height,
                 };
 
-                Fang_Lerp(&gamestate.sway);
+                Fang_Lerp(&gamestate.sway, FANG_DELTA_TIME_S);
             }
 
             gamestate.clock.accumulator -= FANG_DELTA_TIME_MS;

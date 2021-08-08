@@ -185,7 +185,7 @@ Fang_BodyMove(
             vel->value.z -= FANG_GRAVITY * delta;
     }
 
-    Fang_Lerp(vel);
+    Fang_Lerp(vel, delta);
 
     body->pos = Fang_Vec3Add(body->pos, Fang_Vec3Multf(vel->value, delta));
 }
