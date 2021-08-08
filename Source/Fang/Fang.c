@@ -140,7 +140,7 @@ Fang_Update(
 
     gamestate.sway.target = (Fang_Vec2){.x = 0.0f, .y = 0.0f};
 
-    if (player)
+    if (player && player->state == FANG_ENTITYSTATE_ACTIVE)
     {
         float forward = 0.0f;
         float left    = 0.0f;
