@@ -14,22 +14,53 @@
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
+ * Flags that control the body behavior in the physics system.
+**/
+typedef enum Fang_BodyFlags {
+    FANG_BODYFLAG_NONE             = 0,
+    FANG_BODYFLAG_JUMP             = 1 << 1,
+    FANG_BODYFLAG_STEP             = 1 << 2,
+    FANG_BODYFLAG_FALL             = 1 << 3,
+    FANG_BODYFLAG_COLLIDE_WALLS    = 1 << 4,
+    FANG_BODYFLAG_COLLIDE_BODIES   = 1 << 5,
+} Fang_BodyFlags;
+
+/**
  * A structure representing a physical body in the game world.
  *
  * Body positions represent the bottom of the body, so effectively the "head"
  * would be at Fang_Body.pos.z + Fang_Body.size.
 **/
 typedef struct Fang_Body {
-    Fang_Vec3 pos;  /* Current Position     */
-    Fang_Vec3 dir;  /* Current Direction    */
-    Fang_Vec3 vel;  /* Current Velocity     */
-    Fang_Vec3 mov;  /* Movement Direction   */
-    Fang_Vec2 acc;  /* Acceleration Speeds  */
-    Fang_Vec3 max;  /* Max Velocity Values  */
-    float     size; /* Body Size (All Axes) */
-    Fang_Vec3 last; /* Previous Position    */
-    bool      jump; /* Jump State           */
+    int           flags;
+    Fang_Vec3     pos;
+    Fang_Vec3     last;
+    Fang_Vec3     dir;
+    Fang_LerpVec3 vel;
+    float         height;
+    float         width;
+    bool          jump;
 } Fang_Body;
+
+static inline void
+Fang_BodySetTargetVelocity(
+          Fang_Body * const body,
+    const float             forward,
+    const float             left)
+{
+    assert(body);
+
+    const Fang_Vec3 dir_cross = {
+        .x =  body->dir.y,
+        .y = -body->dir.x,
+        .z =  body->dir.z,
+    };
+
+    body->vel.target = Fang_Vec3Add(
+        Fang_Vec3Multf(Fang_Vec3Normalize(body->dir), forward),
+        Fang_Vec3Multf(Fang_Vec3Normalize(dir_cross),    left)
+    );
+}
 
 static inline bool
 Fang_BodyCanStep(
@@ -38,7 +69,10 @@ Fang_BodyCanStep(
 {
     assert(body);
 
-    return (surface_top <= body->pos.z + (body->size / 3.0f));
+    if (!(body->flags & FANG_BODYFLAG_STEP))
+        return false;
+
+    return (surface_top <= body->pos.z + (body->height / 3.0f));
 }
 
 static inline bool
@@ -49,6 +83,9 @@ Fang_BodyCollidesMap(
     assert(body);
     assert(map);
 
+    if (!(body->flags & FANG_BODYFLAG_COLLIDE_WALLS))
+        return false;
+
     const Fang_Tile * const tile = Fang_MapQuery(
         map, (int)floorf(body->pos.x), (int)floorf(body->pos.y)
     );
@@ -56,7 +93,7 @@ Fang_BodyCollidesMap(
     if (!tile)
         return false;
 
-    const float body_top = body->pos.z + body->size;
+    const float body_top = body->pos.z + body->height;
     const float tile_top = tile->y + tile->h;
 
     if (tile->y >= body_top)
@@ -78,6 +115,9 @@ Fang_BodyFindFloor(
 {
     assert(body);
     assert(map);
+
+    if (!(body->flags & FANG_BODYFLAG_COLLIDE_WALLS))
+        return 0.0f;
 
     const Fang_Tile * const tile = Fang_MapQuery(
         map, (int)floorf(body->pos.x), (int)floorf(body->pos.y)
@@ -101,6 +141,9 @@ Fang_BodyFindStep(
 {
     assert(body);
     assert(map);
+
+    if (!(body->flags & FANG_BODYFLAG_COLLIDE_WALLS))
+        return 0.0f;
 
     const Fang_Tile * const tile = Fang_MapQuery(
         map, (int)floorf(body->pos.x), (int)floorf(body->pos.y)
@@ -143,115 +186,44 @@ Fang_BodyMove(
 
     body->last = body->pos;
 
-    for (size_t i = 0; i < 2; ++i)
+    Fang_LerpVec3 * const vel = &body->vel;
+
+    if (!body->jump && vel->target.z > 0.0f)
     {
-        float * const target = &body->vel.xyz[i];
-
-        if (fabsf(body->mov.xyz[i]) < FLT_EPSILON)
+        if (vel->value.z >= -FANG_JUMP_TOLERANCE && vel->value.z <= 0.0f)
         {
-            const float delta_acc = body->acc.xy[i] * delta;
-
-            if (*target < 0.0f)
-            {
-                if (*target + delta_acc < 0.0f)
-                    *target += delta_acc;
-                else
-                    *target = 0.0f;
-            }
-            else if (*target > 0.0f)
-            {
-                if (*target - delta_acc > 0.0f)
-                    *target -= delta_acc;
-                else
-                    *target = 0.0f;
-            }
+            body->jump = true;
+            body->vel.value.z = body->vel.target.z;
         }
-
-        *target = clamp(
-            *target + ((body->acc.xy[i] * delta) * body->mov.xyz[i]),
-            -body->max.xyz[i],
-            body->max.xyz[i]
-        );
     }
 
+    if (body->flags & FANG_BODYFLAG_FALL)
     {
-        if (!body->jump && body->mov.z > 0.0f)
-        {
-            if (body->vel.z >= -FANG_JUMP_TOLERANCE && body->vel.z <= 0.0f)
-            {
-                body->jump  = true;
-                body->vel.z = body->mov.z;
-            }
-        }
-
         const float standing_surface = Fang_BodyFindFloor(body, map);
 
         if (body->pos.z > standing_surface)
-            body->vel.z -= FANG_GRAVITY * delta;
+            vel->value.z -= FANG_GRAVITY * delta;
     }
 
-    Fang_Vec3 new = body->pos;
-    new.x += (body->dir.x * body->vel.x + body->dir.y * body->vel.y) * delta;
-    new.y += (body->dir.y * body->vel.x - body->dir.x * body->vel.y) * delta;
-    new.z += body->vel.z * delta;
+    Fang_Lerp(vel, delta);
 
-    /* X velocity collision */
-    {
-        Fang_Body test_body = *body;
-        test_body.pos.x     = new.x;
-
-        if (!Fang_BodyCollidesMap(&test_body, map))
-            body->pos.x = new.x;
-    }
-
-    /* Y velocity collision */
-    {
-        Fang_Body test_body = *body;
-        test_body.pos.y     = new.y;
-
-        if (!Fang_BodyCollidesMap(&test_body, map))
-            body->pos.y = new.y;
-    }
-
-    /* Z velocity collision */
-    {
-        Fang_Body test_body = *body;
-        test_body.pos.z     = new.z;
-
-        if (!Fang_BodyCollidesMap(&test_body, map))
-        {
-            body->pos.z = new.z;
-        }
-        else
-        {
-            body->vel.z = 0.0f;
-            body->jump = false;
-        }
-    }
-
-    /* If we moved onto a short tile, step up onto it */
-    {
-        const float standing_surface = Fang_BodyFindStep(body, map);
-
-        if (body->pos.z <= standing_surface)
-        {
-            body->vel.z = 0.0f;
-            body->pos.z = standing_surface;
-            body->jump  = false;
-        }
-    }
+    body->pos = Fang_Vec3Add(body->pos, Fang_Vec3Multf(vel->value, delta));
 }
 
+/**
+ * Returns whether two bodies currently intersect, accounting for both height
+ * and size.
+**/
 static inline bool
-Fang_BodyCollidesBody(
+Fang_BodiesIntersect(
     Fang_Body * const a,
     Fang_Body * const b)
 {
     assert(a);
     assert(b);
 
-    const bool a_above_b = a->pos.z > b->pos.z + b->size;
-    const bool b_above_a = b->pos.z > a->pos.z + a->size;
+    const bool a_above_b = a->pos.z > b->pos.z + b->height;
+    const bool b_above_a = b->pos.z > a->pos.z + a->height;
 
     if (a_above_b || b_above_a)
         return false;
@@ -259,5 +231,129 @@ Fang_BodyCollidesBody(
     const float dx = a->pos.x - b->pos.x;
     const float dy = a->pos.y - b->pos.y;
 
-    return sqrtf(dx * dx + dy * dy) <= a->size + b->size;
+    return sqrtf(dx * dx + dy * dy) <= a->width + b->width;
+}
+
+/**
+ * Resolves collisions between a body and the map tiles.
+ *
+ * This accounts for wall collisions as well as keeping the body standing on
+ * the surface below it (if it is below said surface).
+ *
+ * If the body can step onto short tiles, this finds potential steps and applies
+ * them to the body.
+ *
+ * If the body cannot collide with walls, this function does nothing.
+**/
+static inline bool
+Fang_BodyResolveMapCollision(
+          Fang_Body * const body,
+    const Fang_Map  * const map)
+{
+    assert(body);
+    assert(map);
+
+    if (!(body->flags & FANG_BODYFLAG_COLLIDE_WALLS))
+        return false;
+
+    Fang_Body test_body = *body;
+    test_body.pos = test_body.last;
+
+    bool result = false;
+
+    /* X collision */
+    test_body.pos.x = body->pos.x;
+
+    if (Fang_BodyCollidesMap(&test_body, map))
+    {
+        result = true;
+        test_body.pos.x = test_body.last.x;
+    }
+
+    /* Y collision */
+    test_body.pos.y = body->pos.y;
+
+    if (Fang_BodyCollidesMap(&test_body, map))
+    {
+        result = true;
+        test_body.pos.y = test_body.last.y;
+    }
+
+    /* Z collision */
+    test_body.pos.z = body->pos.z;
+
+    if (Fang_BodyCollidesMap(&test_body, map))
+    {
+        result = true;
+        body->jump        = false;
+        body->vel.value.z = 0.0f;
+        test_body.pos.z   = test_body.last.z;
+    }
+
+    body->pos = test_body.pos;
+
+    /* If we moved onto a short tile, step up onto it */
+    const float standing_surface = Fang_BodyFindStep(body, map);
+
+    if (body->pos.z <= standing_surface)
+    {
+        body->jump        = false;
+        body->pos.z       = standing_surface;
+        body->vel.value.z = 0.0f;
+    }
+
+    return result;
+}
+
+/**
+ * Calculates the new position for bodies that have collided.
+ *
+ * When bodies have the collide-body flag enabled, they should not be able to
+ * pass through one another. Collisions of this type stop both bodies from
+ * moving, and cancel the jump state of whichever bodies may have been jumping.
+ *
+ * This function also resolves discrepancies in Z positions, allowing falling
+ * bodies to land on top of other collideable bodies.
+**/
+static inline void
+Fang_BodyResolveBodyCollision(
+    Fang_Body * const a,
+    Fang_Body * const b)
+{
+    assert(a);
+    assert(b);
+
+    if (!(a->flags & FANG_BODYFLAG_COLLIDE_BODIES))
+        return;
+
+    if (!(b->flags & FANG_BODYFLAG_COLLIDE_BODIES))
+        return;
+
+    a->jump = false;
+    b->jump = false;
+
+    if (a->pos.z > b->pos.z && a->vel.value.z < 0.0f)
+    {
+        a->vel.value.z = 0.0f;
+        a->pos.z = b->pos.z + b->height;
+
+        return;
+    }
+
+    if (b->pos.z > a->pos.z && b->vel.value.z < 0.0f)
+    {
+        b->vel.value.z = 0.0f;
+        b->pos.z = a->pos.z + a->height;
+
+        return;
+    }
+
+    a->pos.x = a->last.x;
+    a->pos.y = a->last.y;
+    b->pos.x = b->last.x;
+    b->pos.y = b->last.y;
+    a->vel.value.x = 0.0f;
+    a->vel.value.y = 0.0f;
+    b->vel.value.x = 0.0f;
+    b->vel.value.y = 0.0f;
 }

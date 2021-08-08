@@ -16,26 +16,63 @@
 typedef struct Fang_LerpVec2 {
     Fang_Vec2 target;
     Fang_Vec2 value;
-    float     delta;
+    Fang_Vec2 delta;
 } Fang_LerpVec2;
 
-#define Fang_Lerp(x) _Generic(x,  \
-    Fang_LerpVec2*: Fang_LerpStepVec2 \
-    )(x)
+typedef struct Fang_LerpVec3 {
+    Fang_Vec3 target;
+    Fang_Vec3 value;
+    Fang_Vec3 delta;
+} Fang_LerpVec3;
+
+#define Fang_Lerp(value, delta) _Generic(value,  \
+    Fang_LerpVec2*: Fang_LerpStepVec2, \
+    Fang_LerpVec3*: Fang_LerpStepVec3  \
+    )(value, delta)
 
 static inline void
 Fang_LerpStepVec2(
-    Fang_LerpVec2 * const vec)
+          Fang_LerpVec2 * const vec,
+    const float                 delta)
 {
     assert(vec);
 
-    const float dt = FANG_DELTA_TIME_S / vec->delta;
+    const Fang_Vec2 dt = (Fang_Vec2){
+        .x = vec->delta.x * delta,
+        .y = vec->delta.y * delta,
+    };
 
-    vec->value.x = (fabsf(vec->value.x - vec->target.x) > vec->target.x * dt)
-        ? vec->value.x * (1.0f - dt) + vec->target.x * dt
+    vec->value.x = (fabsf(vec->value.x - vec->target.x) > vec->target.x * dt.x)
+        ? vec->value.x * (1.0f - dt.x) + vec->target.x * dt.x
         : vec->target.x;
 
-    vec->value.y = (fabsf(vec->value.y - vec->target.y) > vec->target.y * dt)
-        ? vec->value.y * (1.0f - dt) + vec->target.y * dt
+    vec->value.y = (fabsf(vec->value.y - vec->target.y) > vec->target.y * dt.y)
+        ? vec->value.y * (1.0f - dt.y) + vec->target.y * dt.y
         : vec->target.y;
+}
+
+static inline void
+Fang_LerpStepVec3(
+          Fang_LerpVec3 * const vec,
+    const float                 delta)
+{
+    assert(vec);
+
+    const Fang_Vec3 dt = (Fang_Vec3){
+        .x = vec->delta.x * delta,
+        .y = vec->delta.y * delta,
+        .z = vec->delta.z * delta,
+    };
+
+    vec->value.x = (fabsf(vec->value.x - vec->target.x) > vec->target.x * dt.x)
+        ? vec->value.x * (1.0f - dt.x) + vec->target.x * dt.x
+        : vec->target.x;
+
+    vec->value.y = (fabsf(vec->value.y - vec->target.y) > vec->target.y * dt.y)
+        ? vec->value.y * (1.0f - dt.y) + vec->target.y * dt.y
+        : vec->target.y;
+
+    vec->value.z = (fabsf(vec->value.z - vec->target.z) > vec->target.z * dt.z)
+        ? vec->value.z * (1.0f - dt.z) + vec->target.z * dt.z
+        : vec->target.z;
 }

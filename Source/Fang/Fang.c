@@ -48,6 +48,7 @@
 #include "Fang_Interface.c"
 #include "Fang_State.c"
 #include "Fang_Pickups.c"
+#include "Fang_Projectiles.c"
 #include "Fang_Player.c"
 
 Fang_State gamestate;
@@ -77,93 +78,40 @@ Fang_Init(void)
         .cam = {.y =  0.5f},
     };
 
-    gamestate.player = Fang_EntitySetAdd(
+    gamestate.player = Fang_PlayerCreate(
         &gamestate.entities,
-        (Fang_Entity){
-            .props.player.health = 90,
-            .props.player.weapon = FANG_WEAPONTYPE_PISTOL,
-            .body = (Fang_Body){
-                .pos = {.x = 2, .y = 2},
-                .dir = {.x = -1.0f},
-                .acc = {
-                    .x = FANG_RUN_SPEED * 7.5f,
-                    .y = FANG_RUN_SPEED * 7.5f,
-                },
-                .max = {
-                    .x = FANG_RUN_SPEED,
-                    .y = FANG_RUN_SPEED,
-                    .z = 100000.0f,
-                },
-                .size = FANG_PLAYER_SIZE,
-            }
-        }
+        FANG_INPUT_ONE,
+        (Fang_Vec3){.x =  2.0f, .y = 2.0f},
+        (Fang_Vec3){.x = -1.0f}
     );
 
-    gamestate.sway.delta = 0.1f;
+    gamestate.sway.delta = (Fang_Vec2){.x = 0.1f, .y = 0.1f};
 
     Fang_EntitySetAdd(
         &gamestate.entities,
         (Fang_Entity){
-            .props.health.count = 10,
-            .type = FANG_ENTITYTYPE_HEALTH,
+            .type = FANG_ENTITYTYPE_PLAYER,
             .body = (Fang_Body){
                 .pos = (Fang_Vec3){.x = 4.0f, .y = 4.0f},
                 .dir = {.x = -1.0f},
-                .acc = {
-                    .x = FANG_RUN_SPEED * 7.5f,
-                    .y = FANG_RUN_SPEED * 7.5f,
-                },
-                .max = {
-                    .x = FANG_RUN_SPEED,
-                    .y = FANG_RUN_SPEED,
-                    .z = 100000.0f,
-                },
-                .size = FANG_PICKUP_SIZE,
+                .width  = FANG_PLAYER_WIDTH,
+                .height = FANG_PLAYER_HEIGHT,
+                .flags  = FANG_BODYFLAG_COLLIDE_BODIES,
             }
         }
     );
 
-    Fang_EntitySetAdd(
+    Fang_AmmoCreate(
         &gamestate.entities,
-        (Fang_Entity){
-            .props.ammo.type  = FANG_WEAPONTYPE_PISTOL,
-            .props.ammo.count = 10,
-            .type = FANG_ENTITYTYPE_AMMO,
-            .body = (Fang_Body){
-                .pos = (Fang_Vec3){.x = 6.0f, .y = 4.0f},
-                .dir = {.x = -1.0f},
-                .acc = {
-                    .x = FANG_RUN_SPEED * 7.5f,
-                    .y = FANG_RUN_SPEED * 7.5f,
-                },
-                .max = {
-                    .x = FANG_RUN_SPEED,
-                    .y = FANG_RUN_SPEED,
-                    .z = 100000.0f,
-                },
-                .size = FANG_PICKUP_SIZE,
-            }
-        }
+        FANG_WEAPONTYPE_PISTOL,
+        10,
+        (Fang_Vec3){.x = 6.0f, .y = 4.0f}
     );
 
-    Fang_EntitySetAdd(
+    Fang_HealthCreate(
         &gamestate.entities,
-        (Fang_Entity){
-            .body = (Fang_Body){
-                .pos = (Fang_Vec3){.x = 6.0f, .y = 5.5f},
-                .dir = {.x = -1.0f},
-                .acc = {
-                    .x = FANG_RUN_SPEED * 7.5f,
-                    .y = FANG_RUN_SPEED * 7.5f,
-                },
-                .max = {
-                    .x = FANG_RUN_SPEED,
-                    .y = FANG_RUN_SPEED,
-                    .z = 100000.0f,
-                },
-                .size = FANG_PLAYER_SIZE,
-            },
-        }
+        10,
+        (Fang_Vec3){.x = 6.0f, .y = 5.5f}
     );
 
     gamestate.map = (Fang_Map){
@@ -194,103 +142,111 @@ Fang_Update(
 
     if (player)
     {
-        Fang_Vec3 move = {.x = 0.0f};
+        float forward = 0.0f;
+        float left    = 0.0f;
+        float up      = 0.0f;
 
         if (input->controller.direction_up.pressed)
-            move.x += 1.0f;
+            forward += FANG_RUN_SPEED;
 
         if (input->controller.direction_down.pressed)
-            move.x -= 1.0f;
+            forward -= FANG_RUN_SPEED;
 
         if (input->controller.direction_left.pressed)
-            move.y += 1.0f;
+            left += FANG_RUN_SPEED;
 
         if (input->controller.direction_right.pressed)
-            move.y -= 1.0f;
+            left -= FANG_RUN_SPEED;
 
         if (Fang_InputPressed(&input->controller.action_down))
-            move.z = FANG_JUMP_SPEED;
+            up = FANG_JUMP_SPEED;
 
-        Fang_WeaponType * const weapon = &player->props.player.weapon;
+        if (input->mouse.left.pressed)
+        {
+            Fang_PlayerFireWeapon(
+                player,
+                &gamestate.entities,
+                Fang_InputPressed(&input->mouse.left)
+            );
+        }
+
+        Fang_WeaponType * const weapon_type = &player->props.player.weapon;
 
         if (Fang_InputPressed(&input->controller.shoulder_left))
         {
-            if (*weapon == FANG_WEAPONTYPE_NONE)
-                *weapon = FANG_WEAPONTYPE_FAZER;
-            else if (*weapon == FANG_WEAPONTYPE_PISTOL)
-                *weapon = FANG_WEAPONTYPE_NONE;
+            if (*weapon_type == FANG_WEAPONTYPE_NONE)
+                *weapon_type = FANG_WEAPONTYPE_FAZER;
+            else if (*weapon_type == FANG_WEAPONTYPE_PISTOL)
+                *weapon_type = FANG_WEAPONTYPE_NONE;
             else
-                (*weapon)--;
+                (*weapon_type)--;
         }
 
         if (Fang_InputPressed(&input->controller.shoulder_right))
         {
-            if (*weapon == FANG_WEAPONTYPE_FAZER)
-                *weapon = FANG_WEAPONTYPE_NONE;
-            else if (*weapon == FANG_WEAPONTYPE_NONE)
-                *weapon = FANG_WEAPONTYPE_PISTOL;
+            if (*weapon_type == FANG_WEAPONTYPE_FAZER)
+                *weapon_type = FANG_WEAPONTYPE_NONE;
+            else if (*weapon_type == FANG_WEAPONTYPE_NONE)
+                *weapon_type = FANG_WEAPONTYPE_PISTOL;
             else
-                (*weapon)++;
+                (*weapon_type)++;
         }
 
-        if (input->controller.joystick_left.button.pressed)
+        left    -= input->controller.joystick_left.x * FANG_RUN_SPEED;
+        forward -= input->controller.joystick_left.y * FANG_RUN_SPEED;
+
+        const float prev_pitch = gamestate.camera.dir.z;
+
         {
-            player->body.max.x = FANG_RUN_SPEED * 1.5f;
-            player->body.max.y = FANG_RUN_SPEED * 1.5f;
+            const Fang_Vec2 mouse_rotate = {
+                .x = input->mouse.relative.x /  (FANG_WINDOW_SIZE / 2.0f),
+                .y = input->mouse.relative.y / -(FANG_WINDOW_SIZE / 2.0f),
+            };
+
+            const Fang_Vec2 joystick_rotate = {
+                .x = input->controller.joystick_right.x /  10.0f,
+                .y = input->controller.joystick_right.y / -10.0f,
+            };
+
+            Fang_CameraRotate(
+                &gamestate.camera,
+                mouse_rotate.x + joystick_rotate.x,
+                mouse_rotate.y + joystick_rotate.y
+            );
+
+            player->body.dir = (Fang_Vec3){
+                .x = gamestate.camera.dir.x,
+                .y = gamestate.camera.dir.y,
+                .z = gamestate.camera.dir.z / FANG_PROJECTION_RATIO,
+            };
         }
-        else if (input->controller.joystick_right.button.pressed)
-        {
-            player->body.max.x = FANG_RUN_SPEED * 0.25f;
-            player->body.max.y = FANG_RUN_SPEED * 0.25f;
-            player->body.size  = FANG_PLAYER_SIZE * 0.5f;
-        }
-        else
-        {
-            player->body.max.x = FANG_RUN_SPEED * 0.5f;
-            player->body.max.y = FANG_RUN_SPEED * 0.5f;
-            player->body.size  = FANG_PLAYER_SIZE;
-        }
-
-        move.y -= input->controller.joystick_left.x;
-        move.x -= input->controller.joystick_left.y;
-
-        const float prev_pitch = gamestate.camera.cam.z;
-
-        Fang_CameraRotate(
-            &gamestate.camera,
-            ((float)input->mouse.relative.x / (FANG_WINDOW_SIZE / 2.0f))
-            + (input->controller.joystick_right.x /  10.0f),
-            ((float)input->mouse.relative.y / -(FANG_WINDOW_SIZE / 2.0f))
-            + (input->controller.joystick_right.y / -10.0f)
-        );
-
-        player->body.dir = gamestate.camera.dir;
 
         /* Sway based on player velocity */
-        gamestate.sway.target.x += player->body.vel.y / 8.0f;
-        gamestate.sway.target.y += player->body.vel.x / 16.0f;
-        gamestate.sway.target.y += player->body.vel.z / 2.0f;
+        gamestate.sway.target.x += player->body.vel.value.y / 8.0f;
+        gamestate.sway.target.y += player->body.vel.value.x / 16.0f;
+        gamestate.sway.target.y += player->body.vel.value.z / 2.0f;
 
         /* Sway based on camera movement */
         gamestate.sway.target.x -= (input->mouse.relative.x / 8);
         gamestate.sway.target.x -= input->controller.joystick_right.x;
 
-        if (fabsf(prev_pitch - gamestate.camera.cam.z) > FLT_EPSILON)
+        if (fabsf(prev_pitch - gamestate.camera.dir.z) > FLT_EPSILON)
         {
             gamestate.sway.target.y -= (input->mouse.relative.y / 8);
             gamestate.sway.target.y -= input->controller.joystick_right.y;
         }
 
         /* Bob if player is moving on a surface */
-        if (player->body.vel.z == 0.0f
-        && (move.x != 0.0f || move.y != 0.0f))
+        if (player->body.vel.value.z == 0.0f
+        && (forward != 0.0f || left != 0.0f))
         {
             gamestate.bob += ((float)M_PI / 20.0f);
             gamestate.sway.target.x += cosf(gamestate.bob) * 0.5f;
             gamestate.sway.target.y += fabsf(sinf(gamestate.bob)) * 0.5f;
         }
 
-        player->body.mov = move;
+        Fang_BodySetTargetVelocity(&player->body, forward, left);
+        player->body.vel.target.z = up;
     }
 
     {
@@ -316,33 +272,10 @@ Fang_Update(
                 Fang_BodyMove(&entity->body, &gamestate.map, FANG_DELTA_TIME_S);
             }
 
-            for (Fang_EntityId i = 0; i < FANG_MAX_ENTITIES; ++i)
-            {
-                for (Fang_EntityId j = i + 1; j < FANG_MAX_ENTITIES; ++j)
-                {
-                    Fang_Entity * const entities[2] = {
-                        Fang_EntitySetQuery(&gamestate.entities, i),
-                        Fang_EntitySetQuery(&gamestate.entities, j),
-                    };
-
-                    if (!entities[0] || !entities[1])
-                        continue;
-
-                    const bool collides = Fang_BodyCollidesBody(
-                        &entities[0]->body, &entities[1]->body
-                    );
-
-                    if (collides)
-                    {
-                        Fang_CollisionSetAdd(
-                            &gamestate.entities.collisions,
-                            (Fang_EntityPair){{i, j}}
-                        );
-                    }
-                }
-            }
-
-            Fang_EntitySetResolveCollisions(&gamestate.entities);
+            Fang_EntitySetResolveCollisions(
+                &gamestate.entities,
+                &gamestate.map
+            );
 
             // Placeholder for entity update loop
             for (Fang_EntityId i = 0; i < FANG_MAX_ENTITIES; ++i)
@@ -357,15 +290,27 @@ Fang_Update(
                 switch (entity->type)
                 {
                     case FANG_ENTITYTYPE_PLAYER:
-                        Fang_PlayerUpdate(&gamestate, entity);
+                        Fang_PlayerUpdate(
+                            &gamestate, entity, FANG_DELTA_TIME_MS
+                        );
                         break;
 
                     case FANG_ENTITYTYPE_AMMO:
-                        Fang_AmmoUpdate(&gamestate, entity);
+                        Fang_AmmoUpdate(
+                            &gamestate, entity, FANG_DELTA_TIME_MS
+                        );
                         break;
 
                     case FANG_ENTITYTYPE_HEALTH:
-                        Fang_HealthUpdate(&gamestate, entity);
+                        Fang_HealthUpdate(
+                            &gamestate, entity, FANG_DELTA_TIME_MS
+                        );
+                        break;
+
+                    case FANG_ENTITYTYPE_PROJECTILE:
+                        Fang_ProjectileUpdate(
+                            &gamestate, entity, FANG_DELTA_TIME_MS
+                        );
                         break;
                 }
             }
@@ -375,10 +320,10 @@ Fang_Update(
                 gamestate.camera.pos = (Fang_Vec3){
                     .x = player->body.pos.x,
                     .y = player->body.pos.y,
-                    .z = player->body.pos.z + player->body.size,
+                    .z = player->body.pos.z + player->body.height,
                 };
 
-                Fang_Lerp(&gamestate.sway);
+                Fang_Lerp(&gamestate.sway, FANG_DELTA_TIME_S);
             }
 
             gamestate.clock.accumulator -= FANG_DELTA_TIME_MS;
