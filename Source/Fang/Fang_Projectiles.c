@@ -89,9 +89,7 @@ Fang_ProjectileUpdate(
     else
         props->lifespan -= delta;
 
-    projectile->body.vel.target = Fang_Vec3Translate(
-        projectile->body.dir, props->speed, 0.0f, 0.0f
-    );
+    Fang_BodySetTargetVelocity(&projectile->body, props->speed, 0.0f, 0.0f);
 }
 
 void

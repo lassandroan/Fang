@@ -231,9 +231,7 @@ Fang_Update(
             gamestate.sway.target.y += fabsf(sinf(gamestate.bob)) * 0.5f;
         }
 
-        player->body.vel.target = Fang_Vec3Translate(
-            player->body.dir, forward, left, up
-        );
+        Fang_BodySetTargetVelocity(&player->body, forward, left, up);
     }
 
     {

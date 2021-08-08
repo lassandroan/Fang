@@ -134,29 +134,3 @@ Fang_Vec3Normalize(
 {
     return Fang_Vec3Divf(a, Fang_Vec3Norm(a));
 }
-
-static inline Fang_Vec3
-Fang_Vec3Translate(
-    const Fang_Vec3 dir,
-    const float     forward,
-    const float     left,
-    const float     up)
-{
-    Fang_Vec2 result = Fang_Vec2Multf(
-        Fang_Vec2Normalize((Fang_Vec2){.x = dir.x, .y = dir.y}),
-        forward
-    );
-
-    result = Fang_Vec2Add(
-        result,
-        Fang_Vec2Multf(
-            Fang_Vec2Normalize((Fang_Vec2){.x = dir.y, .y = -dir.x}), left
-        )
-    );
-
-    return (Fang_Vec3){
-        .x = result.x,
-        .y = result.y,
-        .z = up,
-    };
-}

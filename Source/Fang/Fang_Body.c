@@ -42,6 +42,26 @@ typedef struct Fang_Body {
     bool          jump;
 } Fang_Body;
 
+static inline void
+Fang_BodySetTargetVelocity(
+          Fang_Body * const body,
+    const float             forward,
+    const float             left,
+    const float             up)
+{
+    assert(body);
+
+    const Fang_Vec2 dir       = {.x = body->dir.x, .y =  body->dir.y};
+    const Fang_Vec2 dir_cross = {.x = body->dir.y, .y = -body->dir.x};
+
+    const Fang_Vec2 result = Fang_Vec2Add(
+        Fang_Vec2Multf(Fang_Vec2Normalize(dir),    forward),
+        Fang_Vec2Multf(Fang_Vec2Normalize(dir_cross), left)
+    );
+
+    body->vel.target = (Fang_Vec3){.x = result.x, .y = result.y, .z = up};
+}
+
 static inline bool
 Fang_BodyCanStep(
     const Fang_Body * const body,
