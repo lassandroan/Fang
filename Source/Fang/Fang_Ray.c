@@ -57,7 +57,7 @@ Fang_RayCast(
     );
 
     const bool standing_on_tile = (initial_tile)
-        ? initial_tile->y + initial_tile->h <= camera->pos.z
+        ? initial_tile->offset + initial_tile->height <= camera->pos.z
         : false;
 
     for (size_t i = 0; i < count; ++i)

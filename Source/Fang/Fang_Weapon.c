@@ -27,13 +27,13 @@ typedef enum Fang_WeaponType {
 } Fang_WeaponType;
 
 typedef struct Fang_Weapon {
-    const char         * const name;
-          Fang_Texture         texture;
-          int                  damage;
-          bool                 automatic;
-          uint32_t             cooldown;
-          float                speed;
-          uint32_t             lifespan;
+    const char           * const name;
+          Fang_TextureId         texture;
+          int                    damage;
+          bool                   automatic;
+          uint32_t               cooldown;
+          float                  speed;
+          uint32_t               lifespan;
 } Fang_Weapon;
 
 static inline const Fang_Weapon *

@@ -22,7 +22,7 @@ typedef enum Fang_TileType {
 } Fang_TileType;
 
 typedef struct Fang_Tile {
-    Fang_Texture texture;
-    float y;
-    float h;
+    Fang_TextureId texture;
+    float          offset;
+    float          height;
 } Fang_Tile;

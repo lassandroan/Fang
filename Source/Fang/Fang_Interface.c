@@ -28,7 +28,7 @@ typedef struct Fang_InterfaceColors {
 **/
 typedef struct Fang_InterfaceTheme {
     Fang_InterfaceColors colors;
-    Fang_Texture         font;
+    Fang_TextureId       font;
 } Fang_InterfaceTheme;
 
 /**

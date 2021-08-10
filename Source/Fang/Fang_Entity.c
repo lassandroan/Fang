@@ -127,10 +127,10 @@ typedef union Fang_EntityPair {
 /**
  * A set used to hold collisions between entities for a given frame.
 **/
-typedef struct Fang_CollisionSet {
+typedef struct Fang_EntityCollisionSet {
     Fang_EntityPair collisions[FANG_MAX_COLLISIONS];
     size_t          count;
-} Fang_CollisionSet;
+} Fang_EntityCollisionSet;
 
 /**
  * A set used to hold entities and information about them.
@@ -139,16 +139,16 @@ typedef struct Fang_CollisionSet {
  * also maintains the collision tables for both the current and previous frame.
 **/
 typedef struct Fang_EntitySet {
-    Fang_Entity       entities[FANG_MAX_ENTITIES];
-    Fang_EntityId     last_index;
-    Fang_CollisionSet collisions;
-    Fang_CollisionSet last_collisions;
+    Fang_Entity             entities[FANG_MAX_ENTITIES];
+    Fang_EntityId           last_index;
+    Fang_EntityCollisionSet collisions;
+    Fang_EntityCollisionSet last_collisions;
 } Fang_EntitySet;
 
 /**
  * Returns the relevant texture for the entity's entity type.
 **/
-static inline Fang_Texture
+static inline Fang_TextureId
 Fang_EntityQueryTexture(
     const Fang_Entity * const entity)
 {
@@ -273,9 +273,9 @@ Fang_EntitySetRemove(
  * collision has not already been recorded.
 **/
 static inline void
-Fang_CollisionSetAdd(
-          Fang_CollisionSet * const collisions,
-    const Fang_EntityPair           pair)
+Fang_EntityCollisionSetAdd(
+          Fang_EntityCollisionSet * const collisions,
+    const Fang_EntityPair                 pair)
 {
     assert(collisions);
     assert(pair.first != pair.second);
@@ -432,7 +432,7 @@ Fang_EntitySetResolveCollisions(
 
             if (Fang_BodiesIntersect(&pair[0]->body, &pair[1]->body))
             {
-                Fang_CollisionSetAdd(
+                Fang_EntityCollisionSetAdd(
                     &entities->collisions,
                     (Fang_EntityPair){{i, j}}
                 );
@@ -442,8 +442,8 @@ Fang_EntitySetResolveCollisions(
 
     assert(entities->collisions.count < FANG_MAX_COLLISIONS);
 
-    Fang_CollisionSet * const collisions      = &entities->collisions;
-    Fang_CollisionSet * const last_collisions = &entities->last_collisions;
+    Fang_EntityCollisionSet * const collisions      = &entities->collisions;
+    Fang_EntityCollisionSet * const last_collisions = &entities->last_collisions;
 
     for (size_t i = 0; i < entities->collisions.count; ++i)
     {
@@ -494,7 +494,7 @@ Fang_EntitySetResolveCollisions(
         Fang_EntityResolveCollision(first, second, initial_collision);
     }
 
-    memset(last_collisions, 0, sizeof(Fang_CollisionSet));
-    memcpy(last_collisions, collisions, sizeof(Fang_CollisionSet));
-    memset(collisions, 0, sizeof(Fang_CollisionSet));
+    memset(last_collisions, 0, sizeof(*last_collisions));
+    memcpy(last_collisions, collisions, sizeof(*last_collisions));
+    memset(collisions, 0, sizeof(*collisions));
 }

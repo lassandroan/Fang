@@ -56,8 +56,7 @@ Fang_State gamestate;
 static inline void
 Fang_Init(void)
 {
-    for (Fang_Texture i = 0; i < FANG_NUM_TEXTURES; ++i)
-        Fang_TextureSetLoad(&gamestate.textures, i);
+    Fang_TextureSetInit(&gamestate.textures);
 
     gamestate.interface = (Fang_Interface){
         .textures = &gamestate.textures,

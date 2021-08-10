@@ -94,9 +94,9 @@ Fang_BodyCollidesMap(
         return false;
 
     const float body_top = body->pos.z + body->height;
-    const float tile_top = tile->y + tile->h;
+    const float tile_top = tile->offset + tile->height;
 
-    if (tile->y >= body_top)
+    if (tile->offset >= body_top)
         return false;
 
     if (tile_top <= body->pos.z)
@@ -126,7 +126,7 @@ Fang_BodyFindFloor(
     if (!tile)
         return 0.0f;
 
-    const float tile_top = tile->y + tile->h;
+    const float tile_top = tile->offset + tile->height;
 
     if (tile_top > body->pos.z)
         return 0.0f;
@@ -152,7 +152,7 @@ Fang_BodyFindStep(
     if (!tile)
         return 0.0f;
 
-    const float tile_top = tile->y + tile->h;
+    const float tile_top = tile->offset + tile->height;
 
     if (Fang_BodyCanStep(body, tile_top))
         return tile_top;
