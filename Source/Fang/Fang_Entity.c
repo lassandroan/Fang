@@ -133,17 +133,60 @@ typedef struct Fang_EntityCollisionSet {
 } Fang_EntityCollisionSet;
 
 /**
+ * A set used to hold entity IDs based on their location in the world for a
+ * given frame.
+**/
+typedef struct Fang_EntityLocationSet {
+    Fang_EntityId entities[FANG_MAX_ENTITIES];
+    size_t        count;
+} Fang_EntityLocationSet;
+
+typedef struct Fang_EntityLocationTable {
+    Fang_EntityLocationSet * sets;
+    size_t                   count;
+} Fang_EntityLocationTable;
+
+/**
  * A set used to hold entities and information about them.
  *
  * This structure holds the entity array used to manage and query entities. It
  * also maintains the collision tables for both the current and previous frame.
 **/
 typedef struct Fang_EntitySet {
-    Fang_Entity             entities[FANG_MAX_ENTITIES];
-    Fang_EntityId           last_index;
-    Fang_EntityCollisionSet collisions;
-    Fang_EntityCollisionSet last_collisions;
+    Fang_Entity              entities[FANG_MAX_ENTITIES];
+    Fang_EntityId            last_index;
+    Fang_EntityCollisionSet  collisions;
+    Fang_EntityCollisionSet  last_collisions;
+    Fang_EntityLocationTable locations;
 } Fang_EntitySet;
+
+static inline void
+Fang_EntitySetInit(
+    Fang_EntitySet * const entities)
+{
+    assert(entities);
+    assert(!entities->locations.sets);
+    assert(!entities->locations.count);
+
+    const size_t count = FANG_CHUNK_COUNT * FANG_CHUNK_COUNT;
+
+    entities->locations.sets  = malloc(count * sizeof(Fang_EntityLocationSet));
+    entities->locations.count = count;
+
+    assert(entities->locations.sets);
+}
+
+static inline void
+Fang_EntitySetFree(
+    Fang_EntitySet * const entities)
+{
+    assert(entities);
+    assert(entities->locations.sets);
+    assert(entities->locations.count);
+
+    free(entities->locations.sets);
+    memset(&entities->locations, 0, sizeof(entities->locations));
+}
 
 /**
  * Returns the relevant texture for the entity's entity type.
@@ -295,6 +338,17 @@ Fang_EntityCollisionSetAdd(
     collisions->collisions[collisions->count++] = pair;
 }
 
+static inline Fang_EntityLocationSet *
+Fang_EntityLocationTableQuery(
+          Fang_EntityLocationTable * const locations,
+    const int8_t                           chunk_x,
+    const int8_t                           chunk_y)
+{
+    assert(locations);
+
+    return &locations->sets[Fang_MortonIndex(chunk_x, chunk_y)];
+}
+
 /**
  * Executes the relevant entity behavior subroutines based on the flags from
  * both entities.
@@ -350,6 +404,36 @@ Fang_EntityResolveCollision(
     }
 }
 
+static inline void
+Fang_EntitySetSetLocations(
+    Fang_EntitySet * const entities)
+{
+    assert(entities);
+    assert(entities->locations.sets);
+    assert(entities->locations.count);
+
+    for (size_t i = 0; i < entities->locations.count; ++i)
+        entities->locations.sets[i].count = 0;
+
+    for (Fang_EntityId i = 0; i < FANG_MAX_ENTITIES; ++i)
+    {
+        const Fang_Entity * const entity = Fang_EntitySetQuery(entities, i);
+
+        if (!entity)
+            continue;
+
+        Fang_EntityLocationSet * const set = Fang_EntityLocationTableQuery(
+            &entities->locations,
+            (int8_t)(entity->body.pos.x / (float)FANG_CHUNK_TILES),
+            (int8_t)(entity->body.pos.y / (float)FANG_CHUNK_TILES)
+        );
+
+        assert(set->count < FANG_MAX_ENTITIES - 1);
+
+        set->entities[set->count++] = entity->id;
+    }
+}
+
 /**
  * Calculates and resolves current-frame collisions for entities in the set.
  *
@@ -391,6 +475,57 @@ Fang_EntitySetResolveCollisions(
 
         if (!entity)
             continue;
+
+        if (entity->id == 0)
+        {
+            {
+                char * name = NULL;
+
+                switch (entity->type)
+                {
+                    case FANG_ENTITYTYPE_PLAYER:     name = "Player"; break;
+                    case FANG_ENTITYTYPE_PROJECTILE: name = "Projectile"; break;
+                    case FANG_ENTITYTYPE_AMMO:       name = "Ammo"; break;
+                    case FANG_ENTITYTYPE_HEALTH:     name = "Health"; break;
+                }
+
+                printf(
+                    "For %zu - %s there are these others in the chunk:\n",
+                    i,
+                    name
+                );
+            }
+
+            Fang_EntityLocationSet * const set = Fang_EntityLocationTableQuery(
+                &entities->locations,
+                (int8_t)(entity->body.pos.x / (float)FANG_CHUNK_TILES),
+                (int8_t)(entity->body.pos.y / (float)FANG_CHUNK_TILES)
+            );
+
+            assert(set);
+
+            for (size_t j = 0; j < set->count; ++j)
+            {
+                const Fang_Entity * const neighbor = Fang_EntitySetQuery(
+                    entities, set->entities[j]
+                );
+
+                if (!neighbor)
+                    continue;
+
+                const char * name = NULL;
+
+                switch (neighbor->type)
+                {
+                    case FANG_ENTITYTYPE_PLAYER:     name = "Player"; break;
+                    case FANG_ENTITYTYPE_PROJECTILE: name = "Projectile"; break;
+                    case FANG_ENTITYTYPE_AMMO:       name = "Ammo"; break;
+                    case FANG_ENTITYTYPE_HEALTH:     name = "Health"; break;
+                }
+
+                printf("\t%zu - %s\n", set->entities[j], name);
+            }
+        }
 
         if (Fang_BodyResolveMapCollision(&entity->body, map))
         {

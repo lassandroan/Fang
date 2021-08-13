@@ -15,6 +15,9 @@
 
 const float FANG_PROJECTION_RATIO = 1.0f / (1.0f / 2.0f);
 
+const size_t FANG_CHUNK_TILES = 8;
+const size_t FANG_CHUNK_COUNT = 256;
+
 const float FANG_GRAVITY        = 9.834f;
 const float FANG_RUN_SPEED      = 8.33f; // 30 km/h ~= 8.33 m/s
 const float FANG_JUMP_SPEED     = 3.0f;

@@ -31,6 +31,7 @@
 #include "Fang_Vector.c"
 #include "Fang_Lerp.c"
 #include "Fang_Matrix.c"
+#include "Fang_Hash.c"
 #include "Fang_Input.c"
 #include "Fang_Image.c"
 #include "Fang_TGA.c"
@@ -57,6 +58,7 @@ static inline void
 Fang_Init(void)
 {
     Fang_TextureSetInit(&gamestate.textures);
+    Fang_EntitySetInit(&gamestate.entities);
 
     gamestate.interface = (Fang_Interface){
         .textures = &gamestate.textures,
@@ -270,6 +272,8 @@ Fang_Update(
 
                 Fang_BodyMove(&entity->body, &gamestate.map, FANG_DELTA_TIME_S);
             }
+
+            Fang_EntitySetSetLocations(&gamestate.entities);
 
             Fang_EntitySetResolveCollisions(
                 &gamestate.entities,
