@@ -216,8 +216,8 @@ Fang_BodyMove(
 **/
 static inline bool
 Fang_BodiesIntersect(
-    Fang_Body * const a,
-    Fang_Body * const b)
+    const Fang_Body * const a,
+    const Fang_Body * const b)
 {
     assert(a);
     assert(b);

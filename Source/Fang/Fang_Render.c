@@ -791,17 +791,17 @@ Fang_DrawMinimap(
 
     Fang_FillRect(framebuf, &bounds, &FANG_BLACK);
 
-    for (int row = 0; row < map->size; ++row)
+    for (int row = 0; row < 8; ++row)
     {
-        const float rowf = (float)row / (float)map->size;
+        const float rowf = (float)row / 8.0f;
 
         Fang_DrawHorizontalLine(
             framebuf, (int)(rowf * framebuf->color.height), &FANG_GREY
         );
 
-        for (int col = 0; col < map->size; ++col)
+        for (int col = 0; col < 8; ++col)
         {
-            const float colf = col / (float)map->size;
+            const float colf = col / 8.0f;
 
             Fang_DrawVerticalLine(
                 framebuf, (int)(colf * framebuf->color.width), &FANG_GREY
@@ -826,8 +826,8 @@ Fang_DrawMinimap(
     }
 
     const Fang_Point minimap_pos = {
-        .x = (int)((camera->pos.x / map->size) * bounds.w),
-        .y = (int)((camera->pos.y / map->size) * bounds.h),
+        .x = (int)((camera->pos.x / 8.0f) * bounds.w),
+        .y = (int)((camera->pos.y / 8.0f) * bounds.h),
     };
 
 
@@ -847,8 +847,8 @@ Fang_DrawMinimap(
                 framebuf,
                 &minimap_pos,
                 &(Fang_Point){
-                    .x = (int)((ray_pos.x / map->size) * bounds.w),
-                    .y = (int)((ray_pos.y / map->size) * bounds.h),
+                    .x = (int)((ray_pos.x / 8.0f) * bounds.w),
+                    .y = (int)((ray_pos.y / 8.0f) * bounds.h),
                 },
                 &(Fang_Color){
                     .b = 255,

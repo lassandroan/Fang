@@ -14,12 +14,11 @@
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 typedef struct Fang_Map {
-    int              size;
-    Fang_Tile      * tiles;
-    Fang_TextureId   skybox;
-    Fang_TextureId   floor;
-    Fang_Color       fog;
-    float            fog_distance;
+    Fang_TextureId skybox;
+    Fang_TextureId floor;
+    Fang_Color     fog;
+    float          fog_distance;
+    Fang_ChunkSet  chunks;
 } Fang_Map;
 
 static inline const Fang_Tile *
@@ -29,9 +28,6 @@ Fang_MapQuery(
     const int              y)
 {
     assert(map);
-
-    /* NOTE: Temporary */
-    assert(map->size == 8);
 
     static const Fang_Tile solid_tile = {
         .texture = FANG_TEXTURE_TILE,
@@ -45,10 +41,10 @@ Fang_MapQuery(
         .height = 0.2f,
     };
 
-    if (x < 0 || x >= map->size)
+    if (x < 0 || x >= 8)
         return NULL;
 
-    if (y < 0 || y >= map->size)
+    if (y < 0 || y >= 8)
         return NULL;
 
     static const Fang_TileType temp_tiles[8 * 8] = {

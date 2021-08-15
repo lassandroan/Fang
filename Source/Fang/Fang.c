@@ -31,13 +31,13 @@
 #include "Fang_Vector.c"
 #include "Fang_Lerp.c"
 #include "Fang_Matrix.c"
-#include "Fang_Hash.c"
 #include "Fang_Input.c"
 #include "Fang_Image.c"
 #include "Fang_TGA.c"
 #include "Fang_Framebuffer.c"
 #include "Fang_Texture.c"
 #include "Fang_Tile.c"
+#include "Fang_Chunk.c"
 #include "Fang_Map.c"
 #include "Fang_Body.c"
 #include "Fang_Camera.c"
@@ -58,7 +58,6 @@ static inline void
 Fang_Init(void)
 {
     Fang_TextureSetInit(&gamestate.textures);
-    Fang_EntitySetInit(&gamestate.entities);
 
     gamestate.interface = (Fang_Interface){
         .textures = &gamestate.textures,
@@ -116,7 +115,6 @@ Fang_Init(void)
     );
 
     gamestate.map = (Fang_Map){
-        .size         = 8,
         .skybox       = FANG_TEXTURE_SKYBOX,
         .floor        = FANG_TEXTURE_FLOOR,
         .fog          = FANG_BLACK,
@@ -261,6 +259,7 @@ Fang_Update(
 
         while (gamestate.clock.accumulator >= FANG_DELTA_TIME_MS)
         {
+            // Update entity body positions
             for (Fang_EntityId i = 0; i < FANG_MAX_ENTITIES; ++i)
             {
                 Fang_Entity * const entity = Fang_EntitySetQuery(
@@ -273,14 +272,226 @@ Fang_Update(
                 Fang_BodyMove(&entity->body, &gamestate.map, FANG_DELTA_TIME_S);
             }
 
-            Fang_EntitySetSetLocations(&gamestate.entities);
+            // Soft-reset location tables
+            for (size_t i = 0; i < FANG_CHUNK_COUNT; ++i)
+                gamestate.map.chunks.chunks[i].entities.count = 0;
 
-            Fang_EntitySetResolveCollisions(
-                &gamestate.entities,
-                &gamestate.map
-            );
+            // Update location table entries
+            for (Fang_EntityId i = 0; i < FANG_MAX_ENTITIES; ++i)
+            {
+                Fang_Entity * const entity = Fang_EntitySetQuery(
+                    &gamestate.entities, i
+                );
 
-            // Placeholder for entity update loop
+                if (!entity)
+                    continue;
+
+                Fang_Chunk * const chunk = Fang_GetChunk(
+                    &gamestate.map.chunks,
+                    &(Fang_ChunkLocation){
+                        .x = (int8_t)(entity->body.pos.x / FANG_CHUNK_SIZE),
+                        .y = (int8_t)(entity->body.pos.y / FANG_CHUNK_SIZE),
+                    }
+                );
+
+                assert(chunk->entities.count <= FANG_CHUNK_ENTITY_CAPACITY - 1);
+                chunk->entities.entities[chunk->entities.count++] = entity->id;
+            }
+
+            // Check entity-tile collisions
+            for (Fang_EntityId i = 0; i < FANG_MAX_ENTITIES; ++i)
+            {
+                Fang_Entity * const entity = Fang_EntitySetQuery(
+                    &gamestate.entities, i
+                );
+
+                if (!entity)
+                    continue;
+
+                if (Fang_BodyResolveMapCollision(&entity->body, &gamestate.map))
+                {
+                    switch (entity->type)
+                    {
+                        case FANG_ENTITYTYPE_PLAYER:
+                            Fang_PlayerCollideMap(entity);
+                            break;
+
+                        case FANG_ENTITYTYPE_AMMO:
+                            Fang_AmmoCollideMap(entity);
+                            break;
+
+                        case FANG_ENTITYTYPE_HEALTH:
+                            Fang_HealthCollideMap(entity);
+                            break;
+
+                        case FANG_ENTITYTYPE_PROJECTILE:
+                            Fang_ProjectileCollideMap(entity);
+                            break;
+
+                        default:
+                            break;
+                    };
+                }
+            }
+
+            // Check entity-entity collisions
+            for (Fang_EntityId i = 0; i < FANG_MAX_ENTITIES; ++i)
+            {
+                const Fang_Entity * const entity = Fang_EntitySetQuery(
+                    &gamestate.entities, i
+                );
+
+                if (!entity)
+                    continue;
+
+                Fang_Chunk * const chunk = Fang_GetChunk(
+                    &gamestate.map.chunks,
+                    &(Fang_ChunkLocation){
+                        .x = (int8_t)(entity->body.pos.x / FANG_CHUNK_SIZE),
+                        .y = (int8_t)(entity->body.pos.y / FANG_CHUNK_SIZE),
+                    }
+                );
+
+                if (i == 0)
+                {
+                    assert(entity->type == FANG_ENTITYTYPE_PLAYER);
+
+                    printf("Other entities in your chunk:\n");
+                    (void)Fang_GetChunkTile;
+                }
+
+                for (size_t j = 0; j < chunk->entities.count; ++j)
+                {
+                    if (chunk->entities.entities[j] == entity->id)
+                        continue;
+
+                    const Fang_Entity * const other = Fang_EntitySetQuery(
+                        &gamestate.entities, chunk->entities.entities[j]
+                    );
+
+                    if (!other)
+                        continue;
+
+                    if (i == 0)
+                    {
+                        const char * name;
+                        switch (other->type)
+                        {
+                            case FANG_ENTITYTYPE_PLAYER:     name = "Player"; break;
+                            case FANG_ENTITYTYPE_PROJECTILE: name = "Projectile"; break;
+                            case FANG_ENTITYTYPE_AMMO:       name = "Ammo"; break;
+                            case FANG_ENTITYTYPE_HEALTH:     name = "Health"; break;
+                        }
+
+                        printf("\t%zu - %s\n", other->id, name);
+                    }
+
+                    if (Fang_BodiesIntersect(&entity->body, &other->body))
+                    {
+                        Fang_EntityCollisionSetAdd(
+                            &gamestate.entities.collisions,
+                            (Fang_EntityPair){{entity->id, other->id}}
+                        );
+                    }
+                }
+            }
+
+            // Resolve collisions
+            {
+                Fang_EntityCollisionSet * const collisions = (
+                    &gamestate.entities.collisions
+                );
+                Fang_EntityCollisionSet * const last_collisions = (
+                    &gamestate.entities.last_collisions
+                );
+
+                for (size_t i = 0; i < gamestate.entities.collisions.count; ++i)
+                {
+                    const Fang_EntityPair collision = (
+                        gamestate.entities.collisions.collisions[i]
+                    );
+
+                    Fang_Entity * const first = Fang_EntitySetQuery(
+                        &gamestate.entities, collision.first
+                    );
+
+                    if (!first || first->state != FANG_ENTITYSTATE_ACTIVE)
+                        continue;
+
+                    Fang_Entity * const second = Fang_EntitySetQuery(
+                        &gamestate.entities, collision.second
+                    );
+
+                    if (!second || second->state != FANG_ENTITYSTATE_ACTIVE)
+                        continue;
+
+                    bool initial_collision = true;
+                    for (size_t j = 0; j < last_collisions->count; ++j)
+                    {
+                        const Fang_EntityPair last_collision = (
+                            last_collisions->collisions[j]
+                        );
+
+                        if (last_collision.first  == collision.first
+                        &&  last_collision.second == collision.second)
+                        {
+                            initial_collision = false;
+                            break;
+                        }
+
+                        if (last_collision.first  == collision.second
+                        &&  last_collision.second == collision.first)
+                        {
+                            initial_collision = false;
+                            break;
+                        }
+                    }
+
+                    if (initial_collision)
+                    {
+                        assert(last_collisions->count <= FANG_MAX_COLLISIONS - 1);
+                        last_collisions->collisions[last_collisions->count++] = collision;
+                    }
+
+                    Fang_BodyResolveBodyCollision(&first->body, &second->body);
+
+                    for (size_t i = 0; i < 2; ++i)
+                    {
+                        Fang_Entity * const entity = (i == 0) ?  first : second;
+                        Fang_Entity * const  other = (i == 0) ? second :  first;
+
+                        switch (entity->type)
+                        {
+                            case FANG_ENTITYTYPE_PLAYER:
+                                Fang_PlayerCollideEntity(
+                                    entity, other, initial_collision
+                                );
+                                break;
+
+                            case FANG_ENTITYTYPE_AMMO:
+                                Fang_AmmoCollideEntity(
+                                    entity, other, initial_collision
+                                );
+                                break;
+
+                            case FANG_ENTITYTYPE_HEALTH:
+                                Fang_HealthCollideEntity(
+                                    entity, other, initial_collision
+                                );
+                                break;
+
+                            default:
+                                break;
+                        };
+                    }
+                }
+
+                memset(last_collisions, 0, sizeof(*last_collisions));
+                memcpy(last_collisions, collisions, sizeof(*last_collisions));
+                memset(collisions, 0, sizeof(*collisions));
+            }
+
+            // Run entity update functions
             for (Fang_EntityId i = 0; i < FANG_MAX_ENTITIES; ++i)
             {
                 Fang_Entity * const entity = Fang_EntitySetQuery(
