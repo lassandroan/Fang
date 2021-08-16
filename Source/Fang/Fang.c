@@ -390,7 +390,7 @@ Fang_Update(
                     {
                         Fang_EntityCollisionSetAdd(
                             &gamestate.entities.collisions,
-                            (Fang_EntityPair){{entity->id, other->id}}
+                            (Fang_EntityCollision){entity->id, other->id}
                         );
                     }
                 }
@@ -407,7 +407,7 @@ Fang_Update(
 
                 for (size_t i = 0; i < gamestate.entities.collisions.count; ++i)
                 {
-                    const Fang_EntityPair collision = (
+                    const Fang_EntityCollision collision = (
                         gamestate.entities.collisions.collisions[i]
                     );
 
@@ -428,7 +428,7 @@ Fang_Update(
                     bool initial_collision = true;
                     for (size_t j = 0; j < last_collisions->count; ++j)
                     {
-                        const Fang_EntityPair last_collision = (
+                        const Fang_EntityCollision last_collision = (
                             last_collisions->collisions[j]
                         );
 

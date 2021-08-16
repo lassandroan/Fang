@@ -116,19 +116,16 @@ typedef struct Fang_Entity {
 /**
  * A structure used for identifying an interaction between two entities.
 **/
-typedef union Fang_EntityPair {
-    struct {
-        Fang_EntityId first;
-        Fang_EntityId second;
-    };
-    Fang_EntityId entities[2];
-} Fang_EntityPair;
+typedef struct Fang_EntityCollision {
+    Fang_EntityId first;
+    Fang_EntityId second;
+} Fang_EntityCollision;
 
 /**
  * A set used to hold collisions between entities for a given frame.
 **/
 typedef struct Fang_EntityCollisionSet {
-    Fang_EntityPair collisions[FANG_MAX_COLLISIONS];
+    Fang_EntityCollision collisions[FANG_MAX_COLLISIONS];
     size_t          count;
 } Fang_EntityCollisionSet;
 
@@ -275,7 +272,7 @@ Fang_EntitySetRemove(
 static inline void
 Fang_EntityCollisionSetAdd(
           Fang_EntityCollisionSet * const collisions,
-    const Fang_EntityPair                 pair)
+    const Fang_EntityCollision                 pair)
 {
     assert(collisions);
     assert(pair.first != pair.second);
@@ -283,7 +280,7 @@ Fang_EntityCollisionSetAdd(
 
     for (size_t i = 0; i < collisions->count; ++i)
     {
-        const Fang_EntityPair collision = collisions->collisions[i];
+        const Fang_EntityCollision collision = collisions->collisions[i];
 
         if (pair.first == collision.first && pair.second == collision.second)
             return;
@@ -294,4 +291,4 @@ Fang_EntityCollisionSetAdd(
 
     collisions->collisions[collisions->count++] = pair;
 }
-`
+
