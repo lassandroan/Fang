@@ -76,19 +76,17 @@ Fang_BodyCanStep(
 }
 
 static inline bool
-Fang_BodyCollidesMap(
-    const Fang_Body * const body,
-    const Fang_Map  * const map)
+Fang_BodyCollidesTile(
+    const Fang_Body     * const body,
+    const Fang_ChunkSet * const chunks)
 {
     assert(body);
-    assert(map);
+    assert(chunks);
 
     if (!(body->flags & FANG_BODYFLAG_COLLIDE_WALLS))
         return false;
 
-    const Fang_Tile * const tile = Fang_MapQuery(
-        map, (int)floorf(body->pos.x), (int)floorf(body->pos.y)
-    );
+    const Fang_Tile * const tile = Fang_GetChunkTile(chunks, &body->pos);
 
     if (!tile)
         return false;
@@ -110,18 +108,16 @@ Fang_BodyCollidesMap(
 
 static inline float
 Fang_BodyFindFloor(
-    const Fang_Body * const body,
-    const Fang_Map  * const map)
+    const Fang_Body     * const body,
+    const Fang_ChunkSet * const chunks)
 {
     assert(body);
-    assert(map);
+    assert(chunks);
 
     if (!(body->flags & FANG_BODYFLAG_COLLIDE_WALLS))
         return 0.0f;
 
-    const Fang_Tile * const tile = Fang_MapQuery(
-        map, (int)floorf(body->pos.x), (int)floorf(body->pos.y)
-    );
+    const Fang_Tile * const tile = Fang_GetChunkTile(chunks, &body->pos);
 
     if (!tile)
         return 0.0f;
@@ -136,18 +132,16 @@ Fang_BodyFindFloor(
 
 static inline float
 Fang_BodyFindStep(
-    const Fang_Body * const body,
-    const Fang_Map  * const map)
+    const Fang_Body     * const body,
+    const Fang_ChunkSet * const chunks)
 {
     assert(body);
-    assert(map);
+    assert(chunks);
 
     if (!(body->flags & FANG_BODYFLAG_COLLIDE_WALLS))
         return 0.0f;
 
-    const Fang_Tile * const tile = Fang_MapQuery(
-        map, (int)floorf(body->pos.x), (int)floorf(body->pos.y)
-    );
+    const Fang_Tile * const tile = Fang_GetChunkTile(chunks, &body->pos);
 
     if (!tile)
         return 0.0f;
@@ -177,12 +171,12 @@ Fang_BodyFindStep(
 **/
 static void
 Fang_BodyMove(
-          Fang_Body * const body,
-          Fang_Map  * const map,
-    const float             delta)
+          Fang_Body     * const body,
+    const Fang_ChunkSet * const chunks,
+    const float                 delta)
 {
     assert(body);
-    assert(map);
+    assert(chunks);
 
     body->last = body->pos;
 
@@ -199,7 +193,7 @@ Fang_BodyMove(
 
     if (body->flags & FANG_BODYFLAG_FALL)
     {
-        const float standing_surface = Fang_BodyFindFloor(body, map);
+        const float standing_surface = Fang_BodyFindFloor(body, chunks);
 
         if (body->pos.z > standing_surface)
             vel->value.z -= FANG_GRAVITY * delta;
@@ -247,11 +241,11 @@ Fang_BodiesIntersect(
 **/
 static inline bool
 Fang_BodyResolveMapCollision(
-          Fang_Body * const body,
-    const Fang_Map  * const map)
+          Fang_Body     * const body,
+    const Fang_ChunkSet * const chunks)
 {
     assert(body);
-    assert(map);
+    assert(chunks);
 
     if (!(body->flags & FANG_BODYFLAG_COLLIDE_WALLS))
         return false;
@@ -264,7 +258,7 @@ Fang_BodyResolveMapCollision(
     /* X collision */
     test_body.pos.x = body->pos.x;
 
-    if (Fang_BodyCollidesMap(&test_body, map))
+    if (Fang_BodyCollidesTile(&test_body, chunks))
     {
         result = true;
         test_body.pos.x = test_body.last.x;
@@ -273,7 +267,7 @@ Fang_BodyResolveMapCollision(
     /* Y collision */
     test_body.pos.y = body->pos.y;
 
-    if (Fang_BodyCollidesMap(&test_body, map))
+    if (Fang_BodyCollidesTile(&test_body, chunks))
     {
         result = true;
         test_body.pos.y = test_body.last.y;
@@ -282,7 +276,7 @@ Fang_BodyResolveMapCollision(
     /* Z collision */
     test_body.pos.z = body->pos.z;
 
-    if (Fang_BodyCollidesMap(&test_body, map))
+    if (Fang_BodyCollidesTile(&test_body, chunks))
     {
         result = true;
         body->jump        = false;
@@ -293,7 +287,7 @@ Fang_BodyResolveMapCollision(
     body->pos = test_body.pos;
 
     /* If we moved onto a short tile, step up onto it */
-    const float standing_surface = Fang_BodyFindStep(body, map);
+    const float standing_surface = Fang_BodyFindStep(body, chunks);
 
     if (body->pos.z <= standing_surface)
     {

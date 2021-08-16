@@ -54,9 +54,9 @@ typedef struct Fang_ChunkIndex {
 } Fang_ChunkIndex;
 
 
-static Fang_Chunk *
+static const Fang_Chunk *
 Fang_GetIndexedChunk(
-          Fang_ChunkSet   * const chunks,
+    const Fang_ChunkSet   * const chunks,
     const Fang_ChunkIndex * const index)
 {
     assert(chunks);
@@ -86,35 +86,73 @@ Fang_GetIndexedChunk(
         [15] = 0b01010101,
     };
 
+    // const uint8_t x = (uint8_t)index->x;
+    // const uint8_t y = (uint8_t)index->y;
+
+    const uint8_t x = (index->x < 0)
+        ? (uint8_t)(index->x & ~(1 << 7))
+        : (uint8_t)index->x;
+
+    const uint8_t y = (index->y < 0)
+        ? (uint8_t)(index->y & ~(1 << 7))
+        : (uint8_t)index->y;
+
     uint16_t result = 0;
-    for (uint8_t i = 0; i < 32; i += 4)
+    for (uint8_t i = 0; i < 16; i += 4)
     {
-        const uint8_t xbits = (index->x >> i) & 0b1111;
-        const uint8_t ybits = (index->y >> i) & 0b1111;
+        const uint8_t xbits = (x >> i) & 0b1111;
+        const uint8_t ybits = (y >> i) & 0b1111;
         result |= (lookup[xbits] | (lookup[ybits] << 1)) << (i * 2);
     }
 
-    assert(result < FANG_CHUNK_COUNT);
+    // assert(result < FANG_CHUNK_COUNT);
+    result = clamp(result, 0, FANG_CHUNK_COUNT);
 
     return &chunks->chunks[result];
 }
 
-#define Fang_GetChunk(chunks, position) _Generic(position, \
-    const Fang_Vec3*: Fang_GetChunkVec3,                   \
-          Fang_Vec3*: Fang_GetChunkVec3                    \
+#define Fang_GetChunk(chunks, position) _Generic(position,  \
+    const Fang_Vec2*:  Fang_GetChunkVec2,                   \
+          Fang_Vec2*:  Fang_GetChunkVec2,                   \
+    const Fang_Vec3*:  Fang_GetChunkVec3,                   \
+          Fang_Vec3*:  Fang_GetChunkVec3,                   \
+    const Fang_Point*: Fang_GetChunkPoint,                  \
+          Fang_Point*: Fang_GetChunkPoint                   \
     )(chunks, position)
 
-#define Fang_GetChunkTile(chunks, position) _Generic(position, \
-    const Fang_Vec3*: Fang_GetChunkTileVec3,                   \
-          Fang_Vec3*: Fang_GetChunkTileVec3                    \
+#define Fang_GetChunkTile(chunks, position) _Generic(position,  \
+    const Fang_Vec2*:  Fang_GetChunkTileVec2,                   \
+          Fang_Vec2*:  Fang_GetChunkTileVec2,                   \
+    const Fang_Vec3*:  Fang_GetChunkTileVec3,                   \
+          Fang_Vec3*:  Fang_GetChunkTileVec3,                   \
+    const Fang_Point*: Fang_GetChunkTilePoint,                  \
+          Fang_Point*: Fang_GetChunkTilePoint                   \
     )(chunks, position)
 
-/**
- *
-**/
-static Fang_Chunk *
+static inline const Fang_Chunk *
+Fang_GetChunkVec2(
+    const Fang_ChunkSet * const chunks,
+    const Fang_Vec2     * const position)
+{
+    assert(chunks);
+    assert(position);
+    assert(position->x >= INT8_MIN);
+    assert(position->x <= INT8_MAX);
+    assert(position->y >= INT8_MIN);
+    assert(position->y <= INT8_MAX);
+
+    return Fang_GetIndexedChunk(
+        chunks,
+        &(Fang_ChunkIndex){
+            .x = (int8_t)(position->x / (float)FANG_CHUNK_SIZE),
+            .y = (int8_t)(position->y / (float)FANG_CHUNK_SIZE),
+        }
+    );
+}
+
+static inline const Fang_Chunk *
 Fang_GetChunkVec3(
-          Fang_ChunkSet * const chunks,
+    const Fang_ChunkSet * const chunks,
     const Fang_Vec3     * const position)
 {
     assert(chunks);
@@ -133,24 +171,42 @@ Fang_GetChunkVec3(
     );
 }
 
-/**
- *
-**/
-static Fang_Tile *
-Fang_GetChunkTileVec3(
-          Fang_ChunkSet * const chunks,
-    const Fang_Vec3     * const position)
+static inline const Fang_Chunk *
+Fang_GetChunkPoint(
+    const Fang_ChunkSet * const chunks,
+    const Fang_Point    * const position)
+{
+    assert(chunks);
+    assert(position);
+    assert(position->x >= INT8_MIN);
+    assert(position->x <= INT8_MAX);
+    assert(position->y >= INT8_MIN);
+    assert(position->y <= INT8_MAX);
+
+    return Fang_GetIndexedChunk(
+        chunks,
+        &(Fang_ChunkIndex){
+            .x = (int8_t)(position->x / FANG_CHUNK_SIZE),
+            .y = (int8_t)(position->y / FANG_CHUNK_SIZE),
+        }
+    );
+}
+
+static inline const Fang_Tile *
+Fang_GetChunkTileVec2(
+    const Fang_ChunkSet * const chunks,
+    const Fang_Vec2     * const position)
 {
     assert(chunks);
     assert(position);
 
-    Fang_Chunk * const chunk = Fang_GetChunk(chunks, position);
+    const Fang_Chunk * const chunk = Fang_GetChunk(chunks, position);
 
     assert(chunk);
 
     Fang_Vec2 fractional = {
-        .x = modff(position->x / (float)FANG_CHUNK_SIZE, NULL),
-        .y = modff(position->y / (float)FANG_CHUNK_SIZE, NULL),
+        .x = fmodf(position->x, (float)FANG_CHUNK_SIZE),
+        .y = fmodf(position->y, (float)FANG_CHUNK_SIZE),
     };
 
     fractional.x = (fractional.x < 0.0f) ? 1.0f - fractional.x : fractional.x;
@@ -161,5 +217,34 @@ Fang_GetChunkTileVec3(
         .y = (int)(fractional.y * FANG_CHUNK_SIZE),
     };
 
-    return &chunk->tiles[tile_index.x][tile_index.y];
+    if (chunk->tiles[tile_index.x][tile_index.y].type)
+        return &chunk->tiles[tile_index.x][tile_index.y];
+
+    return NULL;
+}
+
+static inline const Fang_Tile *
+Fang_GetChunkTileVec3(
+    const Fang_ChunkSet * const chunks,
+    const Fang_Vec3     * const position)
+{
+    assert(chunks);
+    assert(position);
+
+    return Fang_GetChunkTileVec2(
+        chunks, &(Fang_Vec2){.x = position->x, .y = position->y}
+    );
+}
+
+static inline const Fang_Tile *
+Fang_GetChunkTilePoint(
+    const Fang_ChunkSet * const chunks,
+    const Fang_Point    * const position)
+{
+    assert(chunks);
+    assert(position);
+
+    return Fang_GetChunkTileVec2(
+        chunks, &(Fang_Vec2){.x = (float)position->x, .y = (float)position->y}
+    );
 }

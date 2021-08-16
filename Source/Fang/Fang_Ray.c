@@ -33,13 +33,13 @@ typedef struct Fang_Ray {
 
 static inline void
 Fang_RayCast(
-    const Fang_Camera * const camera,
-    const Fang_Map    * const map,
-          Fang_Ray    * const rays,
-    const size_t              count)
+    const Fang_Camera   * const camera,
+    const Fang_ChunkSet * const chunks,
+          Fang_Ray      * const rays,
+    const size_t                count)
 {
     assert(camera);
-    assert(map);
+    assert(chunks);
     assert(rays);
     assert(count);
 
@@ -52,9 +52,7 @@ Fang_RayCast(
 
     memset(rays, 0, sizeof(Fang_Ray) * count);
 
-    const Fang_Tile * initial_tile = Fang_MapQuery(
-        map, (int)floorf(pos.x), (int)floorf(pos.y)
-    );
+    const Fang_Tile * const initial_tile = Fang_GetChunkTile(chunks, &pos);
 
     const bool standing_on_tile = (initial_tile)
         ? initial_tile->offset + initial_tile->height <= camera->pos.z
@@ -101,7 +99,7 @@ Fang_RayCast(
 
             hit->front_dist = Fang_DDAStep(&dda);
 
-            hit->tile = Fang_MapQuery(map, (int)dda.pos.x, (int)dda.pos.y);
+            hit->tile = Fang_GetChunkTile(chunks, &dda.pos);
 
             if (hit->tile)
             {

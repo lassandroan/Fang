@@ -269,7 +269,11 @@ Fang_Update(
                 if (!entity)
                     continue;
 
-                Fang_BodyMove(&entity->body, &gamestate.map, FANG_DELTA_TIME_S);
+                Fang_BodyMove(
+                    &entity->body,
+                    &gamestate.map.chunks,
+                    FANG_DELTA_TIME_S
+                );
             }
 
             // Soft-reset location tables
@@ -286,7 +290,7 @@ Fang_Update(
                 if (!entity)
                     continue;
 
-                Fang_Chunk * const chunk = Fang_GetChunk(
+                Fang_Chunk * const chunk = (Fang_Chunk*)Fang_GetChunk(
                     &gamestate.map.chunks, &entity->body.pos
                 );
 
@@ -304,7 +308,11 @@ Fang_Update(
                 if (!entity)
                     continue;
 
-                if (Fang_BodyResolveMapCollision(&entity->body, &gamestate.map))
+                const bool collides_tile = Fang_BodyResolveMapCollision(
+                    &entity->body, &gamestate.map.chunks
+                );
+
+                if (collides_tile)
                 {
                     switch (entity->type)
                     {
@@ -340,7 +348,7 @@ Fang_Update(
                 if (!entity)
                     continue;
 
-                Fang_Chunk * const chunk = Fang_GetChunk(
+                Fang_Chunk * const chunk = (Fang_Chunk*)Fang_GetChunk(
                     &gamestate.map.chunks, &entity->body.pos
                 );
 
@@ -562,7 +570,7 @@ Fang_Update(
 
     Fang_RayCast(
         &gamestate.camera,
-        &gamestate.map,
+        &gamestate.map.chunks,
         gamestate.raycast,
         (size_t)FANG_WINDOW_SIZE
     );

@@ -807,7 +807,8 @@ Fang_DrawMinimap(
                 framebuf, (int)(colf * framebuf->color.width), &FANG_GREY
             );
 
-            if (!Fang_MapQuery(map, row, col))
+            const Fang_Point point = {row, col};
+            if (!Fang_GetChunkTile(&map->chunks, &point))
                 continue;
 
             Fang_Rect map_tile_bounds = Fang_RectResize(
