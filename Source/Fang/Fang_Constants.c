@@ -19,6 +19,8 @@ enum {
     FANG_CHUNK_SIZE  = 16,
     FANG_CHUNK_COUNT = 1 << 12,
     FANG_CHUNK_ENTITY_CAPACITY = 16,
+    FANG_CHUNK_MAX =  (1 << 6) - 1,
+    FANG_CHUNK_MIN = -(1 << 6),
 };
 
 const float FANG_GRAVITY        = 9.834f;

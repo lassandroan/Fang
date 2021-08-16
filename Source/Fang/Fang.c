@@ -287,11 +287,7 @@ Fang_Update(
                     continue;
 
                 Fang_Chunk * const chunk = Fang_GetChunk(
-                    &gamestate.map.chunks,
-                    &(Fang_ChunkLocation){
-                        .x = (int8_t)(entity->body.pos.x / FANG_CHUNK_SIZE),
-                        .y = (int8_t)(entity->body.pos.y / FANG_CHUNK_SIZE),
-                    }
+                    &gamestate.map.chunks, &entity->body.pos
                 );
 
                 assert(chunk->entities.count <= FANG_CHUNK_ENTITY_CAPACITY - 1);
@@ -345,11 +341,7 @@ Fang_Update(
                     continue;
 
                 Fang_Chunk * const chunk = Fang_GetChunk(
-                    &gamestate.map.chunks,
-                    &(Fang_ChunkLocation){
-                        .x = (int8_t)(entity->body.pos.x / FANG_CHUNK_SIZE),
-                        .y = (int8_t)(entity->body.pos.y / FANG_CHUNK_SIZE),
-                    }
+                    &gamestate.map.chunks, &entity->body.pos
                 );
 
                 if (i == 0)
@@ -357,7 +349,6 @@ Fang_Update(
                     assert(entity->type == FANG_ENTITYTYPE_PLAYER);
 
                     printf("Other entities in your chunk:\n");
-                    (void)Fang_GetChunkTile;
                 }
 
                 for (size_t j = 0; j < chunk->entities.count; ++j)

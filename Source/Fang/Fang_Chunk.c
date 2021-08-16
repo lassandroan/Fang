@@ -49,28 +49,23 @@ typedef struct Fang_ChunkSet {
 /**
  *
 **/
-typedef struct Fang_ChunkLocation {
+typedef struct Fang_ChunkIndex {
     int8_t x, y;
-} Fang_ChunkLocation;
+} Fang_ChunkIndex;
 
-/**
- *
-**/
+
 static Fang_Chunk *
-Fang_GetChunk(
-          Fang_ChunkSet      * const chunks,
-    const Fang_ChunkLocation * const location)
+Fang_GetIndexedChunk(
+          Fang_ChunkSet   * const chunks,
+    const Fang_ChunkIndex * const index)
 {
     assert(chunks);
-    assert(location);
+    assert(index);
 
-    static int8_t FANG_CHUNK_MAX =  (1 << 6) - 1;
-    static int8_t FANG_CHUNK_MIN = -(1 << 6);
-
-    assert(location->x >= FANG_CHUNK_MIN);
-    assert(location->x <= FANG_CHUNK_MAX);
-    assert(location->y >= FANG_CHUNK_MIN);
-    assert(location->y <= FANG_CHUNK_MAX);
+    assert(index->x >= FANG_CHUNK_MIN);
+    assert(index->x <= FANG_CHUNK_MAX);
+    assert(index->y >= FANG_CHUNK_MIN);
+    assert(index->y <= FANG_CHUNK_MAX);
 
     static uint64_t lookup[1 << 4] = {
         [ 0] = 0b00000000,
@@ -91,53 +86,75 @@ Fang_GetChunk(
         [15] = 0b01010101,
     };
 
-    uint16_t index = 0;
+    uint16_t result = 0;
     for (uint8_t i = 0; i < 32; i += 4)
     {
-        const uint8_t xbits = (location->x >> i) & 0b1111;
-        const uint8_t ybits = (location->y >> i) & 0b1111;
-        index |= (lookup[xbits] | (lookup[ybits] << 1)) << (i * 2);
+        const uint8_t xbits = (index->x >> i) & 0b1111;
+        const uint8_t ybits = (index->y >> i) & 0b1111;
+        result |= (lookup[xbits] | (lookup[ybits] << 1)) << (i * 2);
     }
 
-    assert(index < FANG_CHUNK_COUNT);
+    assert(result < FANG_CHUNK_COUNT);
 
-    return &chunks->chunks[index];
+    return &chunks->chunks[result];
+}
+
+#define Fang_GetChunk(chunks, position) _Generic(position, \
+    const Fang_Vec3*: Fang_GetChunkVec3,                   \
+          Fang_Vec3*: Fang_GetChunkVec3                    \
+    )(chunks, position)
+
+#define Fang_GetChunkTile(chunks, position) _Generic(position, \
+    const Fang_Vec3*: Fang_GetChunkTileVec3,                   \
+          Fang_Vec3*: Fang_GetChunkTileVec3                    \
+    )(chunks, position)
+
+/**
+ *
+**/
+static Fang_Chunk *
+Fang_GetChunkVec3(
+          Fang_ChunkSet * const chunks,
+    const Fang_Vec3     * const position)
+{
+    assert(chunks);
+    assert(position);
+    assert(position->x >= INT8_MIN);
+    assert(position->x <= INT8_MAX);
+    assert(position->y >= INT8_MIN);
+    assert(position->y <= INT8_MAX);
+
+    return Fang_GetIndexedChunk(
+        chunks,
+        &(Fang_ChunkIndex){
+            .x = (int8_t)(position->x / (float)FANG_CHUNK_SIZE),
+            .y = (int8_t)(position->y / (float)FANG_CHUNK_SIZE),
+        }
+    );
 }
 
 /**
  *
 **/
 static Fang_Tile *
-Fang_GetChunkTile(
+Fang_GetChunkTileVec3(
           Fang_ChunkSet * const chunks,
-    const Fang_Vec3     * const vec)
+    const Fang_Vec3     * const position)
 {
     assert(chunks);
-    assert(vec);
+    assert(position);
 
-    Fang_Vec2 integral;
-    Fang_Vec2 fractional;
+    Fang_Chunk * const chunk = Fang_GetChunk(chunks, position);
 
-    fractional.x = modff(vec->x / (float)FANG_CHUNK_SIZE, &integral.x);
-    fractional.y = modff(vec->y / (float)FANG_CHUNK_SIZE, &integral.y);
+    assert(chunk);
+
+    Fang_Vec2 fractional = {
+        .x = modff(position->x / (float)FANG_CHUNK_SIZE, NULL),
+        .y = modff(position->y / (float)FANG_CHUNK_SIZE, NULL),
+    };
 
     fractional.x = (fractional.x < 0.0f) ? 1.0f - fractional.x : fractional.x;
     fractional.y = (fractional.y < 0.0f) ? 1.0f - fractional.y : fractional.y;
-
-    assert(integral.x >= (float)INT8_MIN);
-    assert(integral.x <= (float)INT8_MAX);
-    assert(integral.y >= (float)INT8_MIN);
-    assert(integral.y <= (float)INT8_MAX);
-
-    Fang_Chunk * const chunk = Fang_GetChunk(
-        chunks,
-        &(Fang_ChunkLocation){
-            .x = (int8_t)integral.x,
-            .y = (int8_t)integral.y,
-        }
-    );
-
-    assert(chunk);
 
     const Fang_Point tile_index = {
         .x = (int)(fractional.x * FANG_CHUNK_SIZE),
