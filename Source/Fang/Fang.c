@@ -114,12 +114,10 @@ Fang_Init(void)
         (Fang_Vec3){.x = 6.0f, .y = 5.5f}
     );
 
-    gamestate.map = (Fang_Map){
-        .skybox       = FANG_TEXTURE_SKYBOX,
-        .floor        = FANG_TEXTURE_FLOOR,
-        .fog          = FANG_BLACK,
-        .fog_distance = 16.0f,
-    };
+    gamestate.map.skybox       = FANG_TEXTURE_SKYBOX;
+    gamestate.map.floor        = FANG_TEXTURE_FLOOR;
+    gamestate.map.fog          = FANG_BLACK;
+    gamestate.map.fog_distance = 16.0f;
 }
 
 static inline void
