@@ -82,6 +82,7 @@ if test $RELEASE -eq 1; then
 else
     COMPILE_FLAGS+="-g "
     COMPILE_FLAGS+="-Wno-unused-function "
+    COMPILE_FLAGS+="-Wno-unused-label "
     DIR_BUILD+="/Debug"
 fi
 
