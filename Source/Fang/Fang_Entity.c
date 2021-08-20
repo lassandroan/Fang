@@ -199,7 +199,7 @@ Fang_EntitySetQuery(
 static inline Fang_EntityId
 Fang_EntitySetAdd(
           Fang_EntitySet * const entities,
-    const Fang_Entity            initial)
+    const Fang_Entity    * const initial)
 {
     assert(entities);
     assert(entities->last_index < FANG_MAX_ENTITIES);
@@ -209,7 +209,7 @@ Fang_EntitySetAdd(
     {
         Fang_Entity * const entity = &entities->entities[result];
 
-        memcpy(entity, &initial, sizeof(Fang_Entity));
+        memcpy(entity, initial, sizeof(Fang_Entity));
 
         entity->id    = result;
         entity->state = FANG_ENTITYSTATE_CREATING;

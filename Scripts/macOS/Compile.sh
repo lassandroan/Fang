@@ -69,6 +69,8 @@ COMPILE_FLAGS+="-Wextra "
 COMPILE_FLAGS+="-Wconversion "
 COMPILE_FLAGS+="-Werror "
 COMPILE_FLAGS+="-Wno-gnu-binary-literal "
+COMPILE_FLAGS+="-Wlarge-by-value-copy "
+COMPILE_FLAGS+="-Wkeyword-macro "
 COMPILE_FLAGS+="-mmacosx-version-min=10.9 "
 COMPILE_FLAGS+="-F/Library/Frameworks/ "
 COMPILE_FLAGS+="-DFANG_TITLE=\"$NAME\" "
@@ -78,11 +80,13 @@ DIR_BUILD="Build"
 
 if test $RELEASE -eq 1; then
     COMPILE_FLAGS+="-O3 "
+    COMPILE_FLAGS+="-Wframe-larger-than=4096 "
     DIR_BUILD+="/Release"
 else
     COMPILE_FLAGS+="-g "
     COMPILE_FLAGS+="-Wno-unused-function "
     COMPILE_FLAGS+="-Wno-unused-label "
+    COMPILE_FLAGS+="-Wframe-larger-than=8192 "
     DIR_BUILD+="/Debug"
 fi
 

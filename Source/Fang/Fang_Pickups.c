@@ -24,7 +24,7 @@ Fang_AmmoCreate(
 
     return Fang_EntitySetAdd(
         entities,
-        (Fang_Entity){
+        &(Fang_Entity){
             .type = FANG_ENTITYTYPE_AMMO,
             .props.ammo.type  = type,
             .props.ammo.count = count,
@@ -119,7 +119,7 @@ Fang_HealthCreate(
 
     return Fang_EntitySetAdd(
         entities,
-        (Fang_Entity){
+        &(Fang_Entity){
             .type = FANG_ENTITYTYPE_HEALTH,
             .props.health.count = count,
             .body = {

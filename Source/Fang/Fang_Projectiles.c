@@ -30,7 +30,7 @@ Fang_ProjectileCreate(
 
     return Fang_EntitySetAdd(
         entities,
-        (Fang_Entity){
+        &(Fang_Entity){
             .type = FANG_ENTITYTYPE_PROJECTILE,
             .props.projectile = (Fang_ProjectileProps){
                 .type     = type,

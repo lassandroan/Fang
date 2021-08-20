@@ -89,7 +89,7 @@ Fang_Init(void)
 
     Fang_EntitySetAdd(
         &gamestate.entities,
-        (Fang_Entity){
+        &(Fang_Entity){
             .type = FANG_ENTITYTYPE_PLAYER,
             .body = (Fang_Body){
                 .pos = (Fang_Vec3){.x = 4.0f, .y = 4.0f},
