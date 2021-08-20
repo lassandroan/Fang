@@ -71,15 +71,19 @@ Fang_ImageAlloc(
 
 /**
  * Frees an image's pixel data and clears the image's attributes.
+ *
+ * If the image was previously freed or not allocated, this function does
+ * nothing.
 **/
 static inline void
 Fang_ImageFree(
     Fang_Image * const image)
 {
-    assert(Fang_ImageValid(image));
-
-    free(image->pixels);
-    memset(image, 0, sizeof(Fang_Image));
+    if (Fang_ImageValid(image))
+    {
+        free(image->pixels);
+        memset(image, 0, sizeof(Fang_Image));
+    }
 }
 
 /**
