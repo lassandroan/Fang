@@ -37,6 +37,7 @@ typedef struct Fang_ChunkEntitySet
 typedef struct Fang_Chunk {
     Fang_Tile           tiles[FANG_CHUNK_SIZE][FANG_CHUNK_SIZE];
     Fang_ChunkEntitySet entities;
+    Fang_TextureId      floor;
 } Fang_Chunk;
 
 /**
