@@ -34,7 +34,7 @@ enum {
  *
  * Each one of these corresponds to a texture file in the resource folder.
 **/
-typedef enum Fang_Texture {
+typedef enum Fang_TextureId {
     /* Map Textures */
     FANG_TEXTURE_SKYBOX,
     FANG_TEXTURE_FLOOR,
@@ -59,7 +59,7 @@ typedef enum Fang_Texture {
 
     FANG_NUM_TEXTURES,
     FANG_TEXTURE_NONE,
-} Fang_Texture;
+} Fang_TextureId;
 
 /**
  * This structure is used for managing textures and fonts.
@@ -74,7 +74,7 @@ typedef struct Fang_TextureSet {
 static inline void
 Fang_TextureSetUnload(
           Fang_TextureSet * const textures,
-    const Fang_Texture            id)
+    const Fang_TextureId          id)
 {
     assert(textures);
     assert(id < FANG_NUM_TEXTURES);
@@ -95,7 +95,7 @@ Fang_TextureSetUnload(
 static inline int
 Fang_TextureSetLoad(
           Fang_TextureSet * const textures,
-    const Fang_Texture            id)
+    const Fang_TextureId          id)
 {
     assert(textures);
     assert(id < FANG_NUM_TEXTURES);
@@ -224,6 +224,16 @@ Fang_TextureSetLoad(
     return 0;
 }
 
+static inline void
+Fang_TextureSetInit(
+    Fang_TextureSet * const textures)
+{
+    assert(textures);
+
+    for (Fang_TextureId i = 0; i < FANG_NUM_TEXTURES; ++i)
+        Fang_TextureSetLoad(textures, i);
+}
+
 /**
  * Unloads all textures currently loaded in the texture set.
 **/
@@ -233,7 +243,7 @@ Fang_TextureSetFree(
 {
     assert(textures);
 
-    for (Fang_Texture i = 0; i < FANG_NUM_TEXTURES; ++i)
+    for (Fang_TextureId i = 0; i < FANG_NUM_TEXTURES; ++i)
         if (textures->textures[i].pixels)
             Fang_TextureSetUnload(textures, i);
 }
@@ -247,7 +257,7 @@ Fang_TextureSetFree(
 static inline const Fang_Image*
 Fang_TextureSetQuery(
     const Fang_TextureSet * const textures,
-    const Fang_Texture            id)
+    const Fang_TextureId          id)
 {
     assert(textures);
 

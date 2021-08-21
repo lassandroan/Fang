@@ -116,21 +116,18 @@ typedef struct Fang_Entity {
 /**
  * A structure used for identifying an interaction between two entities.
 **/
-typedef union Fang_EntityPair {
-    struct {
-        Fang_EntityId first;
-        Fang_EntityId second;
-    };
-    Fang_EntityId entities[2];
-} Fang_EntityPair;
+typedef struct Fang_EntityCollision {
+    Fang_EntityId first;
+    Fang_EntityId second;
+} Fang_EntityCollision;
 
 /**
  * A set used to hold collisions between entities for a given frame.
 **/
-typedef struct Fang_CollisionSet {
-    Fang_EntityPair collisions[FANG_MAX_COLLISIONS];
+typedef struct Fang_EntityCollisionSet {
+    Fang_EntityCollision collisions[FANG_MAX_COLLISIONS];
     size_t          count;
-} Fang_CollisionSet;
+} Fang_EntityCollisionSet;
 
 /**
  * A set used to hold entities and information about them.
@@ -139,16 +136,16 @@ typedef struct Fang_CollisionSet {
  * also maintains the collision tables for both the current and previous frame.
 **/
 typedef struct Fang_EntitySet {
-    Fang_Entity       entities[FANG_MAX_ENTITIES];
-    Fang_EntityId     last_index;
-    Fang_CollisionSet collisions;
-    Fang_CollisionSet last_collisions;
+    Fang_Entity              entities[FANG_MAX_ENTITIES];
+    Fang_EntityId            last_index;
+    Fang_EntityCollisionSet  collisions;
+    Fang_EntityCollisionSet  last_collisions;
 } Fang_EntitySet;
 
 /**
  * Returns the relevant texture for the entity's entity type.
 **/
-static inline Fang_Texture
+static inline Fang_TextureId
 Fang_EntityQueryTexture(
     const Fang_Entity * const entity)
 {
@@ -202,7 +199,7 @@ Fang_EntitySetQuery(
 static inline Fang_EntityId
 Fang_EntitySetAdd(
           Fang_EntitySet * const entities,
-    const Fang_Entity            initial)
+    const Fang_Entity    * const initial)
 {
     assert(entities);
     assert(entities->last_index < FANG_MAX_ENTITIES);
@@ -212,7 +209,7 @@ Fang_EntitySetAdd(
     {
         Fang_Entity * const entity = &entities->entities[result];
 
-        memcpy(entity, &initial, sizeof(Fang_Entity));
+        memcpy(entity, initial, sizeof(Fang_Entity));
 
         entity->id    = result;
         entity->state = FANG_ENTITYSTATE_CREATING;
@@ -273,9 +270,9 @@ Fang_EntitySetRemove(
  * collision has not already been recorded.
 **/
 static inline void
-Fang_CollisionSetAdd(
-          Fang_CollisionSet * const collisions,
-    const Fang_EntityPair           pair)
+Fang_EntityCollisionSetAdd(
+          Fang_EntityCollisionSet * const collisions,
+    const Fang_EntityCollision                 pair)
 {
     assert(collisions);
     assert(pair.first != pair.second);
@@ -283,7 +280,7 @@ Fang_CollisionSetAdd(
 
     for (size_t i = 0; i < collisions->count; ++i)
     {
-        const Fang_EntityPair collision = collisions->collisions[i];
+        const Fang_EntityCollision collision = collisions->collisions[i];
 
         if (pair.first == collision.first && pair.second == collision.second)
             return;
@@ -295,206 +292,3 @@ Fang_CollisionSetAdd(
     collisions->collisions[collisions->count++] = pair;
 }
 
-/**
- * Executes the relevant entity behavior subroutines based on the flags from
- * both entities.
- *
- * If either of the two entities has a flag enabled, the relevant subroutine is
- * run even if the subroutine may require that both entities have the flag
- * enabled.
-**/
-static inline void
-Fang_EntityResolveCollision(
-          Fang_Entity * const first,
-          Fang_Entity * const second,
-    const bool                initial_collision)
-{
-    assert(first);
-    assert(second);
-    assert(first->id != second->id);
-
-    typedef void (CollisionFunc)(
-        Fang_Entity * const,
-        Fang_Entity * const,
-        const bool
-    );
-
-    CollisionFunc Fang_AmmoCollideEntity;
-    CollisionFunc Fang_HealthCollideEntity;
-    CollisionFunc Fang_PlayerCollideEntity;
-
-    Fang_BodyResolveBodyCollision(&first->body, &second->body);
-
-    for (size_t i = 0; i < 2; ++i)
-    {
-        Fang_Entity * const entity = (i == 0) ?  first : second;
-        Fang_Entity * const  other = (i == 0) ? second :  first;
-
-        switch (entity->type)
-        {
-            case FANG_ENTITYTYPE_PLAYER:
-                Fang_PlayerCollideEntity(entity, other, initial_collision);
-                break;
-
-            case FANG_ENTITYTYPE_AMMO:
-                Fang_AmmoCollideEntity(entity, other, initial_collision);
-                break;
-
-            case FANG_ENTITYTYPE_HEALTH:
-                Fang_HealthCollideEntity(entity, other, initial_collision);
-                break;
-
-            default:
-                break;
-        };
-    }
-}
-
-/**
- * Calculates and resolves current-frame collisions for entities in the set.
- *
- * The results of the current-frame collision table are compared with those of
- * the previous-frame collision table to determine if the current collision is
- * a "sustained collision" or not. Sustained collisions may occur over multiple
- * frames, but their side effects (such as damage) typically may happen only on
- * the initial impact (such as a projectile hitting an entity and passing
- * through it).
- *
- * If an entity is removed during collision resolution (i.e. their state is set
- * to inactive), further collisions that the entity is involved in will be
- * disregarded.
- *
- * Collisions that are not disregarded for this frame are saved into the
- * previous-frame collision table at the end of this subroutine.
-**/
-static inline void
-Fang_EntitySetResolveCollisions(
-          Fang_EntitySet * const entities,
-    const Fang_Map       * const map)
-{
-    assert(entities);
-    assert(!entities->collisions.count);
-    assert(map);
-
-    typedef void (CollisionFunc)(
-        Fang_Entity * const
-    );
-
-    CollisionFunc Fang_AmmoCollideMap;
-    CollisionFunc Fang_HealthCollideMap;
-    CollisionFunc Fang_PlayerCollideMap;
-    CollisionFunc Fang_ProjectileCollideMap;
-
-    for (Fang_EntityId i = 0; i < FANG_MAX_ENTITIES; ++i)
-    {
-        Fang_Entity * const entity = Fang_EntitySetQuery(entities, i);
-
-        if (!entity)
-            continue;
-
-        if (Fang_BodyResolveMapCollision(&entity->body, map))
-        {
-            switch (entity->type)
-            {
-                case FANG_ENTITYTYPE_PLAYER:
-                    Fang_PlayerCollideMap(entity);
-                    break;
-
-                case FANG_ENTITYTYPE_AMMO:
-                    Fang_AmmoCollideMap(entity);
-                    break;
-
-                case FANG_ENTITYTYPE_HEALTH:
-                    Fang_HealthCollideMap(entity);
-                    break;
-
-                case FANG_ENTITYTYPE_PROJECTILE:
-                    Fang_ProjectileCollideMap(entity);
-                    break;
-
-                default:
-                    break;
-            };
-        }
-    }
-
-    for (Fang_EntityId i = 0; i < FANG_MAX_ENTITIES; ++i)
-    {
-        for (Fang_EntityId j = i + 1; j < FANG_MAX_ENTITIES; ++j)
-        {
-            Fang_Entity * const pair[2] = {
-                Fang_EntitySetQuery(entities, i),
-                Fang_EntitySetQuery(entities, j),
-            };
-
-            if (!pair[0] || !pair[1])
-                continue;
-
-            if (Fang_BodiesIntersect(&pair[0]->body, &pair[1]->body))
-            {
-                Fang_CollisionSetAdd(
-                    &entities->collisions,
-                    (Fang_EntityPair){{i, j}}
-                );
-            }
-        }
-    }
-
-    assert(entities->collisions.count < FANG_MAX_COLLISIONS);
-
-    Fang_CollisionSet * const collisions      = &entities->collisions;
-    Fang_CollisionSet * const last_collisions = &entities->last_collisions;
-
-    for (size_t i = 0; i < entities->collisions.count; ++i)
-    {
-        const Fang_EntityPair collision = entities->collisions.collisions[i];
-
-        Fang_Entity * const first = Fang_EntitySetQuery(
-            entities, collision.first
-        );
-
-        if (!first || first->state != FANG_ENTITYSTATE_ACTIVE)
-            continue;
-
-        Fang_Entity * const second = Fang_EntitySetQuery(
-            entities, collision.second
-        );
-
-        if (!second || second->state != FANG_ENTITYSTATE_ACTIVE)
-            continue;
-
-        bool initial_collision = true;
-        for (size_t j = 0; j < last_collisions->count; ++j)
-        {
-            const Fang_EntityPair last_collision = (
-                last_collisions->collisions[j]
-            );
-
-            if (last_collision.first  == collision.first
-            &&  last_collision.second == collision.second)
-            {
-                initial_collision = false;
-                break;
-            }
-
-            if (last_collision.first  == collision.second
-            &&  last_collision.second == collision.first)
-            {
-                initial_collision = false;
-                break;
-            }
-        }
-
-        if (initial_collision)
-        {
-            assert(last_collisions->count <= FANG_MAX_COLLISIONS - 1);
-            last_collisions->collisions[last_collisions->count++] = collision;
-        }
-
-        Fang_EntityResolveCollision(first, second, initial_collision);
-    }
-
-    memset(last_collisions, 0, sizeof(Fang_CollisionSet));
-    memcpy(last_collisions, collisions, sizeof(Fang_CollisionSet));
-    memset(collisions, 0, sizeof(Fang_CollisionSet));
-}

@@ -25,7 +25,7 @@ Fang_PlayerCreate(
 
     return Fang_EntitySetAdd(
         entities,
-        (Fang_Entity){
+        &(Fang_Entity){
             .type = FANG_ENTITYTYPE_PLAYER,
             .props.player.input  = input,
             .props.player.health = 100,

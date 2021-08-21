@@ -14,68 +14,9 @@
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 typedef struct Fang_Map {
-    int size;
-
-    Fang_Tile * tiles;
-
-    Fang_Texture skybox;
-    Fang_Texture floor;
-
-    Fang_Color fog;
-    float      fog_distance;
+    Fang_TextureId skybox;
+    Fang_TextureId floor;
+    Fang_Color     fog;
+    float          fog_distance;
+    Fang_ChunkSet  chunks;
 } Fang_Map;
-
-static inline const Fang_Tile *
-Fang_MapQuery(
-    const Fang_Map * const map,
-    const int              x,
-    const int              y)
-{
-    assert(map);
-
-    /* NOTE: Temporary */
-    assert(map->size == 8);
-
-    static const Fang_Tile solid_tile = {
-        .texture = FANG_TEXTURE_TILE,
-        .y = 0.0f,
-        .h = 0.1f,
-    };
-
-    static const Fang_Tile floating_tile = {
-        .texture = FANG_TEXTURE_TILE,
-        .y = 0.0f,
-        .h = 0.2f,
-    };
-
-    if (x < 0 || x >= map->size)
-        return NULL;
-
-    if (y < 0 || y >= map->size)
-        return NULL;
-
-    static const Fang_TileType temp_tiles[8 * 8] = {
-        1, 1, 1, 0, 0, 0, 1, 1,
-        1, 0, 0, 0, 0, 0, 2, 1,
-        1, 0, 0, 0, 0, 0, 0, 1,
-        1, 0, 0, 0, 0, 0, 0, 1,
-        1, 2, 0, 0, 0, 0, 0, 1,
-        1, 0, 0, 0, 0, 1, 0, 1,
-        1, 1, 0, 0, 0, 0, 0, 1,
-        1, 1, 1, 1, 1, 1, 1, 1,
-    };
-
-    const Fang_TileType type = temp_tiles[y * 8 + x];
-
-    switch (type)
-    {
-        case FANG_TILETYPE_SOLID:
-            return &solid_tile;
-
-        case FANG_TILETYPE_FLOATING:
-            return &floating_tile;
-
-        default:
-            return NULL;
-    }
-}

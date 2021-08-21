@@ -405,11 +405,12 @@ Fang_DrawMapFloor(
           Fang_Framebuffer * const framebuf,
     const Fang_Camera      * const camera,
     const Fang_Map         * const map,
-    const Fang_Image       * const texture)
+    const Fang_TextureSet  * const textures)
 {
     assert(framebuf);
     assert(camera);
     assert(map);
+    assert(textures);
 
     const Fang_Rect viewport = Fang_FramebufferGetViewport(framebuf);
 
@@ -433,9 +434,6 @@ Fang_DrawMapFloor(
         .x = camera->dir.x - camera->cam.x,
         .y = camera->dir.y - camera->cam.y,
     };
-
-    const int texture_width  = (texture) ? texture->width  : 32;
-    const int texture_height = (texture) ? texture->height : 32;
 
     for (int y = viewport.h / 2 + offset; y < viewport.h; ++y)
     {
@@ -466,6 +464,22 @@ Fang_DrawMapFloor(
 
         for (int x = 0; x < viewport.w; ++x)
         {
+            const Fang_Chunk * const chunk = Fang_GetChunk(
+                &map->chunks, &floor_pos
+            );
+
+            assert(chunk);
+
+            const Fang_Image * const texture = Fang_TextureSetQuery(
+                textures, chunk->floor
+            );
+
+            if (!texture)
+                continue;
+
+            const int texture_width  = (texture) ? texture->width  : 32;
+            const int texture_height = (texture) ? texture->height : 32;
+
             Fang_Point tex_pos = {
                 .x = (int)roundf(
                     texture_width * (floor_pos.x - floorf(floor_pos.x))
@@ -478,9 +492,6 @@ Fang_DrawMapFloor(
             tex_pos.x &= (texture_width  - 1);
             tex_pos.y &= (texture_height - 1);
 
-            floor_pos.x += floor_step.x;
-            floor_pos.y += floor_step.y;
-
             const Fang_Color dest_color = Fang_ImageQuery(texture, &tex_pos);
 
             Fang_FramebufferPutPixel(
@@ -488,6 +499,9 @@ Fang_DrawMapFloor(
                 &(Fang_Point){x, y},
                 &dest_color
             );
+
+            floor_pos.x += floor_step.x;
+            floor_pos.y += floor_step.y;
         }
     }
 }
@@ -502,7 +516,7 @@ static void
 Fang_DrawMapTiles(
           Fang_Framebuffer * const framebuf,
     const Fang_Camera      * const camera,
-    const Fang_TextureSet       * const textures,
+    const Fang_TextureSet  * const textures,
           Fang_Map         * const map,
     const Fang_Ray         * const rays,
     const size_t                   count)
@@ -730,7 +744,7 @@ static void
 Fang_DrawMap(
           Fang_Framebuffer * const framebuf,
     const Fang_Camera      * const camera,
-    const Fang_TextureSet       * const textures,
+    const Fang_TextureSet  * const textures,
           Fang_Map         * const map,
     const Fang_Ray         * const rays,
     const size_t                   count)
@@ -755,7 +769,7 @@ Fang_DrawMap(
         framebuf,
         camera,
         map,
-        Fang_TextureSetQuery(textures, map->floor)
+        textures
     );
 
     Fang_DrawMapTiles(
@@ -791,31 +805,24 @@ Fang_DrawMinimap(
 
     Fang_FillRect(framebuf, &bounds, &FANG_BLACK);
 
-    for (int row = 0; row < map->size; ++row)
+    for (int row = 0; row < FANG_CHUNK_SIZE; ++row)
     {
-        const float rowf = (float)row / (float)map->size;
+        const float rowf = (float)row / (float)FANG_CHUNK_SIZE;
 
-        Fang_DrawHorizontalLine(
-            framebuf, (int)(rowf * framebuf->color.height), &FANG_GREY
-        );
-
-        for (int col = 0; col < map->size; ++col)
+        for (int col = 0; col < FANG_CHUNK_SIZE; ++col)
         {
-            const float colf = col / (float)map->size;
+            const float colf = (float)col / (float)FANG_CHUNK_SIZE;
 
-            Fang_DrawVerticalLine(
-                framebuf, (int)(colf * framebuf->color.width), &FANG_GREY
-            );
-
-            if (!Fang_MapQuery(map, row, col))
+            const Fang_Point point = {row, col};
+            if (!Fang_GetChunkTile(&map->chunks, &point))
                 continue;
 
             Fang_Rect map_tile_bounds = Fang_RectResize(
                 &(Fang_Rect){
                     .x = (int)(rowf * bounds.w),
                     .y = (int)(colf * bounds.h),
-                    .w = bounds.w / 8,
-                    .h = bounds.h / 8,
+                    .w = bounds.w / FANG_CHUNK_SIZE,
+                    .h = bounds.h / FANG_CHUNK_SIZE,
                 },
                 -2,
                 -2
@@ -826,8 +833,8 @@ Fang_DrawMinimap(
     }
 
     const Fang_Point minimap_pos = {
-        .x = (int)((camera->pos.x / map->size) * bounds.w),
-        .y = (int)((camera->pos.y / map->size) * bounds.h),
+        .x = (int)((camera->pos.x / FANG_CHUNK_SIZE) * bounds.w),
+        .y = (int)((camera->pos.y / FANG_CHUNK_SIZE) * bounds.h),
     };
 
 
@@ -847,8 +854,8 @@ Fang_DrawMinimap(
                 framebuf,
                 &minimap_pos,
                 &(Fang_Point){
-                    .x = (int)((ray_pos.x / map->size) * bounds.w),
-                    .y = (int)((ray_pos.y / map->size) * bounds.h),
+                    .x = (int)((ray_pos.x / FANG_CHUNK_SIZE) * bounds.w),
+                    .y = (int)((ray_pos.y / FANG_CHUNK_SIZE) * bounds.h),
                 },
                 &(Fang_Color){
                     .b = 255,

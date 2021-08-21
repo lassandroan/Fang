@@ -230,7 +230,7 @@ Fang_TGAParse(
 
 Error_Allocation:
 Error_Unsupported:
-    assert(!result.pixels);
+    Fang_ImageFree(&result);
     return result;
 }
 
