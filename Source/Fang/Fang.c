@@ -64,6 +64,8 @@ Fang_Init(void)
             &gamestate.map.chunks, &(Fang_ChunkIndex){0, 0}
         );
 
+        chunk->floor = FANG_TEXTURE_FLOOR;
+
         Fang_Tile * tile = &chunk->tiles[0][0];
         tile->type    = FANG_TILETYPE_SOLID;
         tile->height  = 1.0f;
@@ -72,6 +74,24 @@ Fang_Init(void)
         tile = &chunk->tiles[7][3];
         tile->type    = FANG_TILETYPE_SOLID;
         tile->height  = 0.5f;
+        tile->texture = FANG_TEXTURE_TILE;
+    }
+
+    {
+        Fang_Chunk * const chunk = (Fang_Chunk*)Fang_GetIndexedChunk(
+            &gamestate.map.chunks, &(Fang_ChunkIndex){-2, 0}
+        );
+
+        chunk->floor = FANG_TEXTURE_SKYBOX;
+
+        Fang_Tile * tile = &chunk->tiles[3][3];
+        tile->type    = FANG_TILETYPE_SOLID;
+        tile->height  = 0.25f;
+        tile->texture = FANG_TEXTURE_TILE;
+
+        tile = &chunk->tiles[4][4];
+        tile->type    = FANG_TILETYPE_SOLID;
+        tile->height  = 2.0f;
         tile->texture = FANG_TEXTURE_TILE;
     }
 
@@ -133,7 +153,7 @@ Fang_Init(void)
     gamestate.map.skybox       = FANG_TEXTURE_SKYBOX;
     gamestate.map.floor        = FANG_TEXTURE_FLOOR;
     gamestate.map.fog          = FANG_BLACK;
-    gamestate.map.fog_distance = 16.0f;
+    gamestate.map.fog_distance = FANG_CHUNK_SIZE * 2.0f;
 }
 
 static inline void
