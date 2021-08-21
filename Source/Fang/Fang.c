@@ -61,7 +61,7 @@ Fang_Init(void)
 
     {
         Fang_Chunk * const chunk = (Fang_Chunk*)Fang_GetIndexedChunk(
-            &gamestate.map.chunks, &(Fang_ChunkIndex){0, 0}
+            &gamestate.map.chunks, 0, 0
         );
 
         chunk->floor = FANG_TEXTURE_FLOOR;
@@ -79,7 +79,7 @@ Fang_Init(void)
 
     {
         Fang_Chunk * const chunk = (Fang_Chunk*)Fang_GetIndexedChunk(
-            &gamestate.map.chunks, &(Fang_ChunkIndex){-2, 0}
+            &gamestate.map.chunks, -2, 0
         );
 
         chunk->floor = FANG_TEXTURE_SKYBOX;
