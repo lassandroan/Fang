@@ -20,7 +20,7 @@ typedef struct Fang_Camera {
 } Fang_Camera;
 
 static inline void
-Fang_CameraRotate(
+Fang_RotateCamera(
           Fang_Camera * const camera,
     const float               angle,
     const float               pitch)
@@ -43,7 +43,7 @@ Fang_CameraRotate(
 }
 
 static inline Fang_Rect
-Fang_CameraProjectTile(
+Fang_ProjectTile(
     const Fang_Camera   * const camera,
     const Fang_Tile     * const tile,
           float                 dist,
@@ -66,7 +66,7 @@ Fang_CameraProjectTile(
 }
 
 static inline Fang_Rect
-Fang_CameraProjectBody(
+Fang_ProjectBody(
     const Fang_Camera * const camera,
     const Fang_Body   * const body,
     const Fang_Rect   * const viewport,

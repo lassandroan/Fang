@@ -14,15 +14,15 @@
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 static inline Fang_EntityId
-Fang_AmmoCreate(
-          Fang_EntitySet  * const entities,
+Fang_CreateAmmo(
+          Fang_Entities   * const entities,
     const Fang_WeaponType         type,
     const int                     count,
     const Fang_Vec3               pos)
 {
     assert(entities);
 
-    return Fang_EntitySetAdd(
+    return Fang_AddEntity(
         entities,
         &(Fang_Entity){
             .type = FANG_ENTITYTYPE_AMMO,
@@ -42,7 +42,7 @@ Fang_AmmoCreate(
 }
 
 static inline void
-Fang_AmmoUpdate(
+Fang_UpdateAmmo(
           Fang_State  * const state,
           Fang_Entity * const ammo,
     const uint32_t            delta)
@@ -56,7 +56,7 @@ Fang_AmmoUpdate(
 
     if (ammo->state == FANG_ENTITYSTATE_REMOVING)
     {
-        Fang_EntitySetRemove(&state->entities, ammo->id);
+        Fang_RemoveEntity(&state->entities, ammo->id);
         return;
     }
 
@@ -64,14 +64,14 @@ Fang_AmmoUpdate(
         ammo->state = FANG_ENTITYSTATE_ACTIVE;
 }
 
-void
+static inline void
 Fang_AmmoCollideMap(
     Fang_Entity * const ammo)
 {
     assert(ammo);
 }
 
-void
+static inline void
 Fang_AmmoCollideEntity(
           Fang_Entity * const ammo,
           Fang_Entity * const entity,
@@ -110,14 +110,14 @@ Fang_AmmoCollideEntity(
 }
 
 static inline Fang_EntityId
-Fang_HealthCreate(
-          Fang_EntitySet * const entities,
-    const int                    count,
-    const Fang_Vec3              pos)
+Fang_CreateHealth(
+          Fang_Entities * const entities,
+    const int                   count,
+    const Fang_Vec3             pos)
 {
     assert(entities);
 
-    return Fang_EntitySetAdd(
+    return Fang_AddEntity(
         entities,
         &(Fang_Entity){
             .type = FANG_ENTITYTYPE_HEALTH,
@@ -136,7 +136,7 @@ Fang_HealthCreate(
 }
 
 static inline void
-Fang_HealthUpdate(
+Fang_UpdateHealth(
           Fang_State  * const state,
           Fang_Entity * const health,
     const uint32_t            delta)
@@ -150,7 +150,7 @@ Fang_HealthUpdate(
 
     if (health->state == FANG_ENTITYSTATE_REMOVING)
     {
-        Fang_EntitySetRemove(&state->entities, health->id);
+        Fang_RemoveEntity(&state->entities, health->id);
         return;
     }
 
@@ -158,14 +158,14 @@ Fang_HealthUpdate(
         health->state = FANG_ENTITYSTATE_ACTIVE;
 }
 
-void
+static inline void
 Fang_HealthCollideMap(
     Fang_Entity * const health)
 {
     assert(health);
 }
 
-void
+static inline void
 Fang_HealthCollideEntity(
           Fang_Entity * const health,
           Fang_Entity * const entity,

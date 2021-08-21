@@ -57,7 +57,7 @@ Fang_State gamestate;
 static inline void
 Fang_Init(void)
 {
-    Fang_TextureSetInit(&gamestate.textures);
+    Fang_LoadTextures(&gamestate.textures);
 
     {
         Fang_Chunk * const chunk = (Fang_Chunk*)Fang_GetIndexedChunk(
@@ -114,7 +114,7 @@ Fang_Init(void)
         .cam = {.y =  0.5f},
     };
 
-    gamestate.player = Fang_PlayerCreate(
+    gamestate.player = Fang_CreatePlayer(
         &gamestate.entities,
         FANG_INPUT_ONE,
         (Fang_Vec3){.x =  2.0f, .y = 2.0f},
@@ -123,7 +123,7 @@ Fang_Init(void)
 
     gamestate.sway.delta = (Fang_Vec2){.x = 0.1f, .y = 0.1f};
 
-    Fang_EntitySetAdd(
+    Fang_AddEntity(
         &gamestate.entities,
         &(Fang_Entity){
             .type = FANG_ENTITYTYPE_PLAYER,
@@ -137,14 +137,14 @@ Fang_Init(void)
         }
     );
 
-    Fang_AmmoCreate(
+    Fang_CreateAmmo(
         &gamestate.entities,
         FANG_WEAPONTYPE_PISTOL,
         10,
         (Fang_Vec3){.x = 6.0f, .y = 4.0f}
     );
 
-    Fang_HealthCreate(
+    Fang_CreateHealth(
         &gamestate.entities,
         10,
         (Fang_Vec3){.x = 6.0f, .y = 5.5f}
@@ -165,9 +165,9 @@ Fang_Update(
     assert(input);
     assert(framebuf);
 
-    const Fang_Rect viewport = Fang_FramebufferGetViewport(framebuf);
+    const Fang_Rect viewport = Fang_GetViewport(framebuf);
 
-    Fang_Entity * const player = Fang_EntitySetQuery(
+    Fang_Entity * const player = Fang_GetEntity(
         &gamestate.entities, gamestate.player
     );
 
@@ -241,7 +241,7 @@ Fang_Update(
                 .y = input->controller.joystick_right.y / -10.0f,
             };
 
-            Fang_CameraRotate(
+            Fang_RotateCamera(
                 &gamestate.camera,
                 mouse_rotate.x + joystick_rotate.x,
                 mouse_rotate.y + joystick_rotate.y
@@ -278,7 +278,7 @@ Fang_Update(
             gamestate.sway.target.y += fabsf(sinf(gamestate.bob)) * 0.5f;
         }
 
-        Fang_BodySetTargetVelocity(&player->body, forward, left);
+        Fang_SetTargetVelocity(&player->body, forward, left);
         player->body.vel.target.z = up;
     }
 
@@ -296,14 +296,14 @@ Fang_Update(
             // Update entity body positions
             for (Fang_EntityId i = 0; i < FANG_MAX_ENTITIES; ++i)
             {
-                Fang_Entity * const entity = Fang_EntitySetQuery(
+                Fang_Entity * const entity = Fang_GetEntity(
                     &gamestate.entities, i
                 );
 
                 if (!entity)
                     continue;
 
-                Fang_BodyMove(
+                Fang_UpdateBody(
                     &entity->body,
                     &gamestate.map.chunks,
                     FANG_DELTA_TIME_S
@@ -317,7 +317,7 @@ Fang_Update(
             // Update location table entries
             for (Fang_EntityId i = 0; i < FANG_MAX_ENTITIES; ++i)
             {
-                Fang_Entity * const entity = Fang_EntitySetQuery(
+                Fang_Entity * const entity = Fang_GetEntity(
                     &gamestate.entities, i
                 );
 
@@ -335,14 +335,14 @@ Fang_Update(
             // Check entity-tile collisions
             for (Fang_EntityId i = 0; i < FANG_MAX_ENTITIES; ++i)
             {
-                Fang_Entity * const entity = Fang_EntitySetQuery(
+                Fang_Entity * const entity = Fang_GetEntity(
                     &gamestate.entities, i
                 );
 
                 if (!entity)
                     continue;
 
-                const bool collides_tile = Fang_BodyResolveMapCollision(
+                const bool collides_tile = Fang_ResolveTileCollision(
                     &entity->body, &gamestate.map.chunks
                 );
 
@@ -375,7 +375,7 @@ Fang_Update(
             // Check entity-entity collisions
             for (Fang_EntityId i = 0; i < FANG_MAX_ENTITIES; ++i)
             {
-                const Fang_Entity * const entity = Fang_EntitySetQuery(
+                const Fang_Entity * const entity = Fang_GetEntity(
                     &gamestate.entities, i
                 );
 
@@ -398,7 +398,7 @@ Fang_Update(
                     if (chunk->entities.entities[j] == entity->id)
                         continue;
 
-                    const Fang_Entity * const other = Fang_EntitySetQuery(
+                    const Fang_Entity * const other = Fang_GetEntity(
                         &gamestate.entities, chunk->entities.entities[j]
                     );
 
@@ -421,7 +421,7 @@ Fang_Update(
 
                     if (Fang_BodiesIntersect(&entity->body, &other->body))
                     {
-                        Fang_EntityCollisionSetAdd(
+                        Fang_AddEntityCollision(
                             &gamestate.entities.collisions,
                             (Fang_EntityCollision){entity->id, other->id}
                         );
@@ -431,27 +431,28 @@ Fang_Update(
 
             // Resolve collisions
             {
-                Fang_EntityCollisionSet * const collisions = (
+                Fang_EntityCollisions * const collisions = (
                     &gamestate.entities.collisions
                 );
-                Fang_EntityCollisionSet * const last_collisions = (
+
+                Fang_EntityCollisions * const last_collisions = (
                     &gamestate.entities.last_collisions
                 );
 
-                for (size_t i = 0; i < gamestate.entities.collisions.count; ++i)
+                for (size_t i = 0; i < collisions->count; ++i)
                 {
                     const Fang_EntityCollision collision = (
-                        gamestate.entities.collisions.collisions[i]
+                        collisions->collisions[i]
                     );
 
-                    Fang_Entity * const first = Fang_EntitySetQuery(
+                    Fang_Entity * const first = Fang_GetEntity(
                         &gamestate.entities, collision.first
                     );
 
                     if (!first || first->state != FANG_ENTITYSTATE_ACTIVE)
                         continue;
 
-                    Fang_Entity * const second = Fang_EntitySetQuery(
+                    Fang_Entity * const second = Fang_GetEntity(
                         &gamestate.entities, collision.second
                     );
 
@@ -486,7 +487,7 @@ Fang_Update(
                         last_collisions->collisions[last_collisions->count++] = collision;
                     }
 
-                    Fang_BodyResolveBodyCollision(&first->body, &second->body);
+                    Fang_ResolveBodyCollision(&first->body, &second->body);
 
                     for (size_t i = 0; i < 2; ++i)
                     {
@@ -519,7 +520,6 @@ Fang_Update(
                     }
                 }
 
-                memset(last_collisions, 0, sizeof(*last_collisions));
                 memcpy(last_collisions, collisions, sizeof(*last_collisions));
                 memset(collisions, 0, sizeof(*collisions));
             }
@@ -527,7 +527,7 @@ Fang_Update(
             // Run entity update functions
             for (Fang_EntityId i = 0; i < FANG_MAX_ENTITIES; ++i)
             {
-                Fang_Entity * const entity = Fang_EntitySetQuery(
+                Fang_Entity * const entity = Fang_GetEntity(
                     &gamestate.entities, i
                 );
 
@@ -537,25 +537,25 @@ Fang_Update(
                 switch (entity->type)
                 {
                     case FANG_ENTITYTYPE_PLAYER:
-                        Fang_PlayerUpdate(
+                        Fang_UpdatePlayer(
                             &gamestate, entity, FANG_DELTA_TIME_MS
                         );
                         break;
 
                     case FANG_ENTITYTYPE_AMMO:
-                        Fang_AmmoUpdate(
+                        Fang_UpdateAmmo(
                             &gamestate, entity, FANG_DELTA_TIME_MS
                         );
                         break;
 
                     case FANG_ENTITYTYPE_HEALTH:
-                        Fang_HealthUpdate(
+                        Fang_UpdateHealth(
                             &gamestate, entity, FANG_DELTA_TIME_MS
                         );
                         break;
 
                     case FANG_ENTITYTYPE_PROJECTILE:
-                        Fang_ProjectileUpdate(
+                        Fang_UpdateProjectile(
                             &gamestate, entity, FANG_DELTA_TIME_MS
                         );
                         break;
@@ -580,10 +580,10 @@ Fang_Update(
     {
         gamestate.interface.input    = input;
         gamestate.interface.framebuf = framebuf;
-        Fang_InterfaceUpdate(&gamestate.interface);
+        Fang_UpdateInterface(&gamestate.interface);
     }
 
-    Fang_ImageClear(&framebuf->color);
+    Fang_ClearImage(&framebuf->color);
 
     for (int x = 0; x < viewport.w; ++x)
     {
@@ -599,17 +599,31 @@ Fang_Update(
         }
     }
 
-    framebuf->state.current_depth = 0.0f;
-    framebuf->state.enable_depth  = true;
-
-    Fang_RayCast(
+    Fang_CastRays(
         &gamestate.camera,
         &gamestate.map.chunks,
         gamestate.raycast,
         (size_t)FANG_WINDOW_SIZE
     );
 
-    Fang_DrawMap(
+    framebuf->state.current_depth = FLT_MAX;
+    framebuf->state.enable_depth  = true;
+
+    Fang_DrawMapSkybox(
+        framebuf,
+        &gamestate.camera,
+        &gamestate.map,
+        Fang_GetTexture(&gamestate.textures, gamestate.map.skybox)
+    );
+
+    Fang_DrawMapFloor(
+        framebuf,
+        &gamestate.camera,
+        &gamestate.map,
+        &gamestate.textures
+    );
+
+    Fang_DrawMapTiles(
         framebuf,
         &gamestate.camera,
         &gamestate.textures,
@@ -626,7 +640,7 @@ Fang_Update(
         &gamestate.entities
     );
 
-    Fang_FramebufferShadeDepth(
+    Fang_ShadeFramebuffer(
         framebuf, &gamestate.map.fog, gamestate.map.fog_distance
     );
 
@@ -634,13 +648,13 @@ Fang_Update(
 
     if (player)
     {
-        const Fang_Weapon * const weapon = Fang_WeaponQuery(
+        const Fang_Weapon * const weapon = Fang_GetWeapon(
             player->props.player.weapon
         );
 
         if (weapon)
         {
-            const Fang_Image * const weapon_texture = Fang_TextureSetQuery(
+            const Fang_Image * const weapon_texture = Fang_GetTexture(
                 &gamestate.textures, weapon->texture
             );
 
@@ -671,7 +685,7 @@ Fang_Update(
             Fang_DrawText(
                 framebuf,
                 weapon->name,
-                Fang_TextureSetQuery(&gamestate.textures, FANG_TEXTURE_FORMULA),
+                Fang_GetTexture(&gamestate.textures, FANG_TEXTURE_FORMULA),
                 FANG_FONT_HEIGHT,
                 &(Fang_Point){.x = 5, .y = 3}
             );
@@ -687,7 +701,7 @@ Fang_Update(
             Fang_DrawText(
                 framebuf,
                 ammo_count,
-                Fang_TextureSetQuery(&gamestate.textures, FANG_TEXTURE_FORMULA),
+                Fang_GetTexture(&gamestate.textures, FANG_TEXTURE_FORMULA),
                 FANG_FONT_HEIGHT,
                 &(Fang_Point){.x = 5, .y = 3 + FANG_FONT_HEIGHT}
             );
@@ -707,7 +721,7 @@ Fang_Update(
             Fang_DrawText(
                 framebuf,
                 health,
-                Fang_TextureSetQuery(&gamestate.textures, FANG_TEXTURE_FORMULA),
+                Fang_GetTexture(&gamestate.textures, FANG_TEXTURE_FORMULA),
                 FANG_FONT_HEIGHT,
                 &(Fang_Point){
                     .x = viewport.w - 5 - (FANG_FONT_WIDTH * (3 - text_offset)),
@@ -730,7 +744,7 @@ Fang_Update(
             Fang_DrawText(
                 framebuf,
                 position,
-                Fang_TextureSetQuery(&gamestate.textures, FANG_TEXTURE_FORMULA),
+                Fang_GetTexture(&gamestate.textures, FANG_TEXTURE_FORMULA),
                 FANG_FONT_HEIGHT,
                 &(Fang_Point){
                     .x = 3,
@@ -741,7 +755,7 @@ Fang_Update(
     }
 
     {
-        const Fang_FrameState state = Fang_FramebufferSetViewport(
+        const Fang_FrameState state = Fang_SetViewport(
             framebuf,
             &(Fang_Rect){
                 .x = FANG_WINDOW_SIZE - 32,
@@ -764,7 +778,7 @@ Fang_Update(
 
     framebuf->state.current_depth = 0.0f;
 
-    Fang_FramebufferPutPixel(
+    Fang_SetFragment(
         framebuf,
         &(Fang_Point){
             .x = viewport.w / 2,
@@ -782,5 +796,5 @@ Fang_Update(
 static inline void
 Fang_Quit(void)
 {
-    Fang_TextureSetFree(&gamestate.textures);
+    Fang_FreeTextures(&gamestate.textures);
 }

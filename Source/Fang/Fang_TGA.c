@@ -14,7 +14,7 @@
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Parses a TGA file in memory.
+ * Parses TGA file data.
  *
  * This function does not support the following TGA features:
  * - Bit depths other than 8, 24, or 32
@@ -24,7 +24,7 @@
  * - Images with an origin other than top-left
 **/
 static Fang_Image
-Fang_TGAParse(
+Fang_ParseTGA(
     Fang_File * const file)
 {
     assert(file);
@@ -119,7 +119,7 @@ Fang_TGAParse(
     if (header.descriptor & TGA_ORIGIN_RIGHT)
         goto Error_Unsupported;
 
-    if (Fang_ImageAlloc(&result, header.width, header.height, header.depth))
+    if (Fang_AllocImage(&result, header.width, header.height, header.depth))
         goto Error_Allocation;
 
     /* Image ID and color map unused */
@@ -230,12 +230,12 @@ Fang_TGAParse(
 
 Error_Allocation:
 Error_Unsupported:
-    Fang_ImageFree(&result);
+    Fang_FreeImage(&result);
     return result;
 }
 
 static inline Fang_Image
-Fang_TGALoad(
+Fang_LoadTGA(
     const char * const filepath)
 {
     Fang_Image result = {.pixels = NULL};
@@ -244,7 +244,7 @@ Fang_TGALoad(
     if (Fang_LoadFile(filepath, &file) != 0)
         return result;
 
-    result = Fang_TGAParse(&file);
+    result = Fang_ParseTGA(&file);
     Fang_FreeFile(&file);
     return result;
 }

@@ -40,7 +40,7 @@ typedef struct Fang_DDAState {
  * Initializes the DDA based on a given starting position and direction vector.
 **/
 static inline void
-Fang_DDAInit(
+Fang_InitDDA(
           Fang_DDAState * const dda,
     const Fang_Vec2     * const start,
     const Fang_Vec2     * const dir)
@@ -94,7 +94,7 @@ Fang_DDAInit(
  * position to the current point.
 **/
 static float
-Fang_DDAStep(
+Fang_StepDDA(
     Fang_DDAState * const dda)
 {
     assert(dda);

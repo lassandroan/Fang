@@ -26,12 +26,12 @@ typedef struct Fang_LerpVec3 {
 } Fang_LerpVec3;
 
 #define Fang_Lerp(value, delta) _Generic(value,  \
-    Fang_LerpVec2*: Fang_LerpVec2Step, \
-    Fang_LerpVec3*: Fang_LerpVec3Step  \
+    Fang_LerpVec2*: Fang_StepLerpVec2, \
+    Fang_LerpVec3*: Fang_StepLerpVec3  \
     )(value, delta)
 
 static inline void
-Fang_LerpVec2Step(
+Fang_StepLerpVec2(
           Fang_LerpVec2 * const vec,
     const float                 delta)
 {
@@ -52,7 +52,7 @@ Fang_LerpVec2Step(
 }
 
 static inline void
-Fang_LerpVec3Step(
+Fang_StepLerpVec3(
           Fang_LerpVec3 * const vec,
     const float                 delta)
 {

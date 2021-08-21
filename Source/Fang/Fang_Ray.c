@@ -13,17 +13,13 @@
 // You should have received a copy of the GNU General Public License along
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-enum {
-    FANG_RAY_MAX_STEPS = 64,
-};
-
 typedef struct Fang_RayHit {
-    const Fang_Tile * tile;
-    Fang_Vec2  front_hit;
-    float      front_dist;
-    Fang_Vec2  back_hit;
-    float      back_dist;
-    Fang_Face  norm_dir;
+    Fang_Tile * tile;
+    Fang_Vec2   front_hit;
+    float       front_dist;
+    Fang_Vec2   back_hit;
+    float       back_dist;
+    Fang_Face   norm_dir;
 } Fang_RayHit;
 
 typedef struct Fang_Ray {
@@ -32,16 +28,16 @@ typedef struct Fang_Ray {
 } Fang_Ray;
 
 static inline void
-Fang_RayCast(
-    const Fang_Camera   * const camera,
-    const Fang_ChunkSet * const chunks,
-          Fang_Ray      * const rays,
-    const size_t                count)
+Fang_CastRays(
+    const Fang_Camera * const camera,
+    const Fang_Chunks * const chunks,
+          Fang_Ray    * const rays,
+    const size_t              ray_count)
 {
     assert(camera);
     assert(chunks);
     assert(rays);
-    assert(count);
+    assert(ray_count);
 
     const Fang_Vec3 * const dir = &camera->dir;
     const Fang_Vec2 * const cam = &camera->cam;
@@ -50,7 +46,7 @@ Fang_RayCast(
         .y = camera->pos.y
     };
 
-    memset(rays, 0, sizeof(Fang_Ray) * count);
+    memset(rays, 0, sizeof(Fang_Ray) * ray_count);
 
     const Fang_Tile * const initial_tile = Fang_GetChunkTile(chunks, &pos);
 
@@ -58,19 +54,21 @@ Fang_RayCast(
         ? initial_tile->offset + initial_tile->height <= camera->pos.z
         : false;
 
-    for (size_t i = 0; i < count; ++i)
+    for (size_t i = 0; i < ray_count; ++i)
     {
         /* X coordinate in camera space, normalized -1.0f..1.0f */
-        const float ray_cam = 2.0f * (1.0f - (float)i / (float)count) - 1.0f;
+        const float plane_x = (
+            2.0f * (1.0f - (float)i / (float)ray_count) - 1.0f
+        );
 
         /* Map ray start position onto camera plane */
         const Fang_Vec2 cam_ray = {
-            .x = dir->x + cam->x * ray_cam,
-            .y = dir->y + cam->y * ray_cam,
+            .x = dir->x + cam->x * plane_x,
+            .y = dir->y + cam->y * plane_x,
         };
 
         Fang_DDAState dda;
-        Fang_DDAInit(&dda, &pos, &cam_ray);
+        Fang_InitDDA(&dda, &pos, &cam_ray);
 
         size_t hit_count = 0;
 
@@ -82,8 +80,8 @@ Fang_RayCast(
             const Fang_DDAState old_dda = dda;
 
             /* Front-face is not needed for rendering */
-            hit->tile      = initial_tile;
-            hit->back_dist = Fang_DDAStep(&dda);
+            hit->tile      = (Fang_Tile*)initial_tile;
+            hit->back_dist = Fang_StepDDA(&dda);
             hit->back_hit  = (Fang_Vec2){
                 .x = dda.pos.x - dda.start.x,
                 .y = dda.pos.y - dda.start.y,
@@ -97,9 +95,9 @@ Fang_RayCast(
         {
             Fang_RayHit * const hit = &rays[i].hits[hit_count];
 
-            hit->front_dist = Fang_DDAStep(&dda);
+            hit->front_dist = Fang_StepDDA(&dda);
 
-            hit->tile = Fang_GetChunkTile(chunks, &dda.pos);
+            hit->tile = (Fang_Tile*)Fang_GetChunkTile(chunks, &dda.pos);
 
             if (hit->tile)
             {
@@ -111,7 +109,7 @@ Fang_RayCast(
                     .y = pos.y + (hit->front_dist * cam_ray.y),
                 };
 
-                hit->back_dist = Fang_DDAStep(&dda);
+                hit->back_dist = Fang_StepDDA(&dda);
                 hit->back_hit  = (Fang_Vec2){
                     .x = pos.x + (hit->back_dist * cam_ray.x),
                     .y = pos.y + (hit->back_dist * cam_ray.y),

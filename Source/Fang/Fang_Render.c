@@ -45,7 +45,7 @@ Fang_DrawLine(
 
     while (true)
     {
-        Fang_FramebufferPutPixel(framebuf, &point, color);
+        Fang_SetFragment(framebuf, &point, color);
 
         if ((err * 2) >= delta.y)
         {
@@ -80,7 +80,7 @@ Fang_DrawVerticalLine(
     assert(color);
 
     for (int y = 0; y < framebuf->color.height; ++y)
-        Fang_FramebufferPutPixel(framebuf, &(Fang_Point){x, y}, color);
+        Fang_SetFragment(framebuf, &(Fang_Point){x, y}, color);
 }
 
 /**
@@ -96,7 +96,7 @@ Fang_DrawHorizontalLine(
     assert(color);
 
     for (int x = 0; x < framebuf->color.width; ++x)
-        Fang_FramebufferPutPixel(framebuf, &(Fang_Point){x, y}, color);
+        Fang_SetFragment(framebuf, &(Fang_Point){x, y}, color);
 }
 
 /**
@@ -114,14 +114,14 @@ Fang_DrawRect(
     assert(rect);
     assert(color);
 
-    const Fang_Rect viewport  = Fang_FramebufferGetViewport(framebuf);
-    const Fang_Rect dest_rect = Fang_RectClip(rect, &viewport);
+    const Fang_Rect viewport  = Fang_GetViewport(framebuf);
+    const Fang_Rect dest_rect = Fang_ClipRect(rect, &viewport);
 
     for (int h = 0; h < dest_rect.h; h += dest_rect.h - 1)
     {
         for (int w = 0; w < dest_rect.w; ++w)
         {
-            Fang_FramebufferPutPixel(
+            Fang_SetFragment(
                 framebuf,
                 &(Fang_Point){dest_rect.x + w, dest_rect.y + h},
                 color
@@ -133,7 +133,7 @@ Fang_DrawRect(
     {
         for (int w = 0; w < dest_rect.w; w += dest_rect.w - 1)
         {
-            Fang_FramebufferPutPixel(
+            Fang_SetFragment(
                 framebuf,
                 &(Fang_Point){dest_rect.x + w, dest_rect.y + h},
                 color
@@ -157,14 +157,14 @@ Fang_FillRect(
     assert(rect);
     assert(color);
 
-    const Fang_Rect viewport  = Fang_FramebufferGetViewport(framebuf);
-    const Fang_Rect dest_rect = Fang_RectClip(rect, &viewport);
+    const Fang_Rect viewport  = Fang_GetViewport(framebuf);
+    const Fang_Rect dest_rect = Fang_ClipRect(rect, &viewport);
 
     for (int h = 0; h < dest_rect.h; ++h)
     {
         for (int w = 0; w < dest_rect.w; ++w)
         {
-            Fang_FramebufferPutPixel(
+            Fang_SetFragment(
                 framebuf,
                 &(Fang_Point){dest_rect.x + w, dest_rect.y + h},
                 color
@@ -199,23 +199,23 @@ Fang_DrawImageEx(
     assert(framebuf->color.stride == 4);
 
     /* If the image is invalid we will supply a default size for
-       Fang_ImageQuery() to use in creating the 'XOR Texture'.
+       Fang_GetPixel() to use in creating the 'XOR Texture'.
     */
     const Fang_Rect image_area = (Fang_ImageValid(image))
         ? (Fang_Rect){.w = image->width, .h = image->height}
         : (Fang_Rect){.w = FANG_TEXTURE_SIZE, .h = FANG_TEXTURE_SIZE};
 
     const Fang_Rect source_area = (source)
-        ? Fang_RectClip(source, &image_area)
+        ? Fang_ClipRect(source, &image_area)
         : image_area;
 
-    const Fang_Rect framebuf_area = Fang_FramebufferGetViewport(framebuf);
+    const Fang_Rect framebuf_area = Fang_GetViewport(framebuf);
 
     const Fang_Rect dest_area = (dest)
         ? *dest
         : framebuf_area;
 
-    const Fang_Rect clipped_area = Fang_RectClip(&dest_area, &framebuf_area);
+    const Fang_Rect clipped_area = Fang_ClipRect(&dest_area, &framebuf_area);
 
     for (int x = clipped_area.x; x < clipped_area.x + clipped_area.w; ++x)
     {
@@ -242,9 +242,9 @@ Fang_DrawImageEx(
                     : (int)(r_y * (source_area.h - 0)) + source_area.y,
             };
 
-            const Fang_Color dest_color = Fang_ImageQuery(image, &tex_pos);
+            const Fang_Color dest_color = Fang_GetPixel(image, &tex_pos);
 
-            Fang_FramebufferPutPixel(
+            Fang_SetFragment(
                 framebuf,
                 &(Fang_Point){x, y},
                 &dest_color
@@ -344,7 +344,7 @@ Fang_DrawMapSkybox(
     assert(framebuf);
     assert(camera);
 
-    const Fang_Rect viewport = Fang_FramebufferGetViewport(framebuf);
+    const Fang_Rect viewport = Fang_GetViewport(framebuf);
 
     if (!Fang_ImageValid(texture))
     {
@@ -405,14 +405,14 @@ Fang_DrawMapFloor(
           Fang_Framebuffer * const framebuf,
     const Fang_Camera      * const camera,
     const Fang_Map         * const map,
-    const Fang_TextureSet  * const textures)
+    const Fang_Textures    * const textures)
 {
     assert(framebuf);
     assert(camera);
     assert(map);
     assert(textures);
 
-    const Fang_Rect viewport = Fang_FramebufferGetViewport(framebuf);
+    const Fang_Rect viewport = Fang_GetViewport(framebuf);
 
     if (camera->pos.z <= 0.0f)
         return;
@@ -470,7 +470,7 @@ Fang_DrawMapFloor(
 
             assert(chunk);
 
-            const Fang_Image * const texture = Fang_TextureSetQuery(
+            const Fang_Image * const texture = Fang_GetTexture(
                 textures, chunk->floor
             );
 
@@ -492,9 +492,9 @@ Fang_DrawMapFloor(
             tex_pos.x &= (texture_width  - 1);
             tex_pos.y &= (texture_height - 1);
 
-            const Fang_Color dest_color = Fang_ImageQuery(texture, &tex_pos);
+            const Fang_Color dest_color = Fang_GetPixel(texture, &tex_pos);
 
-            Fang_FramebufferPutPixel(
+            Fang_SetFragment(
                 framebuf,
                 &(Fang_Point){x, y},
                 &dest_color
@@ -516,7 +516,7 @@ static void
 Fang_DrawMapTiles(
           Fang_Framebuffer * const framebuf,
     const Fang_Camera      * const camera,
-    const Fang_TextureSet  * const textures,
+    const Fang_Textures    * const textures,
           Fang_Map         * const map,
     const Fang_Ray         * const rays,
     const size_t                   count)
@@ -528,7 +528,7 @@ Fang_DrawMapTiles(
     assert(rays);
     assert(count);
 
-    const Fang_Rect viewport = Fang_FramebufferGetViewport(framebuf);
+    const Fang_Rect viewport = Fang_GetViewport(framebuf);
 
     for (size_t i = 0; i < count; ++i)
     {
@@ -544,7 +544,7 @@ Fang_DrawMapTiles(
             if (hit->front_dist > map->fog_distance)
                 continue;
 
-            const Fang_Image * const wall_tex = Fang_TextureSetQuery(
+            const Fang_Image * const wall_tex = Fang_GetTexture(
                 textures, hit->tile->texture
             );
 
@@ -558,7 +558,7 @@ Fang_DrawMapTiles(
                     ? hit->front_dist
                     : hit->back_dist;
 
-                Fang_Rect dest_rect = Fang_CameraProjectTile(
+                Fang_Rect dest_rect = Fang_ProjectTile(
                     camera, hit->tile, face_dist, &viewport
                 );
 
@@ -709,7 +709,7 @@ Fang_DrawMapTiles(
 
                     tex_pos.x += (int)face * FANG_TEXTURE_SIZE;
 
-                    Fang_Color dest_color = Fang_ImageQuery(
+                    Fang_Color dest_color = Fang_GetPixel(
                         wall_tex, &tex_pos
                     );
 
@@ -718,7 +718,7 @@ Fang_DrawMapTiles(
 
                     framebuf->state.current_depth = dist;
 
-                    Fang_FramebufferPutPixel(
+                    Fang_SetFragment(
                         framebuf,
                         &(Fang_Point){
                             .x = (int)i,
@@ -730,56 +730,6 @@ Fang_DrawMapTiles(
             }
         }
     }
-}
-
-/**
- * Renders a first-person view of the provided map.
- *
- * The map is rendered in order of:
- * - Skybox
- * - Floor
- * - Tiles
-**/
-static void
-Fang_DrawMap(
-          Fang_Framebuffer * const framebuf,
-    const Fang_Camera      * const camera,
-    const Fang_TextureSet  * const textures,
-          Fang_Map         * const map,
-    const Fang_Ray         * const rays,
-    const size_t                   count)
-{
-    assert(framebuf);
-    assert(camera);
-    assert(textures);
-    assert(map);
-    assert(rays);
-    assert(count);
-
-    framebuf->state.current_depth = FLT_MAX;
-
-    Fang_DrawMapSkybox(
-        framebuf,
-        camera,
-        map,
-        Fang_TextureSetQuery(textures, map->skybox)
-    );
-
-    Fang_DrawMapFloor(
-        framebuf,
-        camera,
-        map,
-        textures
-    );
-
-    Fang_DrawMapTiles(
-        framebuf,
-        camera,
-        textures,
-        map,
-        rays,
-        count
-    );
 }
 
 /**
@@ -801,7 +751,7 @@ Fang_DrawMinimap(
     assert(rays);
     assert(count);
 
-    const Fang_Rect bounds = Fang_FramebufferGetViewport(framebuf);
+    const Fang_Rect bounds = Fang_GetViewport(framebuf);
 
     Fang_FillRect(framebuf, &bounds, &FANG_BLACK);
 
@@ -817,7 +767,7 @@ Fang_DrawMinimap(
             if (!Fang_GetChunkTile(&map->chunks, &point))
                 continue;
 
-            Fang_Rect map_tile_bounds = Fang_RectResize(
+            Fang_Rect map_tile_bounds = Fang_ResizeRect(
                 &(Fang_Rect){
                     .x = (int)(rowf * bounds.w),
                     .y = (int)(colf * bounds.h),
@@ -882,9 +832,9 @@ static void
 Fang_DrawEntities(
           Fang_Framebuffer * const framebuf,
     const Fang_Camera      * const camera,
-    const Fang_TextureSet  * const textures,
+    const Fang_Textures    * const textures,
     const Fang_Map         * const map,
-          Fang_EntitySet   * const entities)
+          Fang_Entities    * const entities)
 {
     assert(framebuf);
     assert(camera);
@@ -892,16 +842,16 @@ Fang_DrawEntities(
     assert(map);
     assert(entities);
 
-    const Fang_Rect viewport = Fang_FramebufferGetViewport(framebuf);
+    const Fang_Rect viewport = Fang_GetViewport(framebuf);
 
     for (Fang_EntityId i = 0; i < FANG_MAX_ENTITIES; ++i)
     {
-        const Fang_Entity * const entity = Fang_EntitySetQuery(entities, i);
+        const Fang_Entity * const entity = Fang_GetEntity(entities, i);
 
         if (!entity)
             continue;
 
-        const Fang_Rect dest_rect = Fang_CameraProjectBody(
+        const Fang_Rect dest_rect = Fang_ProjectBody(
             camera,
             &entity->body,
             &viewport,
@@ -922,7 +872,7 @@ Fang_DrawEntities(
 
         Fang_DrawImageEx(
             framebuf,
-            Fang_TextureSetQuery(textures, Fang_EntityQueryTexture(entity)),
+            Fang_GetTexture(textures, Fang_GetEntityTexture(entity)),
             NULL,
             &dest_rect,
             false,

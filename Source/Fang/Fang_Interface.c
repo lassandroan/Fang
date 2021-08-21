@@ -65,7 +65,7 @@ typedef struct Fang_Interface {
     Fang_InterfaceTheme theme;
 
           Fang_Framebuffer * framebuf;
-    const Fang_TextureSet       * textures;
+    const Fang_Textures    * textures;
     const Fang_Input       * input;
 } Fang_Interface;
 
@@ -78,7 +78,7 @@ typedef struct Fang_Interface {
  * This should be called at the beginning of each frame.
 **/
 static inline void
-Fang_InterfaceUpdate(
+Fang_UpdateInterface(
     Fang_Interface * const interface)
 {
     assert(interface);
@@ -98,6 +98,8 @@ Fang_InterfaceButton(
 {
     assert(interface);
     assert(bounds);
+
+    const Fang_InterfaceTheme * const theme = &interface->theme;
 
     const uint32_t id = ++interface->id;
 
@@ -140,22 +142,22 @@ Fang_InterfaceButton(
         const bool active = interface->active == id;
 
         if (active)
-            Fang_FillRect(framebuf, bounds, &interface->theme.colors.highlight);
+            Fang_FillRect(framebuf, bounds, &theme->colors.highlight);
         else if (hot)
-            Fang_DrawRect(framebuf, bounds, &interface->theme.colors.foreground);
+            Fang_DrawRect(framebuf, bounds, &theme->colors.foreground);
         else
-            Fang_DrawRect(framebuf, bounds, &interface->theme.colors.disabled);
+            Fang_DrawRect(framebuf, bounds, &theme->colors.disabled);
 
         if (text)
         {
-            const Fang_Rect text_area = Fang_RectResize(
+            const Fang_Rect text_area = Fang_ResizeRect(
                 bounds, -4, -bounds->h / 2
             );
 
             Fang_DrawText(
                 framebuf,
                 text,
-                Fang_TextureSetQuery(interface->textures, interface->theme.font),
+                Fang_GetTexture(interface->textures, theme->font),
                 text_area.h,
                 &(Fang_Point){
                     .x = (
@@ -180,6 +182,8 @@ Fang_InterfaceSlider(
 {
     assert(interface);
     assert(bounds);
+
+    const Fang_InterfaceTheme * const theme = &interface->theme;
 
     const uint32_t id = ++interface->id;
 
@@ -243,15 +247,15 @@ Fang_InterfaceSlider(
         Fang_Color color;
 
         if (active)
-            color = interface->theme.colors.foreground;
+            color = theme->colors.foreground;
         else if (hot)
-            color = interface->theme.colors.highlight;
+            color = theme->colors.highlight;
         else
-            color = interface->theme.colors.disabled;
+            color = theme->colors.disabled;
 
         Fang_DrawRect(framebuf, bounds, &color);
 
-        Fang_Rect fill_area = Fang_RectResize(bounds, -1, -1);
+        Fang_Rect fill_area = Fang_ResizeRect(bounds, -1, -1);
 
         Fang_FillRect(
             framebuf,
@@ -274,14 +278,14 @@ Fang_InterfaceSlider(
 
             if (display_text)
             {
-                const Fang_Rect text_area = Fang_RectResize(
+                const Fang_Rect text_area = Fang_ResizeRect(
                     bounds, -4, -bounds->h / 2
                 );
 
                 Fang_DrawText(
                     framebuf,
                     display_text,
-                    Fang_TextureSetQuery(interface->textures, interface->theme.font),
+                    Fang_GetTexture(interface->textures, theme->font),
                     text_area.h,
                     &(Fang_Point){
                         .x = (
