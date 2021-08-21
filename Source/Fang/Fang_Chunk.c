@@ -209,9 +209,15 @@ Fang_GetChunkTileVec2(
     assert(chunk);
 
     Fang_Point tile_index = {
-        .x = (int)fabsf(fmodf(position->x, FANG_CHUNK_SIZE)),
-        .y = (int)fabsf(fmodf(position->y, FANG_CHUNK_SIZE)),
+        .x = (int)fmodf(position->x, FANG_CHUNK_SIZE),
+        .y = (int)fmodf(position->y, FANG_CHUNK_SIZE),
     };
+
+    if (tile_index.x < 0)
+        tile_index.x += FANG_CHUNK_SIZE - 1;
+
+    if (tile_index.y < 0)
+        tile_index.y += FANG_CHUNK_SIZE - 1;
 
     const Fang_Tile * const result = &chunk->tiles[tile_index.x][tile_index.y];
 
