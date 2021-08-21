@@ -63,61 +63,56 @@ Fang_GetIndexedChunk(
     assert(index);
 
     assert(index->x >= FANG_CHUNK_MIN);
-    assert(index->x <= FANG_CHUNK_MAX);
+    assert(index->x <= FANG_CHUNK_MAX - 1);
     assert(index->y >= FANG_CHUNK_MIN);
-    assert(index->y <= FANG_CHUNK_MAX);
+    assert(index->y <= FANG_CHUNK_MAX - 1);
 
-    static uint64_t lookup[1 << 4] = {
-        [ 0] = 0b00000000,
-        [ 1] = 0b00000001,
-        [ 2] = 0b00000100,
-        [ 3] = 0b00000101,
-        [ 4] = 0b00010000,
-        [ 5] = 0b00010001,
-        [ 6] = 0b00010100,
-        [ 7] = 0b00010101,
-        [ 8] = 0b01000000,
-        [ 9] = 0b01000001,
-        [10] = 0b01000100,
-        [11] = 0b01000101,
-        [12] = 0b01010000,
-        [13] = 0b01010001,
-        [14] = 0b01010100,
-        [15] = 0b01010101,
+    static uint64_t lookup[1 << 3] = {
+        [ 0] = 0b000000,
+        [ 1] = 0b000001,
+        [ 2] = 0b000100,
+        [ 3] = 0b000101,
+        [ 4] = 0b010000,
+        [ 5] = 0b010001,
+        [ 6] = 0b010100,
+        [ 7] = 0b010101,
     };
 
-    // const uint8_t x = (uint8_t)index->x;
-    // const uint8_t y = (uint8_t)index->y;
 
-    const uint8_t x = (index->x < 0)
-        ? (uint8_t)(index->x & ~(1 << 7))
-        : (uint8_t)index->x;
+    struct {
+        unsigned x:      6;
+        unsigned y:      6;
+        unsigned result: 12;
+    } values;
 
-    const uint8_t y = (index->y < 0)
-        ? (uint8_t)(index->y & ~(1 << 7))
-        : (uint8_t)index->y;
+    values.x = (uint8_t)index->x;
+    values.y = (uint8_t)index->y;
+    values.result = 0;
 
-    uint16_t result = 0;
-    for (uint8_t i = 0; i < 16; i += 4)
     {
-        const uint8_t xbits = (x >> i) & 0b1111;
-        const uint8_t ybits = (y >> i) & 0b1111;
-        result |= (lookup[xbits] | (lookup[ybits] << 1)) << (i * 2);
+        const uint8_t xbits = values.x & 0b111;
+        const uint8_t ybits = values.y & 0b111;
+        values.result |= (lookup[xbits] | (lookup[ybits] << 1));
     }
 
-    // assert(result < FANG_CHUNK_COUNT);
-    result = clamp(result, 0, FANG_CHUNK_COUNT);
+    {
+        const uint8_t xbits = (values.x >> 3) & 0b111;
+        const uint8_t ybits = (values.y >> 3) & 0b111;
+        values.result |= (lookup[xbits] | (lookup[ybits] << 1)) << 3;
+    }
 
-    return &chunks->chunks[result];
+    assert(values.result < FANG_CHUNK_COUNT);
+
+    return &chunks->chunks[values.result];
 }
 
-#define Fang_GetChunk(chunks, position) _Generic(position,  \
-    const Fang_Vec2*:  Fang_GetChunkVec2,                   \
-          Fang_Vec2*:  Fang_GetChunkVec2,                   \
-    const Fang_Vec3*:  Fang_GetChunkVec3,                   \
-          Fang_Vec3*:  Fang_GetChunkVec3,                   \
-    const Fang_Point*: Fang_GetChunkPoint,                  \
-          Fang_Point*: Fang_GetChunkPoint                   \
+#define Fang_GetChunk(chunks, position) _Generic(position,       \
+    const Fang_Vec2*:  Fang_GetChunkVec2,                        \
+          Fang_Vec2*:  Fang_GetChunkVec2,                        \
+    const Fang_Vec3*:  Fang_GetChunkVec3,                        \
+          Fang_Vec3*:  Fang_GetChunkVec3,                        \
+    const Fang_Point*: Fang_GetChunkPoint,                       \
+          Fang_Point*: Fang_GetChunkPoint                        \
     )(chunks, position)
 
 #define Fang_GetChunkTile(chunks, position) _Generic(position,  \
@@ -136,16 +131,19 @@ Fang_GetChunkVec2(
 {
     assert(chunks);
     assert(position);
-    assert(position->x >= INT8_MIN);
-    assert(position->x <= INT8_MAX);
-    assert(position->y >= INT8_MIN);
-    assert(position->y <= INT8_MAX);
+    assert(position->x >= FANG_CHUNK_SIZE * FANG_CHUNK_MIN);
+    assert(position->x <= FANG_CHUNK_SIZE * FANG_CHUNK_MAX);
+    assert(position->y >= FANG_CHUNK_SIZE * FANG_CHUNK_MIN);
+    assert(position->y <= FANG_CHUNK_SIZE * FANG_CHUNK_MAX);
+
+    const int8_t x_offset = (position->x < 0.0f) ? -1 : 0;
+    const int8_t y_offset = (position->y < 0.0f) ? -1 : 0;
 
     return Fang_GetIndexedChunk(
         chunks,
         &(Fang_ChunkIndex){
-            .x = (int8_t)(position->x / (float)FANG_CHUNK_SIZE),
-            .y = (int8_t)(position->y / (float)FANG_CHUNK_SIZE),
+            .x = (int8_t)(position->x / (float)FANG_CHUNK_SIZE) + x_offset,
+            .y = (int8_t)(position->y / (float)FANG_CHUNK_SIZE) + y_offset,
         }
     );
 }
@@ -157,16 +155,19 @@ Fang_GetChunkVec3(
 {
     assert(chunks);
     assert(position);
-    assert(position->x >= INT8_MIN);
-    assert(position->x <= INT8_MAX);
-    assert(position->y >= INT8_MIN);
-    assert(position->y <= INT8_MAX);
+    assert(position->x >= FANG_CHUNK_SIZE * FANG_CHUNK_MIN);
+    assert(position->x <= FANG_CHUNK_SIZE * FANG_CHUNK_MAX);
+    assert(position->y >= FANG_CHUNK_SIZE * FANG_CHUNK_MIN);
+    assert(position->y <= FANG_CHUNK_SIZE * FANG_CHUNK_MAX);
+
+    const int8_t x_offset = (position->x < 0.0f) ? -1 : 0;
+    const int8_t y_offset = (position->y < 0.0f) ? -1 : 0;
 
     return Fang_GetIndexedChunk(
         chunks,
         &(Fang_ChunkIndex){
-            .x = (int8_t)(position->x / (float)FANG_CHUNK_SIZE),
-            .y = (int8_t)(position->y / (float)FANG_CHUNK_SIZE),
+            .x = (int8_t)(position->x / (float)FANG_CHUNK_SIZE) + x_offset,
+            .y = (int8_t)(position->y / (float)FANG_CHUNK_SIZE) + y_offset,
         }
     );
 }
@@ -178,16 +179,19 @@ Fang_GetChunkPoint(
 {
     assert(chunks);
     assert(position);
-    assert(position->x >= INT8_MIN);
-    assert(position->x <= INT8_MAX);
-    assert(position->y >= INT8_MIN);
-    assert(position->y <= INT8_MAX);
+    assert(position->x >= FANG_CHUNK_SIZE * FANG_CHUNK_MIN);
+    assert(position->x <= FANG_CHUNK_SIZE * FANG_CHUNK_MAX);
+    assert(position->y >= FANG_CHUNK_SIZE * FANG_CHUNK_MIN);
+    assert(position->y <= FANG_CHUNK_SIZE * FANG_CHUNK_MAX);
+
+    const int8_t x_offset = (position->x < 0) ? -1 : 0;
+    const int8_t y_offset = (position->y < 0) ? -1 : 0;
 
     return Fang_GetIndexedChunk(
         chunks,
         &(Fang_ChunkIndex){
-            .x = (int8_t)(position->x / FANG_CHUNK_SIZE),
-            .y = (int8_t)(position->y / FANG_CHUNK_SIZE),
+            .x = (int8_t)(position->x / FANG_CHUNK_SIZE) + x_offset,
+            .y = (int8_t)(position->y / FANG_CHUNK_SIZE) + y_offset,
         }
     );
 }
@@ -204,21 +208,15 @@ Fang_GetChunkTileVec2(
 
     assert(chunk);
 
-    Fang_Vec2 fractional = {
-        .x = fmodf(position->x, (float)FANG_CHUNK_SIZE),
-        .y = fmodf(position->y, (float)FANG_CHUNK_SIZE),
+    Fang_Point tile_index = {
+        .x = (int)fabsf(fmodf(position->x, FANG_CHUNK_SIZE)),
+        .y = (int)fabsf(fmodf(position->y, FANG_CHUNK_SIZE)),
     };
 
-    fractional.x = (fractional.x < 0.0f) ? 1.0f - fractional.x : fractional.x;
-    fractional.y = (fractional.y < 0.0f) ? 1.0f - fractional.y : fractional.y;
+    const Fang_Tile * const result = &chunk->tiles[tile_index.x][tile_index.y];
 
-    const Fang_Point tile_index = {
-        .x = (int)(fractional.x * FANG_CHUNK_SIZE),
-        .y = (int)(fractional.y * FANG_CHUNK_SIZE),
-    };
-
-    if (chunk->tiles[tile_index.x][tile_index.y].type)
-        return &chunk->tiles[tile_index.x][tile_index.y];
+    if (result->type)
+        return result;
 
     return NULL;
 }

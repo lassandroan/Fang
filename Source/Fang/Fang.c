@@ -59,6 +59,22 @@ Fang_Init(void)
 {
     Fang_TextureSetInit(&gamestate.textures);
 
+    {
+        Fang_Chunk * const chunk = (Fang_Chunk*)Fang_GetIndexedChunk(
+            &gamestate.map.chunks, &(Fang_ChunkIndex){0, 0}
+        );
+
+        Fang_Tile * tile = &chunk->tiles[0][0];
+        tile->type    = FANG_TILETYPE_SOLID;
+        tile->height  = 1.0f;
+        tile->texture = FANG_TEXTURE_TILE;
+
+        tile = &chunk->tiles[7][3];
+        tile->type    = FANG_TILETYPE_SOLID;
+        tile->height  = 0.5f;
+        tile->texture = FANG_TEXTURE_TILE;
+    }
+
     gamestate.interface = (Fang_Interface){
         .textures = &gamestate.textures,
         .theme = (Fang_InterfaceTheme){
