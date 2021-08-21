@@ -657,30 +657,51 @@ Fang_Update(
             );
         }
 
-        char health[4] = "000";
-
-        if (player)
         {
+            char health[4] = "000";
             snprintf(
                 health,
                 sizeof(health),
                 "%3d",
                 player->props.player.health
             );
+
+            const int text_offset = 3 - (int)strlen(health);
+
+            Fang_DrawText(
+                framebuf,
+                health,
+                Fang_TextureSetQuery(&gamestate.textures, FANG_TEXTURE_FORMULA),
+                FANG_FONT_HEIGHT,
+                &(Fang_Point){
+                    .x = viewport.w - 5 - (FANG_FONT_WIDTH * (3 - text_offset)),
+                    .y = 3
+                }
+            );
         }
 
-        const int text_offset = 3 - (int)strlen(health);
+        {
+            char position[15];
 
-        Fang_DrawText(
-            framebuf,
-            health,
-            Fang_TextureSetQuery(&gamestate.textures, FANG_TEXTURE_FORMULA),
-            FANG_FONT_HEIGHT,
-            &(Fang_Point){
-                .x = viewport.w - 5 - (FANG_FONT_WIDTH * (3 - text_offset)),
-                .y = 3
-            }
-        );
+            snprintf(
+                position,
+                sizeof(position),
+                "%3.2f, %3.2f",
+                fmodf(player->body.pos.x, FANG_CHUNK_SIZE),
+                fmodf(player->body.pos.y, FANG_CHUNK_SIZE)
+            );
+
+            Fang_DrawText(
+                framebuf,
+                position,
+                Fang_TextureSetQuery(&gamestate.textures, FANG_TEXTURE_FORMULA),
+                FANG_FONT_HEIGHT,
+                &(Fang_Point){
+                    .x = 3,
+                    .y = viewport.h - FANG_FONT_HEIGHT - 3
+                }
+            );
+        }
     }
 
     {
