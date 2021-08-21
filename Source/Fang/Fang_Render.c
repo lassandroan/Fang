@@ -791,21 +791,13 @@ Fang_DrawMinimap(
 
     Fang_FillRect(framebuf, &bounds, &FANG_BLACK);
 
-    for (int row = 0; row < 8; ++row)
+    for (int row = 0; row < FANG_CHUNK_SIZE; ++row)
     {
-        const float rowf = (float)row / 8.0f;
+        const float rowf = (float)row / (float)FANG_CHUNK_SIZE;
 
-        Fang_DrawHorizontalLine(
-            framebuf, (int)(rowf * framebuf->color.height), &FANG_GREY
-        );
-
-        for (int col = 0; col < 8; ++col)
+        for (int col = 0; col < FANG_CHUNK_SIZE; ++col)
         {
-            const float colf = col / 8.0f;
-
-            Fang_DrawVerticalLine(
-                framebuf, (int)(colf * framebuf->color.width), &FANG_GREY
-            );
+            const float colf = (float)col / (float)FANG_CHUNK_SIZE;
 
             const Fang_Point point = {row, col};
             if (!Fang_GetChunkTile(&map->chunks, &point))
@@ -815,8 +807,8 @@ Fang_DrawMinimap(
                 &(Fang_Rect){
                     .x = (int)(rowf * bounds.w),
                     .y = (int)(colf * bounds.h),
-                    .w = bounds.w / 8,
-                    .h = bounds.h / 8,
+                    .w = bounds.w / FANG_CHUNK_SIZE,
+                    .h = bounds.h / FANG_CHUNK_SIZE,
                 },
                 -2,
                 -2
@@ -827,8 +819,8 @@ Fang_DrawMinimap(
     }
 
     const Fang_Point minimap_pos = {
-        .x = (int)((camera->pos.x / 8.0f) * bounds.w),
-        .y = (int)((camera->pos.y / 8.0f) * bounds.h),
+        .x = (int)((camera->pos.x / FANG_CHUNK_SIZE) * bounds.w),
+        .y = (int)((camera->pos.y / FANG_CHUNK_SIZE) * bounds.h),
     };
 
 
@@ -848,8 +840,8 @@ Fang_DrawMinimap(
                 framebuf,
                 &minimap_pos,
                 &(Fang_Point){
-                    .x = (int)((ray_pos.x / 8.0f) * bounds.w),
-                    .y = (int)((ray_pos.y / 8.0f) * bounds.h),
+                    .x = (int)((ray_pos.x / FANG_CHUNK_SIZE) * bounds.w),
+                    .y = (int)((ray_pos.y / FANG_CHUNK_SIZE) * bounds.h),
                 },
                 &(Fang_Color){
                     .b = 255,
