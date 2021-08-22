@@ -13,6 +13,10 @@
 // You should have received a copy of the GNU General Public License along
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+enum {
+  FANG_WINDOW_SIZE = 256,
+};
+
 static const float FANG_PROJECTION_RATIO = 1.0f / (1.0f / 2.0f);
 
 enum {

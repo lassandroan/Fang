@@ -79,8 +79,8 @@ int Fang_Main(int argc, char** argv)
         FANG_TITLE,
         SDL_WINDOWPOS_UNDEFINED,
         SDL_WINDOWPOS_UNDEFINED,
-        FANG_WINDOW_SIZE * 2,
-        FANG_WINDOW_SIZE * 2,
+        512,
+        512,
         SDL_WINDOW_SHOWN
             | SDL_WINDOW_ALLOW_HIGHDPI
             | SDL_WINDOW_INPUT_FOCUS
@@ -99,7 +99,7 @@ int Fang_Main(int argc, char** argv)
     if (!renderer)
         goto Error_Renderer;
 
-    SDL_Texture * const texture = SDL_CreateTexture(
+    SDL_Texture * const target = SDL_CreateTexture(
         renderer,
         SDL_PIXELFORMAT_RGBA8888,
         SDL_TEXTUREACCESS_STREAMING,
@@ -107,19 +107,8 @@ int Fang_Main(int argc, char** argv)
         FANG_WINDOW_SIZE
     );
 
-    if (!texture)
-        goto Error_Framebuffer;
-
-    SDL_Texture * const depth = SDL_CreateTexture(
-        renderer,
-        SDL_PIXELFORMAT_RGBA8888,
-        SDL_TEXTUREACCESS_STREAMING,
-        FANG_WINDOW_SIZE,
-        FANG_WINDOW_SIZE
-    );
-
-    if (!depth)
-        goto Error_Depthbuffer;
+    if (!target)
+        goto Error_Texture;
 
     SDL_GameController * controller = NULL;
     FangSDL_ConnectController(&controller);
@@ -341,44 +330,11 @@ int Fang_Main(int argc, char** argv)
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
-        {
-            Fang_Framebuffer framebuf;
-            framebuf.color.width  = FANG_WINDOW_SIZE;
-            framebuf.color.height = FANG_WINDOW_SIZE;
-            framebuf.color.stride = SDL_BYTESPERPIXEL(SDL_PIXELFORMAT_RGBA8888);
-            framebuf.depth.width  = FANG_WINDOW_SIZE;
-            framebuf.depth.height = FANG_WINDOW_SIZE;
-            framebuf.depth.stride = SDL_BYTESPERPIXEL(SDL_PIXELFORMAT_RGBA8888);
+        const Fang_Image * const frame = Fang_Update(&input, SDL_GetTicks());
+        SDL_assert(Fang_ImageValid(frame));
 
-            framebuf.state.enable_depth  = true;
-            framebuf.state.current_depth = 0.0f;
-            framebuf.state.transform     = Fang_IdentityMatrix();
-
-            int error = SDL_LockTexture(
-                texture,
-                NULL,
-                (void**)&framebuf.color.pixels,
-                &framebuf.color.pitch
-            );
-
-            error |= SDL_LockTexture(
-                depth,
-                NULL,
-                (void**)&framebuf.depth.pixels,
-                &framebuf.depth.pitch
-            );
-
-            if (error)
-                break;
-
-            Fang_Update(&input, &framebuf, SDL_GetTicks());
-
-            SDL_UnlockTexture(depth);
-            SDL_UnlockTexture(texture);
-        }
-
-        SDL_SetRenderTarget(renderer, NULL);
-        SDL_RenderCopy(renderer, texture, NULL, NULL);
+        SDL_UpdateTexture(target, NULL, frame->pixels, frame->pitch);
+        SDL_RenderCopy(renderer, target, NULL, NULL);
         SDL_RenderPresent(renderer);
     }
 
@@ -386,11 +342,8 @@ int Fang_Main(int argc, char** argv)
 
     Fang_Quit();
 
-Error_Depthbuffer:
-    SDL_DestroyTexture(depth);
-
-Error_Framebuffer:
-    SDL_DestroyTexture(texture);
+Error_Texture:
+    SDL_DestroyTexture(target);
 
 Error_Renderer:
     SDL_DestroyRenderer(renderer);

@@ -57,6 +57,27 @@ Fang_State gamestate;
 static inline void
 Fang_Init(void)
 {
+    Fang_AllocImage(
+        &gamestate.framebuffer.color,
+        FANG_WINDOW_SIZE,
+        FANG_WINDOW_SIZE,
+        32
+    );
+
+    Fang_AllocImage(
+        &gamestate.framebuffer.depth,
+        FANG_WINDOW_SIZE,
+        FANG_WINDOW_SIZE,
+        32
+    );
+
+    assert(Fang_ImageValid(&gamestate.framebuffer.color));
+    assert(Fang_ImageValid(&gamestate.framebuffer.depth));
+
+    gamestate.framebuffer.state.current_depth = 0.0f;
+    gamestate.framebuffer.state.enable_depth  = true;
+    gamestate.framebuffer.state.transform     = Fang_IdentityMatrix();
+
     Fang_LoadTextures(&gamestate.textures);
 
     {
@@ -156,16 +177,14 @@ Fang_Init(void)
     gamestate.map.fog_distance = FANG_CHUNK_SIZE * 2.0f;
 }
 
-static inline void
+static inline const Fang_Image *
 Fang_Update(
-    const Fang_Input       * const input,
-          Fang_Framebuffer * const framebuf,
-          uint32_t                 time)
+    const Fang_Input * const input,
+          uint32_t           time)
 {
     assert(input);
-    assert(framebuf);
 
-    const Fang_Rect viewport = Fang_GetViewport(framebuf);
+    const Fang_Rect viewport = Fang_GetViewport(&gamestate.framebuffer);
 
     Fang_Entity * const player = Fang_GetEntity(
         &gamestate.entities, gamestate.player
@@ -578,21 +597,20 @@ Fang_Update(
     }
 
     {
-        gamestate.interface.input    = input;
-        gamestate.interface.framebuf = framebuf;
+        gamestate.interface.input = input;
         Fang_UpdateInterface(&gamestate.interface);
     }
 
-    Fang_ClearImage(&framebuf->color);
+    Fang_ClearImage(&gamestate.framebuffer.color);
 
     for (int x = 0; x < viewport.w; ++x)
     {
         for (int y = 0; y < viewport.h; ++y)
         {
             float * const depth = (float*)(
-                framebuf->depth.pixels
-              + (x * framebuf->depth.stride)
-              + (y * framebuf->depth.pitch)
+                gamestate.framebuffer.depth.pixels
+              + (x * gamestate.framebuffer.depth.stride)
+              + (y * gamestate.framebuffer.depth.pitch)
             );
 
             *depth = FLT_MAX;
@@ -606,25 +624,25 @@ Fang_Update(
         (size_t)FANG_WINDOW_SIZE
     );
 
-    framebuf->state.current_depth = FLT_MAX;
-    framebuf->state.enable_depth  = true;
+    gamestate.framebuffer.state.current_depth = FLT_MAX;
+    gamestate.framebuffer.state.enable_depth  = true;
 
     Fang_DrawMapSkybox(
-        framebuf,
+        &gamestate.framebuffer,
         &gamestate.camera,
         &gamestate.map,
         Fang_GetTexture(&gamestate.textures, gamestate.map.skybox)
     );
 
     Fang_DrawMapFloor(
-        framebuf,
+        &gamestate.framebuffer,
         &gamestate.camera,
         &gamestate.map,
         &gamestate.textures
     );
 
     Fang_DrawMapTiles(
-        framebuf,
+        &gamestate.framebuffer,
         &gamestate.camera,
         &gamestate.textures,
         &gamestate.map,
@@ -633,7 +651,7 @@ Fang_Update(
     );
 
     Fang_DrawEntities(
-        framebuf,
+        &gamestate.framebuffer,
         &gamestate.camera,
         &gamestate.textures,
         &gamestate.map,
@@ -641,10 +659,12 @@ Fang_Update(
     );
 
     Fang_ShadeFramebuffer(
-        framebuf, &gamestate.map.fog, gamestate.map.fog_distance
+        &gamestate.framebuffer,
+        &gamestate.map.fog,
+        gamestate.map.fog_distance
     );
 
-    framebuf->state.enable_depth = false;
+    gamestate.framebuffer.state.enable_depth = false;
 
     if (player)
     {
@@ -670,7 +690,7 @@ Fang_Update(
                 };
 
                 Fang_DrawImage(
-                    framebuf,
+                    &gamestate.framebuffer,
                     weapon_texture,
                     NULL,
                     &(Fang_Rect){
@@ -683,7 +703,7 @@ Fang_Update(
             }
 
             Fang_DrawText(
-                framebuf,
+                &gamestate.framebuffer,
                 weapon->name,
                 Fang_GetTexture(&gamestate.textures, FANG_TEXTURE_FORMULA),
                 FANG_FONT_HEIGHT,
@@ -699,7 +719,7 @@ Fang_Update(
             );
 
             Fang_DrawText(
-                framebuf,
+                &gamestate.framebuffer,
                 ammo_count,
                 Fang_GetTexture(&gamestate.textures, FANG_TEXTURE_FORMULA),
                 FANG_FONT_HEIGHT,
@@ -719,7 +739,7 @@ Fang_Update(
             const int text_offset = 3 - (int)strlen(health);
 
             Fang_DrawText(
-                framebuf,
+                &gamestate.framebuffer,
                 health,
                 Fang_GetTexture(&gamestate.textures, FANG_TEXTURE_FORMULA),
                 FANG_FONT_HEIGHT,
@@ -742,7 +762,7 @@ Fang_Update(
             );
 
             Fang_DrawText(
-                framebuf,
+                &gamestate.framebuffer,
                 position,
                 Fang_GetTexture(&gamestate.textures, FANG_TEXTURE_FORMULA),
                 FANG_FONT_HEIGHT,
@@ -756,7 +776,7 @@ Fang_Update(
 
     {
         const Fang_FrameState state = Fang_SetViewport(
-            framebuf,
+            &gamestate.framebuffer,
             &(Fang_Rect){
                 .x = FANG_WINDOW_SIZE - 32,
                 .y = FANG_WINDOW_SIZE - 32,
@@ -766,20 +786,20 @@ Fang_Update(
         );
 
         Fang_DrawMinimap(
-            framebuf,
+            &gamestate.framebuffer,
             &gamestate.camera,
             &gamestate.map,
             gamestate.raycast,
             (size_t)FANG_WINDOW_SIZE
         );
 
-        framebuf->state = state;
+        gamestate.framebuffer.state = state;
     }
 
-    framebuf->state.current_depth = 0.0f;
+    gamestate.framebuffer.state.current_depth = 0.0f;
 
     Fang_SetFragment(
-        framebuf,
+        &gamestate.framebuffer,
         &(Fang_Point){
             .x = viewport.w / 2,
             .y = viewport.h / 2,
@@ -791,10 +811,14 @@ Fang_Update(
             .a = 128,
         }
     );
+
+    return &gamestate.framebuffer.color;
 }
 
 static inline void
 Fang_Quit(void)
 {
     Fang_FreeTextures(&gamestate.textures);
+    Fang_FreeImage(&gamestate.framebuffer.color);
+    Fang_FreeImage(&gamestate.framebuffer.depth);
 }
