@@ -22,14 +22,17 @@ VERSION="0.0.0"
 
 RUN=0
 DEBUG=0
+OPTIMIZED=0
 RELEASE=0
 
 COMPILE_FLAGS=" "
 
+HELP_TEXT="\$Compile.sh [optimized|release] [asan|ubsan] [debug|run]"
+
 while [ "$1" != "" ]; do
     case $1 in
         "help" )
-            echo "\$./Scripts/macOS/Compile.sh [debug|release] [asan|ubsan] [run]"
+            echo HELP_TEXT
             exit 0
             ;;
 
@@ -41,6 +44,10 @@ while [ "$1" != "" ]; do
         "asan" )
             echo "Compiling with address sanitizer..."
             COMPILE_FLAGS+="-fsanitize=address "
+            ;;
+
+        "optimized" )
+            OPTIMIZED=1
             ;;
 
         "release" )
@@ -80,12 +87,21 @@ DIR_BUILD="Build"
 
 if test $RELEASE -eq 1; then
     COMPILE_FLAGS+="-O3 "
+    COMPILE_FLAGS+="-DNDEBUG "
     COMPILE_FLAGS+="-Wframe-larger-than=4096 "
     DIR_BUILD+="/Release"
+elif test $OPTIMIZED -eq 1; then
+    COMPILE_FLAGS+="-O3 "
+    COMPILE_FLAGS+="-Wno-unused-function "
+    COMPILE_FLAGS+="-Wno-unused-label "
+    COMPILE_FLAGS+="-Wno-unused-variable "
+    COMPILE_FLAGS+="-Wframe-larger-than=4096 "
+    DIR_BUILD+="/Optimized"
 else
     COMPILE_FLAGS+="-g "
     COMPILE_FLAGS+="-Wno-unused-function "
     COMPILE_FLAGS+="-Wno-unused-label "
+    COMPILE_FLAGS+="-Wno-unused-variable "
     COMPILE_FLAGS+="-Wframe-larger-than=8192 "
     DIR_BUILD+="/Debug"
 fi
