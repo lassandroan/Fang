@@ -44,39 +44,13 @@
             },
             "variants": [
                 {
-                    "name": "Debug",
+                    "name": "Optimized",
                     "osx": {
                         "cmd": [
                             "sh",
                             "Scripts/macOS/Compile.sh",
                             "run",
-                            "debug",
-                            "-DFANG_UNBUFFERED_STDOUT",
-                        ]
-                    },
-                },
-                {
-                    "name": "ASAN",
-                    "osx": {
-                        "cmd": [
-                            "sh",
-                            "Scripts/macOS/Compile.sh",
-                            "run",
-                            "debug",
-                            "asan",
-                            "-DFANG_UNBUFFERED_STDOUT",
-                        ]
-                    },
-                },
-                {
-                    "name": "UBSAN",
-                    "osx": {
-                        "cmd": [
-                            "sh",
-                            "Scripts/macOS/Compile.sh",
-                            "run",
-                            "debug",
-                            "ubsan",
+                            "optimized",
                             "-DFANG_UNBUFFERED_STDOUT",
                         ]
                     },
