@@ -30,14 +30,15 @@ typedef struct Fang_Clock {
  * not indicative of the game's "save state".
 **/
 typedef struct Fang_State {
-    Fang_Map       map;
-    Fang_Textures  textures;
-    Fang_Ray       raycast[FANG_WINDOW_SIZE];
-    Fang_Clock     clock;
-    Fang_Camera    camera;
-    Fang_EntityId  player;
-    Fang_Interface interface;
-    Fang_Entities  entities;
-    Fang_LerpVec2  sway;
-    float          bob;
+    Fang_Framebuffer framebuffer;
+    Fang_Map         map;
+    Fang_Textures    textures;
+    Fang_Ray         raycast[FANG_WINDOW_SIZE];
+    Fang_Clock       clock;
+    Fang_Camera      camera;
+    Fang_EntityId    player;
+    Fang_Interface   interface;
+    Fang_Entities    entities;
+    Fang_LerpVec2    sway;
+    float            bob;
 } Fang_State;
