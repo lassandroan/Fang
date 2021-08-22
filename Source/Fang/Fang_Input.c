@@ -123,8 +123,6 @@ typedef struct Fang_InputText {
 
 /**
  * A structure representing the input state for a given frame.
- *
- * @see Fang_InputClear()
 **/
 typedef struct Fang_Input {
     Fang_InputId         id;
@@ -167,7 +165,7 @@ Fang_InputReleased(
  * text buffer.
 **/
 static void
-Fang_InputReset(
+Fang_ClearInput(
     Fang_Input * const input)
 {
     assert(input);

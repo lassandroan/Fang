@@ -13,6 +13,9 @@
 // You should have received a copy of the GNU General Public License along
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+/**
+ * The available weapon types in the game.
+**/
 typedef enum Fang_WeaponType {
     FANG_WEAPONTYPE_PISTOL,
     FANG_WEAPONTYPE_CARBINE,
@@ -26,6 +29,18 @@ typedef enum Fang_WeaponType {
     FANG_WEAPONTYPE_NONE,
 } Fang_WeaponType;
 
+/**
+ * A structure detailing the properties of an in-game weapon.
+ *
+ * Weapons have various properties that determine their behavior when firing,
+ * such as how quickly they can fire, whether they fire automatically, how much
+ * damage or speed the projectile should have, and how long the projectile
+ * should stay active before de-spawning.
+ *
+ * The texture of a weapon controls the image displayed in the first person
+ * view. If no texture has been assigned then the weapon will not render in the
+ * HUD.
+**/
 typedef struct Fang_Weapon {
     char           * name;
     Fang_TextureId   texture;
@@ -36,8 +51,13 @@ typedef struct Fang_Weapon {
     uint32_t         lifespan;
 } Fang_Weapon;
 
+/**
+ * Retrieves weapon details given a weapon-id.
+ *
+ * If the type is 'none' this will return NULL.
+**/
 static inline const Fang_Weapon *
-Fang_WeaponQuery(
+Fang_GetWeapon(
     const Fang_WeaponType type)
 {
     if (type == FANG_WEAPONTYPE_NONE)

@@ -14,22 +14,6 @@
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * A constant representing the width|height of a texture frame.
-**/
-enum {
-    FANG_TEXTURE_SIZE = 128,
-};
-
-/**
- * All fonts should be 8x9 in size, with a 1px barrier in between each
- * character.
-**/
-enum {
-    FANG_FONT_HEIGHT = 9,
-    FANG_FONT_WIDTH  = 8,
-};
-
-/**
  * The textures available to the game.
  *
  * Each one of these corresponds to a texture file in the resource folder.
@@ -64,23 +48,23 @@ typedef enum Fang_TextureId {
 /**
  * This structure is used for managing textures and fonts.
 **/
-typedef struct Fang_TextureSet {
+typedef struct Fang_Textures {
     Fang_Image textures[FANG_NUM_TEXTURES];
-} Fang_TextureSet;
+} Fang_Textures;
 
 /**
  * Frees a previously loaded texture.
 **/
 static inline void
-Fang_TextureSetUnload(
-          Fang_TextureSet * const textures,
-    const Fang_TextureId          id)
+Fang_FreeTexture(
+          Fang_Textures  * const textures,
+    const Fang_TextureId         id)
 {
     assert(textures);
     assert(id < FANG_NUM_TEXTURES);
     assert(Fang_ImageValid(&textures->textures[id]));
 
-    Fang_ImageFree(&textures->textures[id]);
+    Fang_FreeImage(&textures->textures[id]);
 }
 
 /**
@@ -93,9 +77,9 @@ Fang_TextureSetUnload(
  * may be checked for validation.
 **/
 static inline int
-Fang_TextureSetLoad(
-          Fang_TextureSet * const textures,
-    const Fang_TextureId          id)
+Fang_LoadTexture(
+          Fang_Textures  * const textures,
+    const Fang_TextureId         id)
 {
     assert(textures);
     assert(id < FANG_NUM_TEXTURES);
@@ -103,7 +87,7 @@ Fang_TextureSetLoad(
     Fang_Image * const result = &textures->textures[id];
 
     if (Fang_ImageValid(result))
-        Fang_TextureSetUnload(textures, id);
+        Fang_FreeTexture(textures, id);
 
     typedef enum {
         FONT_TEXTURE,
@@ -197,7 +181,7 @@ Fang_TextureSetLoad(
 
         if (info.path)
         {
-            *result = Fang_TGALoad(texture_info[id].path);
+            *result = Fang_LoadTGA(texture_info[id].path);
 
             if (!Fang_ImageValid(result))
                 return 1;
@@ -224,40 +208,49 @@ Fang_TextureSetLoad(
     return 0;
 }
 
-static inline void
-Fang_TextureSetInit(
-    Fang_TextureSet * const textures)
+/**
+ * Loads all texture types into the textures structure.
+ *
+ * Returns non-zero if any textures failed to load.
+**/
+static inline int
+Fang_LoadTextures(
+    Fang_Textures * const textures)
 {
     assert(textures);
 
+    int error = 0;
+
     for (Fang_TextureId i = 0; i < FANG_NUM_TEXTURES; ++i)
-        Fang_TextureSetLoad(textures, i);
+        error |= Fang_LoadTexture(textures, i);
+
+    return error;
 }
 
 /**
  * Unloads all textures currently loaded in the texture set.
 **/
 static inline void
-Fang_TextureSetFree(
-    Fang_TextureSet * const textures)
+Fang_FreeTextures(
+    Fang_Textures * const textures)
 {
     assert(textures);
 
     for (Fang_TextureId i = 0; i < FANG_NUM_TEXTURES; ++i)
         if (textures->textures[i].pixels)
-            Fang_TextureSetUnload(textures, i);
+            Fang_FreeTexture(textures, i);
 }
 
 /**
- * Queries a texture from the set.
+ * Retrieves a texture from the loaded textures.
  *
  * If the id is FANG_TEXTURE_NONE or the target image is invalid this will
  * return NULL.
 **/
-static inline const Fang_Image*
-Fang_TextureSetQuery(
-    const Fang_TextureSet * const textures,
-    const Fang_TextureId          id)
+static inline const Fang_Image *
+Fang_GetTexture(
+    const Fang_Textures  * const textures,
+    const Fang_TextureId         id)
 {
     assert(textures);
 

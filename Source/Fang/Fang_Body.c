@@ -43,7 +43,7 @@ typedef struct Fang_Body {
 } Fang_Body;
 
 static inline void
-Fang_BodySetTargetVelocity(
+Fang_SetTargetVelocity(
           Fang_Body * const body,
     const float             forward,
     const float             left)
@@ -63,7 +63,7 @@ Fang_BodySetTargetVelocity(
 }
 
 static inline bool
-Fang_BodyCanStep(
+Fang_CanStep(
     const Fang_Body * const body,
     const float             surface_top)
 {
@@ -75,10 +75,47 @@ Fang_BodyCanStep(
     return (surface_top <= body->pos.z + (body->height / 3.0f));
 }
 
+/**
+ * Returns the lowest surface that the body could be standing on.
+ *
+ * If there is no tile underneath the body, this returns the floor value
+ * (0.0f). If a tile is underneath the body, this returns the top of that tile
+ * unless the tile's top is above the body.
+ *
+ * If the body cannot collide with walls, this always returns 0.0f.
+**/
+static inline float
+Fang_FindFloor(
+    const Fang_Body   * const body,
+    const Fang_Chunks * const chunks)
+{
+    assert(body);
+    assert(chunks);
+
+    if (!(body->flags & FANG_BODYFLAG_COLLIDE_WALLS))
+        return 0.0f;
+
+    const Fang_Tile * const tile = Fang_GetChunkTile(chunks, &body->pos);
+
+    if (!tile)
+        return 0.0f;
+
+    const float tile_top = tile->offset + tile->height;
+
+    if (tile_top > body->pos.z)
+        return 0.0f;
+
+    return tile_top;
+}
+
+/**
+ * Checks whether a body is currently intersecting a tile, accounting for both
+ * height and size.
+**/
 static inline bool
-Fang_BodyCollidesTile(
-    const Fang_Body     * const body,
-    const Fang_ChunkSet * const chunks)
+Fang_BodyIntersects(
+    const Fang_Body   * const body,
+    const Fang_Chunks * const chunks)
 {
     assert(body);
     assert(chunks);
@@ -100,108 +137,10 @@ Fang_BodyCollidesTile(
     if (tile_top <= body->pos.z)
         return false;
 
-    if (Fang_BodyCanStep(body, tile_top))
+    if (Fang_CanStep(body, tile_top))
         return false;
 
     return true;
-}
-
-static inline float
-Fang_BodyFindFloor(
-    const Fang_Body     * const body,
-    const Fang_ChunkSet * const chunks)
-{
-    assert(body);
-    assert(chunks);
-
-    if (!(body->flags & FANG_BODYFLAG_COLLIDE_WALLS))
-        return 0.0f;
-
-    const Fang_Tile * const tile = Fang_GetChunkTile(chunks, &body->pos);
-
-    if (!tile)
-        return 0.0f;
-
-    const float tile_top = tile->offset + tile->height;
-
-    if (tile_top > body->pos.z)
-        return 0.0f;
-
-    return tile_top;
-}
-
-static inline float
-Fang_BodyFindStep(
-    const Fang_Body     * const body,
-    const Fang_ChunkSet * const chunks)
-{
-    assert(body);
-    assert(chunks);
-
-    if (!(body->flags & FANG_BODYFLAG_COLLIDE_WALLS))
-        return 0.0f;
-
-    const Fang_Tile * const tile = Fang_GetChunkTile(chunks, &body->pos);
-
-    if (!tile)
-        return 0.0f;
-
-    const float tile_top = tile->offset + tile->height;
-
-    if (Fang_BodyCanStep(body, tile_top))
-        return tile_top;
-
-    return 0.0f;
-}
-
-/**
- * Moves a body using its given 'move' vector.
- *
- * The X and Y values of the move vector will be multiplied with the body's
- * acceleration values to determine the increase/decrease in velocity.
- *
- * The Z value of the move vector will be directly applied as the body's new
- * Z velocity, but only if the body is standing on a surface.
- *
- * If the movement vector is 0.0f for X/Y, the current velocities for those axes
- * will be decreased until they reach 0.0f. The same applies to the Z axis, but
- * instead it is gravity acting on the body if its position is above a surface.
- *
- * If the body is in the air, deceleration in the X/Y axes will not occur.
-**/
-static void
-Fang_BodyMove(
-          Fang_Body     * const body,
-    const Fang_ChunkSet * const chunks,
-    const float                 delta)
-{
-    assert(body);
-    assert(chunks);
-
-    body->last = body->pos;
-
-    Fang_LerpVec3 * const vel = &body->vel;
-
-    if (!body->jump && vel->target.z > 0.0f)
-    {
-        if (vel->value.z >= -FANG_JUMP_TOLERANCE && vel->value.z <= 0.0f)
-        {
-            body->jump = true;
-            body->vel.value.z = body->vel.target.z;
-        }
-    }
-
-    if (body->flags & FANG_BODYFLAG_FALL)
-    {
-        const float standing_surface = Fang_BodyFindFloor(body, chunks);
-
-        if (body->pos.z > standing_surface)
-            vel->value.z -= FANG_GRAVITY * delta;
-    }
-
-    Fang_Lerp(vel, delta);
-
-    body->pos = Fang_Vec3Add(body->pos, Fang_Vec3Multf(vel->value, delta));
 }
 
 /**
@@ -229,6 +168,56 @@ Fang_BodiesIntersect(
 }
 
 /**
+ * Moves a body using its given 'move' vector.
+ *
+ * The X and Y values of the move vector will be multiplied with the body's
+ * acceleration values to determine the increase/decrease in velocity.
+ *
+ * The Z value of the move vector will be directly applied as the body's new
+ * Z velocity, but only if the body is standing on a surface.
+ *
+ * If the movement vector is 0.0f for X/Y, the current velocities for those axes
+ * will be decreased until they reach 0.0f. The same applies to the Z axis, but
+ * instead it is gravity acting on the body if its position is above a surface.
+ *
+ * If the body is in the air, deceleration in the X/Y axes will not occur.
+**/
+static void
+Fang_UpdateBody(
+          Fang_Body   * const body,
+    const Fang_Chunks * const chunks,
+    const float               delta)
+{
+    assert(body);
+    assert(chunks);
+
+    body->last = body->pos;
+
+    Fang_LerpVec3 * const vel = &body->vel;
+
+    if (!body->jump && vel->target.z > 0.0f)
+    {
+        if (vel->value.z >= -FANG_JUMP_TOLERANCE && vel->value.z <= 0.0f)
+        {
+            body->jump = true;
+            body->vel.value.z = body->vel.target.z;
+        }
+    }
+
+    if (body->flags & FANG_BODYFLAG_FALL)
+    {
+        const float standing_surface = Fang_FindFloor(body, chunks);
+
+        if (body->pos.z > standing_surface)
+            vel->value.z -= FANG_GRAVITY * delta;
+    }
+
+    Fang_Lerp(vel, delta);
+
+    body->pos = Fang_Vec3Add(body->pos, Fang_Vec3Multf(vel->value, delta));
+}
+
+/**
  * Resolves collisions between a body and the map tiles.
  *
  * This accounts for wall collisions as well as keeping the body standing on
@@ -240,9 +229,9 @@ Fang_BodiesIntersect(
  * If the body cannot collide with walls, this function does nothing.
 **/
 static inline bool
-Fang_BodyResolveMapCollision(
-          Fang_Body     * const body,
-    const Fang_ChunkSet * const chunks)
+Fang_ResolveTileCollision(
+          Fang_Body   * const body,
+    const Fang_Chunks * const chunks)
 {
     assert(body);
     assert(chunks);
@@ -258,7 +247,7 @@ Fang_BodyResolveMapCollision(
     /* X collision */
     test_body.pos.x = body->pos.x;
 
-    if (Fang_BodyCollidesTile(&test_body, chunks))
+    if (Fang_BodyIntersects(&test_body, chunks))
     {
         result = true;
         test_body.pos.x = test_body.last.x;
@@ -267,7 +256,7 @@ Fang_BodyResolveMapCollision(
     /* Y collision */
     test_body.pos.y = body->pos.y;
 
-    if (Fang_BodyCollidesTile(&test_body, chunks))
+    if (Fang_BodyIntersects(&test_body, chunks))
     {
         result = true;
         test_body.pos.y = test_body.last.y;
@@ -276,7 +265,7 @@ Fang_BodyResolveMapCollision(
     /* Z collision */
     test_body.pos.z = body->pos.z;
 
-    if (Fang_BodyCollidesTile(&test_body, chunks))
+    if (Fang_BodyIntersects(&test_body, chunks))
     {
         result = true;
         body->jump        = false;
@@ -287,7 +276,17 @@ Fang_BodyResolveMapCollision(
     body->pos = test_body.pos;
 
     /* If we moved onto a short tile, step up onto it */
-    const float standing_surface = Fang_BodyFindStep(body, chunks);
+    float standing_surface = 0.0f;
+
+    const Fang_Tile * const tile = Fang_GetChunkTile(chunks, &body->pos);
+
+    if (tile)
+    {
+        const float tile_top = tile->offset + tile->height;
+
+        if (Fang_CanStep(body, tile_top))
+            standing_surface = tile_top;
+    }
 
     if (body->pos.z <= standing_surface)
     {
@@ -310,7 +309,7 @@ Fang_BodyResolveMapCollision(
  * bodies to land on top of other collideable bodies.
 **/
 static inline void
-Fang_BodyResolveBodyCollision(
+Fang_ResolveBodyCollision(
     Fang_Body * const a,
     Fang_Body * const b)
 {

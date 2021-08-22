@@ -13,10 +13,13 @@
 // You should have received a copy of the GNU General Public License along
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+/**
+ * A structure representing the current world loaded in the game.
+**/
 typedef struct Fang_Map {
     Fang_TextureId skybox;
     Fang_TextureId floor;
     Fang_Color     fog;
     float          fog_distance;
-    Fang_ChunkSet  chunks;
+    Fang_Chunks    chunks;
 } Fang_Map;

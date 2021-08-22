@@ -13,20 +13,31 @@
 // You should have received a copy of the GNU General Public License along
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+/**
+ * A structure representing the in-game Unix time.
+ *
+ * An accumulator is included here for use in the fixed-step update loop.
+**/
 typedef struct Fang_Clock {
     uint32_t time;
     uint32_t accumulator;
 } Fang_Clock;
 
+/**
+ * The current state of the game.
+ *
+ * While this structure holds all the necessary data for the game to run, it is
+ * not indicative of the game's "save state".
+**/
 typedef struct Fang_State {
-    Fang_Map        map;
-    Fang_TextureSet textures;
-    Fang_Ray        raycast[FANG_WINDOW_SIZE];
-    Fang_Clock      clock;
-    Fang_Camera     camera;
-    Fang_EntityId   player;
-    Fang_Interface  interface;
-    Fang_EntitySet  entities;
-    Fang_LerpVec2   sway;
-    float           bob;
+    Fang_Map       map;
+    Fang_Textures  textures;
+    Fang_Ray       raycast[FANG_WINDOW_SIZE];
+    Fang_Clock     clock;
+    Fang_Camera    camera;
+    Fang_EntityId  player;
+    Fang_Interface interface;
+    Fang_Entities  entities;
+    Fang_LerpVec2  sway;
+    float          bob;
 } Fang_State;

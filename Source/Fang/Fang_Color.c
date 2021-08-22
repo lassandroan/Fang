@@ -32,7 +32,7 @@ typedef struct Fang_Color {
  * Maps RGBA components of a Fang_Color to a 32-bit, unsigned integer.
 **/
 static inline uint32_t
-Fang_ColorToRGBA(
+Fang_MapColor(
     const Fang_Color * const color)
 {
     assert(color);
@@ -49,7 +49,7 @@ Fang_ColorToRGBA(
  * Maps a 32-bit, unsigned integer to RGBA components of a Fang_Color.
 **/
 static inline Fang_Color
-Fang_ColorFromRGBA(
+Fang_GetColor(
     uint32_t color)
 {
     Fang_Color result;
@@ -64,7 +64,7 @@ Fang_ColorFromRGBA(
  * Performs alpha blending on two colors.
 **/
 static inline Fang_Color
-Fang_ColorBlend(
+Fang_BlendColor(
     const Fang_Color * const source,
     const Fang_Color * const dest)
 {

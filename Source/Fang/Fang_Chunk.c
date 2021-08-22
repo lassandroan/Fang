@@ -18,12 +18,11 @@ typedef size_t Fang_EntityId;
 /**
  * A structure representing which entities are in a given chunk during a frame.
 **/
-typedef struct Fang_ChunkEntitySet Fang_ChunkEntitySet;
-typedef struct Fang_ChunkEntitySet
+typedef struct Fang_ChunkEntities
 {
     Fang_EntityId entities[FANG_CHUNK_ENTITY_CAPACITY];
     size_t        count;
-} Fang_ChunkEntitySet;
+} Fang_ChunkEntities;
 
 /**
  * A structure representing a logical section of the world.
@@ -37,17 +36,17 @@ typedef struct Fang_ChunkEntitySet
  * that position, allowing for varying floor textures across the game map.
 **/
 typedef struct Fang_Chunk {
-    Fang_Tile           tiles[FANG_CHUNK_SIZE][FANG_CHUNK_SIZE];
-    Fang_ChunkEntitySet entities;
-    Fang_TextureId      floor;
+    Fang_Tile          tiles[FANG_CHUNK_SIZE][FANG_CHUNK_SIZE];
+    Fang_ChunkEntities entities;
+    Fang_TextureId     floor;
 } Fang_Chunk;
 
 /**
  * A structure that holds all the available chunks of the game world.
 **/
-typedef struct Fang_ChunkSet {
+typedef struct Fang_Chunks {
     Fang_Chunk chunks[FANG_CHUNK_COUNT];
-} Fang_ChunkSet;
+} Fang_Chunks;
 
 /**
  * Returns the given chunk based on X and Y index values.
@@ -66,9 +65,9 @@ typedef struct Fang_ChunkSet {
 **/
 static const Fang_Chunk *
 Fang_GetIndexedChunk(
-    const Fang_ChunkSet * const chunks,
-    const int8_t                x_index,
-    const int8_t                y_index)
+    const Fang_Chunks * const chunks,
+    const int8_t              x_index,
+    const int8_t              y_index)
 {
     assert(chunks);
 
@@ -139,8 +138,8 @@ Fang_GetIndexedChunk(
 **/
 static inline const Fang_Chunk *
 Fang_GetChunkVec2(
-    const Fang_ChunkSet * const chunks,
-    const Fang_Vec2     * const position)
+    const Fang_Chunks * const chunks,
+    const Fang_Vec2   * const position)
 {
     assert(chunks);
     assert(position);
@@ -167,8 +166,8 @@ Fang_GetChunkVec2(
 **/
 static inline const Fang_Chunk *
 Fang_GetChunkVec3(
-    const Fang_ChunkSet * const chunks,
-    const Fang_Vec3     * const position)
+    const Fang_Chunks * const chunks,
+    const Fang_Vec3   * const position)
 {
     assert(chunks);
     assert(position);
@@ -192,8 +191,8 @@ Fang_GetChunkVec3(
 **/
 static inline const Fang_Chunk *
 Fang_GetChunkPoint(
-    const Fang_ChunkSet * const chunks,
-    const Fang_Point    * const position)
+    const Fang_Chunks * const chunks,
+    const Fang_Point  * const position)
 {
     assert(chunks);
     assert(position);
@@ -242,8 +241,8 @@ Fang_GetChunkPoint(
 **/
 static inline const Fang_Tile *
 Fang_GetChunkTileVec2(
-    const Fang_ChunkSet * const chunks,
-    const Fang_Vec2     * const position)
+    const Fang_Chunks * const chunks,
+    const Fang_Vec2   * const position)
 {
     assert(chunks);
     assert(position);
@@ -279,8 +278,8 @@ Fang_GetChunkTileVec2(
 **/
 static inline const Fang_Tile *
 Fang_GetChunkTileVec3(
-    const Fang_ChunkSet * const chunks,
-    const Fang_Vec3     * const position)
+    const Fang_Chunks * const chunks,
+    const Fang_Vec3   * const position)
 {
     assert(chunks);
     assert(position);
@@ -295,8 +294,8 @@ Fang_GetChunkTileVec3(
 **/
 static inline const Fang_Tile *
 Fang_GetChunkTilePoint(
-    const Fang_ChunkSet * const chunks,
-    const Fang_Point    * const position)
+    const Fang_Chunks * const chunks,
+    const Fang_Point  * const position)
 {
     assert(chunks);
     assert(position);

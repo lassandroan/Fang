@@ -16,7 +16,7 @@
 typedef struct Fang_FrameState {
     bool        enable_depth;
     float       current_depth;
-    Fang_Mat3x3 transform;
+    Fang_Matrix transform;
 } Fang_FrameState;
 
 /**
@@ -24,9 +24,7 @@ typedef struct Fang_FrameState {
  *
  * Framebuffers consist of two images:
  * - An RGBA color image whose result is drawn to the screen
- * - A depth buffer used internally to discard pixels
- *
- * @see Fang_FramebufferPutPixel()
+ * - A depth buffer used internally to discard fragments
 **/
 typedef struct Fang_Framebuffer
 {
@@ -36,21 +34,21 @@ typedef struct Fang_Framebuffer
 } Fang_Framebuffer;
 
 /**
- * Writes a pixel of a given color to the framebuffer.
+ * Writes a fragment of a given color to the framebuffer.
  *
- * This routine utilizes the framebuffer's depth when placing pixels. If the
+ * This routine utilizes the framebuffer's depth when placing fragments. If the
  * depth buffer is enabled, its buffer is checked to see if a value has already
  * been written in this position.
  *
  * If a value has been written *and* is lower than our supplied depth, we do not
- * write the new pixel into the color image. If a value has not been written
+ * write the new fragment into the color image. If a value has not been written
  * then the depth is written to and the color is written into the color image.
  * If the point lies outside the framebuffer bounds this function does nothing.
  *
  * The framebuffer must have a color image.
 **/
 static inline bool
-Fang_FramebufferPutPixel(
+Fang_SetFragment(
     const Fang_Framebuffer * const framebuf,
     const Fang_Point       * const point,
     const Fang_Color       * const color)
@@ -59,7 +57,7 @@ Fang_FramebufferPutPixel(
     assert(Fang_ImageValid(&framebuf->color));
     assert(framebuf->color.stride == 4);
 
-    const Fang_Point trans_point = Fang_MatMult(
+    const Fang_Point trans_point = Fang_MultMatrix(
         framebuf->state.transform, *point
     );
 
@@ -102,9 +100,9 @@ Fang_FramebufferPutPixel(
           + trans_point.x * framebuf->color.stride
         );
 
-        Fang_Color dest_color    = Fang_ColorFromRGBA(*dest);
-        Fang_Color blended_color = Fang_ColorBlend(color, &dest_color);
-        *dest = Fang_ColorToRGBA(&blended_color);
+        Fang_Color dest_color    = Fang_GetColor(*dest);
+        Fang_Color blended_color = Fang_BlendColor(color, &dest_color);
+        *dest = Fang_MapColor(&blended_color);
     }
 
     return write;
@@ -117,7 +115,7 @@ Fang_FramebufferPutPixel(
  * This is utilized for drawing fog at the end of the frame.
 **/
 static inline void
-Fang_FramebufferShadeDepth(
+Fang_ShadeFramebuffer(
           Fang_Framebuffer * const framebuf,
     const Fang_Color       * const color,
     const float                    dist)
@@ -155,8 +153,8 @@ Fang_FramebufferShadeDepth(
               + x * framebuf->color.stride
             );
 
-            Fang_Color dest_color    = Fang_ColorFromRGBA(*dest);
-            Fang_Color blended_color = Fang_ColorBlend(
+            Fang_Color dest_color    = Fang_GetColor(*dest);
+            Fang_Color blended_color = Fang_BlendColor(
                 &(Fang_Color){
                     .r = color->r,
                     .g = color->g,
@@ -166,7 +164,7 @@ Fang_FramebufferShadeDepth(
                 &dest_color
             );
 
-            *dest = Fang_ColorToRGBA(&blended_color);
+            *dest = Fang_MapColor(&blended_color);
         }
     }
 }
@@ -177,7 +175,7 @@ Fang_FramebufferShadeDepth(
  * This does not take the framebuffer's transform into account.
 **/
 static inline Fang_Rect
-Fang_FramebufferGetViewport(
+Fang_GetViewport(
     Fang_Framebuffer * const framebuf)
 {
     assert(framebuf);
@@ -200,7 +198,7 @@ Fang_FramebufferGetViewport(
  * restored later.
 **/
 static inline Fang_FrameState
-Fang_FramebufferSetViewport(
+Fang_SetViewport(
           Fang_Framebuffer * const framebuf,
     const Fang_Rect        * const viewport)
 {
@@ -212,20 +210,20 @@ Fang_FramebufferSetViewport(
     if (viewport->w == 0 || viewport->h == 0)
     {
         assert(0);
-        memset(&framebuf->state.transform, 0, sizeof(Fang_Mat3x3));
+        memset(&framebuf->state.transform, 0, sizeof(Fang_Matrix));
         return state;
     }
 
-    const Fang_Rect bounds = Fang_FramebufferGetViewport(framebuf);
+    const Fang_Rect bounds = Fang_GetViewport(framebuf);
 
-    const Fang_Mat3x3 translate = Fang_MatMult(
+    const Fang_Matrix translate = Fang_MultMatrix(
         framebuf->state.transform,
-        Fang_Mat3x3Translate(viewport->x, viewport->y)
+        Fang_TranslateMatrix(viewport->x, viewport->y)
     );
 
-    framebuf->state.transform = Fang_MatMult(
+    framebuf->state.transform = Fang_MultMatrix(
         translate,
-        Fang_Mat3x3Scale(
+        Fang_ScaleMatrix(
             (float)viewport->w / (float)bounds.w,
             (float)viewport->h / (float)bounds.h
         )

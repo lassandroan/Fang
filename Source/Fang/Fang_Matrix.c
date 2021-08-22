@@ -13,34 +13,34 @@
 // You should have received a copy of the GNU General Public License along
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-typedef struct Fang_Mat3x3 {
+typedef struct Fang_Matrix {
     float m00, m01, m02,
           m10, m11, m12,
           m20, m21, m22;
-} Fang_Mat3x3;
+} Fang_Matrix;
 
-#define Fang_MatMult(a, b) _Generic(b,   \
-        Fang_Vec3:   Fang_Mat3x3Multv3,  \
-        Fang_Point:  Fang_Mat3x3Multp,   \
-        Fang_Mat3x3: Fang_Mat3x3Mult     \
+#define Fang_MultMatrix(a, b) _Generic(b, \
+        Fang_Matrix: Fang_MultMatrices,   \
+        Fang_Vec3:   Fang_MultMatrixVec3, \
+        Fang_Point:  Fang_MultMatrixPoint \
     )(a, b)
 
-static inline Fang_Mat3x3
-Fang_Mat3x3Identity(void)
+static inline Fang_Matrix
+Fang_IdentityMatrix(void)
 {
-    return (Fang_Mat3x3){
+    return (Fang_Matrix){
         1.0f, 0.0f, 0.0f,
         0.0f, 1.0f, 0.0f,
         0.0f, 0.0f, 1.0f,
     };
 }
 
-static inline Fang_Mat3x3
-Fang_Mat3x3Mult(
-    const Fang_Mat3x3 a,
-    const Fang_Mat3x3 b)
+static inline Fang_Matrix
+Fang_MultMatrices(
+    const Fang_Matrix a,
+    const Fang_Matrix b)
 {
-    return (Fang_Mat3x3){
+    return (Fang_Matrix){
         a.m00 * b.m00 + a.m01 * b.m10 + a.m02 * b.m20,
         a.m00 * b.m01 + a.m01 * b.m11 + a.m02 * b.m21,
         a.m00 * b.m02 + a.m01 * b.m12 + a.m02 * b.m22,
@@ -56,8 +56,8 @@ Fang_Mat3x3Mult(
 }
 
 static inline Fang_Vec3
-Fang_Mat3x3Multv3(
-    const Fang_Mat3x3 a,
+Fang_MultMatrixVec3(
+    const Fang_Matrix a,
     const Fang_Vec3   b)
 {
     return (Fang_Vec3){
@@ -68,35 +68,35 @@ Fang_Mat3x3Multv3(
 }
 
 static inline Fang_Point
-Fang_Mat3x3Multp(
-    const Fang_Mat3x3 a,
+Fang_MultMatrixPoint(
+    const Fang_Matrix a,
     const Fang_Point  b)
 {
-    const Fang_Vec3 result = Fang_Mat3x3Multv3(
+    const Fang_Vec3 result = Fang_MultMatrixVec3(
         a, (Fang_Vec3){.x = b.x, .y = b.y, .z = 1.0f}
     );
 
     return (Fang_Point){.x = (int)result.x, .y = (int)result.y};
 }
 
-static inline Fang_Mat3x3
-Fang_Mat3x3Translate(
+static inline Fang_Matrix
+Fang_TranslateMatrix(
     const float x,
     const float y)
 {
-    return (Fang_Mat3x3){
+    return (Fang_Matrix){
         1.0f, 0.0f,    x,
         0.0f, 1.0f,    y,
         0.0f, 0.0f, 1.0f,
     };
 }
 
-static inline Fang_Mat3x3
-Fang_Mat3x3Scale(
+static inline Fang_Matrix
+Fang_ScaleMatrix(
     const float x,
     const float y)
 {
-    return (Fang_Mat3x3){
+    return (Fang_Matrix){
            x, 0.0f, 0.0f,
         0.0f,    y, 0.0f,
         0.0f, 0.0f, 1.0f,

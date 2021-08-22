@@ -14,21 +14,21 @@
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 static inline Fang_EntityId
-Fang_ProjectileCreate(
-          Fang_EntitySet  * const entities,
+Fang_CreateProjectile(
+          Fang_Entities   * const entities,
     const Fang_WeaponType         type,
     const Fang_EntityId           owner_id)
 {
     assert(entities);
 
-    const Fang_Entity * const owner  = Fang_EntitySetQuery(entities, owner_id);
-    const Fang_Weapon * const weapon = Fang_WeaponQuery(type);
+    const Fang_Entity * const owner  = Fang_GetEntity(entities, owner_id);
+    const Fang_Weapon * const weapon = Fang_GetWeapon(type);
 
     assert(weapon);
     assert(owner);
     assert(owner->state);
 
-    return Fang_EntitySetAdd(
+    return Fang_AddEntity(
         entities,
         &(Fang_Entity){
             .type = FANG_ENTITYTYPE_PROJECTILE,
@@ -65,7 +65,7 @@ Fang_ProjectileCreate(
 }
 
 static inline void
-Fang_ProjectileUpdate(
+Fang_UpdateProjectile(
           Fang_State  * const state,
           Fang_Entity * const projectile,
     const uint32_t            delta)
@@ -85,7 +85,7 @@ Fang_ProjectileUpdate(
 
     if (projectile->state == FANG_ENTITYSTATE_REMOVING)
     {
-        Fang_EntitySetRemove(&state->entities, projectile->id);
+        Fang_RemoveEntity(&state->entities, projectile->id);
         return;
     }
 
@@ -97,10 +97,10 @@ Fang_ProjectileUpdate(
     else
         props->lifespan -= delta;
 
-    Fang_BodySetTargetVelocity(&projectile->body, props->speed, 0.0f);
+    Fang_SetTargetVelocity(&projectile->body, props->speed, 0.0f);
 }
 
-void
+static inline void
 Fang_ProjectileCollideMap(
     Fang_Entity * const projectile)
 {
@@ -109,7 +109,7 @@ Fang_ProjectileCollideMap(
     projectile->state = FANG_ENTITYSTATE_REMOVING;
 }
 
-void
+static inline void
 Fang_ProjectileCollideEntity(
           Fang_Entity * const projectile,
           Fang_Entity * const entity,

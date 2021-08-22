@@ -13,10 +13,16 @@
 // You should have received a copy of the GNU General Public License along
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+/**
+ * An integral, 2D position in space.
+**/
 typedef struct Fang_Point {
     int x, y;
 } Fang_Point;
 
+/**
+ * An integral, 2D area in space.
+**/
 typedef struct Fang_Rect {
     int x, y, w, h;
 } Fang_Rect;
@@ -26,7 +32,7 @@ typedef struct Fang_Rect {
  * destination rectangle.
 **/
 static inline Fang_Rect
-Fang_RectClip(
+Fang_ClipRect(
     const Fang_Rect * const source,
     const Fang_Rect * const dest)
 {
@@ -64,7 +70,7 @@ Fang_RectContains(
  * Grows or shrinks a rectangle in each dimension by a given pixel amount.
 **/
 static inline Fang_Rect
-Fang_RectResize(
+Fang_ResizeRect(
     const Fang_Rect * const rect,
     const int               x,
     const int               y)

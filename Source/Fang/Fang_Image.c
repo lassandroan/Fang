@@ -45,7 +45,7 @@ Fang_ImageValid(
  * stride (bytes per pixel) and set the image pitch appropriately.
 **/
 static inline int
-Fang_ImageAlloc(
+Fang_AllocImage(
           Fang_Image * const image,
     const int                width,
     const int                height,
@@ -76,7 +76,7 @@ Fang_ImageAlloc(
  * nothing.
 **/
 static inline void
-Fang_ImageFree(
+Fang_FreeImage(
     Fang_Image * const image)
 {
     if (Fang_ImageValid(image))
@@ -95,7 +95,7 @@ Fang_ImageFree(
  * The image must have a valid pixel data pointer.
 **/
 static inline void
-Fang_ImageClear(
+Fang_ClearImage(
     Fang_Image * const image)
 {
     assert(Fang_ImageValid(image));
@@ -110,7 +110,7 @@ Fang_ImageClear(
  * to 255.
 **/
 static inline Fang_Color
-Fang_ImageQuery(
+Fang_GetPixel(
     const Fang_Image * const image,
     const Fang_Point * const point)
 {
@@ -146,5 +146,5 @@ Fang_ImageQuery(
         pixel |= 0x000000FF;
     }
 
-    return Fang_ColorFromRGBA(pixel);
+    return Fang_GetColor(pixel);
 }

@@ -13,17 +13,16 @@
 // You should have received a copy of the GNU General Public License along
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
 static inline Fang_EntityId
-Fang_PlayerCreate(
-          Fang_EntitySet  * const entities,
-    const Fang_InputId            input,
-    const Fang_Vec3               pos,
-    const Fang_Vec3               dir)
+Fang_CreatePlayer(
+          Fang_Entities * const entities,
+    const Fang_InputId          input,
+    const Fang_Vec3             pos,
+    const Fang_Vec3             dir)
 {
     assert(entities);
 
-    return Fang_EntitySetAdd(
+    return Fang_AddEntity(
         entities,
         &(Fang_Entity){
             .type = FANG_ENTITYTYPE_PLAYER,
@@ -52,8 +51,8 @@ Fang_PlayerCreate(
     );
 }
 
-void
-Fang_PlayerUpdate(
+static inline void
+Fang_UpdatePlayer(
           Fang_State  * const state,
           Fang_Entity * const player,
     const uint32_t            delta)
@@ -65,7 +64,7 @@ Fang_PlayerUpdate(
 
     if (player->state == FANG_ENTITYSTATE_REMOVING)
     {
-        Fang_EntitySetRemove(&state->entities, player->id);
+        Fang_RemoveEntity(&state->entities, player->id);
         return;
     }
 
@@ -81,14 +80,14 @@ Fang_PlayerUpdate(
     }
 }
 
-void
+static inline void
 Fang_PlayerCollideMap(
     Fang_Entity * const player)
 {
     assert(player);
 }
 
-void
+static inline void
 Fang_PlayerCollideEntity(
           Fang_Entity * const player,
           Fang_Entity * const entity,
@@ -101,18 +100,18 @@ Fang_PlayerCollideEntity(
     (void)initial_collision;
 }
 
-void
+static inline void
 Fang_PlayerFireWeapon(
-          Fang_Entity    * const player,
-          Fang_EntitySet * const entities,
-    const bool                   initial_fire)
+          Fang_Entity   * const player,
+          Fang_Entities * const entities,
+    const bool                  initial_fire)
 {
     assert(player);
     assert(player->state == FANG_ENTITYSTATE_ACTIVE);
     assert(entities);
 
           Fang_PlayerProps * const props  = &player->props.player;
-    const Fang_Weapon      * const weapon = Fang_WeaponQuery(props->weapon);
+    const Fang_Weapon      * const weapon = Fang_GetWeapon(props->weapon);
 
     if (!weapon)
         return;
@@ -132,5 +131,5 @@ Fang_PlayerFireWeapon(
 
     props->cooldown = weapon->cooldown;
 
-    Fang_ProjectileCreate(entities, props->weapon, player->id);
+    Fang_CreateProjectile(entities, props->weapon, player->id);
 }

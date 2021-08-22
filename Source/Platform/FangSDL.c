@@ -143,7 +143,7 @@ int Fang_Main(int argc, char** argv)
     bool quit = false;
     while (!quit)
     {
-        Fang_InputReset(&input);
+        Fang_ClearInput(&input);
 
         SDL_Event event;
         while (SDL_PollEvent(&event))
@@ -343,16 +343,16 @@ int Fang_Main(int argc, char** argv)
 
         {
             Fang_Framebuffer framebuf;
-            framebuf.color.width   = FANG_WINDOW_SIZE;
-            framebuf.color.height  = FANG_WINDOW_SIZE;
-            framebuf.color.stride  = SDL_BYTESPERPIXEL(SDL_PIXELFORMAT_RGBA8888);
-            framebuf.depth.width   = FANG_WINDOW_SIZE;
-            framebuf.depth.height  = FANG_WINDOW_SIZE;
-            framebuf.depth.stride  = SDL_BYTESPERPIXEL(SDL_PIXELFORMAT_RGBA8888);
+            framebuf.color.width  = FANG_WINDOW_SIZE;
+            framebuf.color.height = FANG_WINDOW_SIZE;
+            framebuf.color.stride = SDL_BYTESPERPIXEL(SDL_PIXELFORMAT_RGBA8888);
+            framebuf.depth.width  = FANG_WINDOW_SIZE;
+            framebuf.depth.height = FANG_WINDOW_SIZE;
+            framebuf.depth.stride = SDL_BYTESPERPIXEL(SDL_PIXELFORMAT_RGBA8888);
 
             framebuf.state.enable_depth  = true;
             framebuf.state.current_depth = 0.0f;
-            framebuf.state.transform     = Fang_Mat3x3Identity();
+            framebuf.state.transform     = Fang_IdentityMatrix();
 
             int error = SDL_LockTexture(
                 texture,

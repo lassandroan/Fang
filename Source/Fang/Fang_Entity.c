@@ -13,10 +13,7 @@
 // You should have received a copy of the GNU General Public License along
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-enum {
-    FANG_MAX_ENTITIES   = 256,
-    FANG_MAX_COLLISIONS = FANG_MAX_ENTITIES * 64,
-};
+typedef size_t Fang_EntityId;
 
 /**
  * The life-cycle state that the entity is in.
@@ -47,8 +44,6 @@ typedef enum Fang_EntityType {
     FANG_ENTITYTYPE_AMMO,
     FANG_ENTITYTYPE_PROJECTILE,
 } Fang_EntityType;
-
-typedef size_t Fang_EntityId;
 
 /**
  * Properties specific to health pickup entity types.
@@ -122,31 +117,31 @@ typedef struct Fang_EntityCollision {
 } Fang_EntityCollision;
 
 /**
- * A set used to hold collisions between entities for a given frame.
+ * A structure used to hold collisions between entities for a given frame.
 **/
-typedef struct Fang_EntityCollisionSet {
+typedef struct Fang_EntityCollisions {
     Fang_EntityCollision collisions[FANG_MAX_COLLISIONS];
-    size_t          count;
-} Fang_EntityCollisionSet;
+    size_t               count;
+} Fang_EntityCollisions;
 
 /**
- * A set used to hold entities and information about them.
+ * A structure used to hold entities and information about them.
  *
  * This structure holds the entity array used to manage and query entities. It
  * also maintains the collision tables for both the current and previous frame.
 **/
-typedef struct Fang_EntitySet {
-    Fang_Entity              entities[FANG_MAX_ENTITIES];
-    Fang_EntityId            last_index;
-    Fang_EntityCollisionSet  collisions;
-    Fang_EntityCollisionSet  last_collisions;
-} Fang_EntitySet;
+typedef struct Fang_Entities {
+    Fang_Entity            entities[FANG_MAX_ENTITIES];
+    Fang_EntityId          last_index;
+    Fang_EntityCollisions  collisions;
+    Fang_EntityCollisions  last_collisions;
+} Fang_Entities;
 
 /**
  * Returns the relevant texture for the entity's entity type.
 **/
 static inline Fang_TextureId
-Fang_EntityQueryTexture(
+Fang_GetEntityTexture(
     const Fang_Entity * const entity)
 {
     assert(entity);
@@ -170,9 +165,9 @@ Fang_EntityQueryTexture(
  * a null pointer.
 **/
 static inline Fang_Entity *
-Fang_EntitySetQuery(
-          Fang_EntitySet * const entities,
-    const Fang_EntityId          entity_id)
+Fang_GetEntity(
+          Fang_Entities * const entities,
+    const Fang_EntityId         entity_id)
 {
     assert(entities);
     assert(entity_id < FANG_MAX_ENTITIES);
@@ -197,9 +192,9 @@ Fang_EntitySetQuery(
  * exceeds the maximum this function will do nothing.
 **/
 static inline Fang_EntityId
-Fang_EntitySetAdd(
-          Fang_EntitySet * const entities,
-    const Fang_Entity    * const initial)
+Fang_AddEntity(
+          Fang_Entities * const entities,
+    const Fang_Entity   * const initial)
 {
     assert(entities);
     assert(entities->last_index < FANG_MAX_ENTITIES);
@@ -216,7 +211,7 @@ Fang_EntitySetAdd(
     }
 
     const bool last_index_valid = result < FANG_MAX_ENTITIES - 1;
-    const bool last_index_open  = !Fang_EntitySetQuery(
+    const bool last_index_open  = !Fang_GetEntity(
         entities, entities->last_index + 1
     );
 
@@ -232,7 +227,7 @@ Fang_EntitySetAdd(
             if (i == result)
                 continue;
 
-            if (!Fang_EntitySetQuery(entities, i))
+            if (!Fang_GetEntity(entities, i))
             {
                 entities->last_index = i;
                 break;
@@ -254,9 +249,9 @@ Fang_EntitySetAdd(
  * a set maximum number of entities.
 **/
 static inline void
-Fang_EntitySetRemove(
-          Fang_EntitySet * const entities,
-    const Fang_EntityId          entity_id)
+Fang_RemoveEntity(
+          Fang_Entities * const entities,
+    const Fang_EntityId         entity_id)
 {
     assert(entities);
     assert(entity_id < FANG_MAX_ENTITIES);
@@ -270,9 +265,9 @@ Fang_EntitySetRemove(
  * collision has not already been recorded.
 **/
 static inline void
-Fang_EntityCollisionSetAdd(
-          Fang_EntityCollisionSet * const collisions,
-    const Fang_EntityCollision                 pair)
+Fang_AddEntityCollision(
+          Fang_EntityCollisions * const collisions,
+    const Fang_EntityCollision          pair)
 {
     assert(collisions);
     assert(pair.first != pair.second);
