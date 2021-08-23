@@ -36,6 +36,9 @@
 #include "Fang_TGA.c"
 #include "Fang_Framebuffer.c"
 #include "Fang_Texture.c"
+#include "Fang_Audio.c"
+#include "Fang_WAV.c"
+#include "Fang_Sound.c"
 #include "Fang_Tile.c"
 #include "Fang_Chunk.c"
 #include "Fang_Map.c"
@@ -54,9 +57,21 @@
 
 Fang_State gamestate;
 
-static inline void
+typedef struct Fang_InitResult {
+    Fang_Sounds * sounds;
+} Fang_InitResult;
+
+static inline Fang_InitResult
 Fang_Init(void)
 {
+    Fang_LoadAudios(&gamestate.sounds.audios);
+
+    gamestate.sounds.musics.current.audio = FANG_AUDIO_NONE;
+    gamestate.sounds.musics.next.audio = FANG_AUDIO_NONE;
+
+    for (Fang_SoundId i = 0; i < FANG_MAX_SOUNDS; ++i)
+        Fang_GetSound(&gamestate.sounds, i)->audio = FANG_AUDIO_NONE;
+
     Fang_AllocImage(
         &gamestate.framebuffer.color,
         FANG_WINDOW_SIZE,
@@ -175,6 +190,10 @@ Fang_Init(void)
     gamestate.map.floor        = FANG_TEXTURE_FLOOR;
     gamestate.map.fog          = FANG_BLACK;
     gamestate.map.fog_distance = FANG_CHUNK_SIZE * 2.0f;
+
+    return (Fang_InitResult){
+        .sounds = &gamestate.sounds,
+    };
 }
 
 static inline const Fang_Image *
@@ -211,13 +230,28 @@ Fang_Update(
             left -= FANG_RUN_SPEED;
 
         if (Fang_InputPressed(&input->controller.action_down))
+        {
+            Fang_QueueSound(
+                &gamestate.sounds,
+                &(Fang_Sound){
+                    .audio = FANG_AUDIO_RISSET,
+                    .type  = FANG_SOUNDTYPE_POSITIONAL,
+                    .world_position = {
+                        .x = 8.0f,
+                        .y = 8.0f,
+                    },
+                }
+            );
+
             up = FANG_JUMP_SPEED;
+        }
 
         if (input->mouse.left.pressed)
         {
             Fang_PlayerFireWeapon(
                 player,
                 &gamestate.entities,
+                &gamestate.sounds,
                 Fang_InputPressed(&input->mouse.left)
             );
         }
@@ -409,7 +443,7 @@ Fang_Update(
                 {
                     assert(entity->type == FANG_ENTITYTYPE_PLAYER);
 
-                    printf("Other entities in your chunk:\n");
+                    // printf("Other entities in your chunk:\n");
                 }
 
                 for (size_t j = 0; j < chunk->entities.count; ++j)
@@ -435,7 +469,7 @@ Fang_Update(
                             case FANG_ENTITYTYPE_HEALTH:     name = "Health"; break;
                         }
 
-                        printf("\t%zu - %s\n", other->id, name);
+                        // printf("\t%zu - %s\n", other->id, name);
                     }
 
                     if (Fang_BodiesIntersect(&entity->body, &other->body))
@@ -812,6 +846,19 @@ Fang_Update(
         }
     );
 
+    if (player)
+    {
+        gamestate.sounds.listener.position = (Fang_Vec2){
+            .x = player->body.pos.x,
+            .y = player->body.pos.y,
+        };
+
+        gamestate.sounds.listener.direction = (Fang_Vec2){
+            .x = player->body.dir.x,
+            .y = player->body.dir.y,
+        };
+    }
+
     return &gamestate.framebuffer.color;
 }
 
@@ -819,6 +866,7 @@ static inline void
 Fang_Quit(void)
 {
     Fang_FreeTextures(&gamestate.textures);
+    Fang_FreeAudios(&gamestate.sounds.audios);
     Fang_FreeImage(&gamestate.framebuffer.color);
     Fang_FreeImage(&gamestate.framebuffer.depth);
 }

@@ -104,11 +104,13 @@ static inline void
 Fang_PlayerFireWeapon(
           Fang_Entity   * const player,
           Fang_Entities * const entities,
+          Fang_Sounds   * const sounds,
     const bool                  initial_fire)
 {
     assert(player);
     assert(player->state == FANG_ENTITYSTATE_ACTIVE);
     assert(entities);
+    assert(sounds);
 
           Fang_PlayerProps * const props  = &player->props.player;
     const Fang_Weapon      * const weapon = Fang_GetWeapon(props->weapon);
@@ -130,6 +132,14 @@ Fang_PlayerFireWeapon(
     (*inventory)--;
 
     props->cooldown = weapon->cooldown;
+
+    Fang_QueueSound(
+        sounds,
+        &(Fang_Sound){
+            .audio = FANG_AUDIO_TONE,
+            .type = FANG_SOUNDTYPE_GLOBAL,
+        }
+    );
 
     Fang_CreateProjectile(entities, props->weapon, player->id);
 }

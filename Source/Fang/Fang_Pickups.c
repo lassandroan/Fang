@@ -56,6 +56,18 @@ Fang_UpdateAmmo(
 
     if (ammo->state == FANG_ENTITYSTATE_REMOVING)
     {
+        Fang_QueueSound(
+            &state->sounds,
+            &(Fang_Sound){
+                .audio    = FANG_AUDIO_DTMF,
+                .type     = FANG_SOUNDTYPE_POSITIONAL,
+                .world_position = {
+                    .x = ammo->body.pos.x,
+                    .y = ammo->body.pos.y,
+                },
+            }
+        );
+
         Fang_RemoveEntity(&state->entities, ammo->id);
         return;
     }

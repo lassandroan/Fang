@@ -42,10 +42,33 @@ typedef enum Fang_FileError {
  * directory, etc.) and then read the file at that location.
 **/
 FANG_PLATFORM_CALL
-Fang_FileError Fang_LoadFile(const char * /* filename */, Fang_File *);
+Fang_FileError Fang_LoadFile(const char*, Fang_File*);
 
 /**
  * Frees a game file that was allocated via Fang_LoadFile().
 **/
 FANG_PLATFORM_CALL
-void Fang_FreeFile(Fang_File *);
+void Fang_FreeFile(Fang_File*);
+
+/**
+ * Casts a data pointer to a given type to assign the value to a given target.
+ *
+ * This is utilized as a `memcpy(...); data += ...;` shorthand in the WAV and
+ * TGA parsing functions.
+**/
+#define Fang_parse(data, target, type) \
+    target = *(type*)(data); data += sizeof(type);
+
+/**
+ * Checks for equivalence between a 4-byte identifier and a given string.
+ *
+ * This is utilized as a strncmp() shorthand in the WAV parsing function.
+**/
+static inline bool
+Fang_idcmp(
+    const uint32_t         id,
+    const char     * const expected)
+{
+    assert(strlen(expected) == 4);
+    return strncmp((char*)&id, expected, 4) == 0;
+}

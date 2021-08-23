@@ -29,6 +29,8 @@ Fang_ParseTGA(
 {
     assert(file);
 
+    Fang_Image result = {.pixels = NULL};
+
     const uint8_t * data = file->data;
 
     enum {
@@ -67,20 +69,18 @@ Fang_ParseTGA(
         uint8_t  descriptor;
     } header;
 
-    memcpy(&header.id_len,       data, sizeof( uint8_t)); data += sizeof( uint8_t);
-    memcpy(&header.map_included, data, sizeof( uint8_t)); data += sizeof( uint8_t);
-    memcpy(&header.image_type,   data, sizeof( uint8_t)); data += sizeof( uint8_t);
-    memcpy(&header.map_origin,   data, sizeof(uint16_t)); data += sizeof(uint16_t);
-    memcpy(&header.map_length,   data, sizeof(uint16_t)); data += sizeof(uint16_t);
-    memcpy(&header.map_depth,    data, sizeof( uint8_t)); data += sizeof( uint8_t);
-    memcpy(&header.x,            data, sizeof(uint16_t)); data += sizeof(uint16_t);
-    memcpy(&header.y,            data, sizeof(uint16_t)); data += sizeof(uint16_t);
-    memcpy(&header.width,        data, sizeof(uint16_t)); data += sizeof(uint16_t);
-    memcpy(&header.height,       data, sizeof(uint16_t)); data += sizeof(uint16_t);
-    memcpy(&header.depth,        data, sizeof( uint8_t)); data += sizeof( uint8_t);
-    memcpy(&header.descriptor,   data, sizeof( uint8_t)); data += sizeof( uint8_t);
-
-    Fang_Image result = {.pixels = NULL};
+    Fang_parse(data, header.id_len,       uint8_t);
+    Fang_parse(data, header.map_included, uint8_t);
+    Fang_parse(data, header.image_type,   uint8_t);
+    Fang_parse(data, header.map_origin,   uint16_t);
+    Fang_parse(data, header.map_length,   uint16_t);
+    Fang_parse(data, header.map_depth,    uint8_t);
+    Fang_parse(data, header.x,            uint16_t);
+    Fang_parse(data, header.y,            uint16_t);
+    Fang_parse(data, header.width,        uint16_t);
+    Fang_parse(data, header.height,       uint16_t);
+    Fang_parse(data, header.depth,        uint8_t);
+    Fang_parse(data, header.descriptor,   uint8_t);
 
     bool bw  = false,
          rle = false;
@@ -238,9 +238,11 @@ static inline Fang_Image
 Fang_LoadTGA(
     const char * const filepath)
 {
-    Fang_Image result = {.pixels = NULL};
+    assert(filepath);
 
-    Fang_File file = {.data = NULL};
+    Fang_Image result = {.pixels = NULL};
+    Fang_File  file   = {.data = NULL};
+
     if (Fang_LoadFile(filepath, &file) != 0)
         return result;
 

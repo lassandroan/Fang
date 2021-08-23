@@ -35,6 +35,7 @@ Fang_ImageValid(
      && image->height
      && image->stride
      && image->pitch
+     && image->pitch == image->stride * image->width
     );
 }
 
@@ -79,7 +80,7 @@ static inline void
 Fang_FreeImage(
     Fang_Image * const image)
 {
-    if (Fang_ImageValid(image))
+    if (image->pixels)
     {
         free(image->pixels);
         memset(image, 0, sizeof(Fang_Image));

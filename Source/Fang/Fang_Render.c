@@ -363,8 +363,7 @@ Fang_DrawMapSkybox(
     const int pitch = (int)roundf(camera->dir.z * viewport.h);
 
     const float angle = Fang_Vec2Angle(
-        *(Fang_Vec2*)(&camera->dir),
-        (Fang_Vec2){.x = 0.0f, .y = -1.0f}
+        (Fang_Vec2){.x = camera->dir.x, .y = camera->dir.y}
     );
 
     const float ratio = (angle / ((float)M_PI / 2.0f)) * 2.0f;

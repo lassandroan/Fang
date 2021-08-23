@@ -62,7 +62,6 @@ Fang_FreeTexture(
 {
     assert(textures);
     assert(id < FANG_NUM_TEXTURES);
-    assert(Fang_ImageValid(&textures->textures[id]));
 
     Fang_FreeImage(&textures->textures[id]);
 }
@@ -102,23 +101,23 @@ Fang_LoadTexture(
 
     static const Info texture_info[FANG_NUM_TEXTURES] = {
         /* Map Textures */
-        [FANG_TEXTURE_SKYBOX] = (Info){
+        [FANG_TEXTURE_SKYBOX] = {
             .path = "Textures/Skybox.tga",
             .type = OTHER_TEXTURE,
         },
 
-        [FANG_TEXTURE_FLOOR] = (Info){
+        [FANG_TEXTURE_FLOOR] = {
             .path = "Textures/Floor.tga",
             .type = OTHER_TEXTURE,
         },
 
-        [FANG_TEXTURE_TILE] = (Info){
+        [FANG_TEXTURE_TILE] = {
             .path = "Textures/Tile.tga",
             .type = TILE_TEXTURE,
         },
 
         /* Fonts */
-        [FANG_TEXTURE_FORMULA] = (Info){
+        [FANG_TEXTURE_FORMULA] = {
             .path = "Fonts/Formula.tga",
             .type = FONT_TEXTURE,
         },
@@ -181,10 +180,13 @@ Fang_LoadTexture(
 
         if (info.path)
         {
-            *result = Fang_LoadTGA(texture_info[id].path);
+            *result = Fang_LoadTGA(info.path);
 
             if (!Fang_ImageValid(result))
+            {
+                Fang_FreeImage(result);
                 return 1;
+            }
         }
     }
 
@@ -237,8 +239,7 @@ Fang_FreeTextures(
     assert(textures);
 
     for (Fang_TextureId i = 0; i < FANG_NUM_TEXTURES; ++i)
-        if (textures->textures[i].pixels)
-            Fang_FreeTexture(textures, i);
+        Fang_FreeTexture(textures, i);
 }
 
 /**

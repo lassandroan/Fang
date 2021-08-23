@@ -19,6 +19,7 @@
 
 #include "FangSDL_File.c"
 #include "FangSDL_Input.c"
+#include "FangSDL_Audio.c"
 
 Fang_Input           input;
 SDL_GameController * controller;
@@ -39,7 +40,7 @@ int Fang_Main(int argc, char** argv)
         );
     }
 
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER))
+    if (SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER))
         goto Error_SDL;
 
     SDL_Window * const window = SDL_CreateWindow(
@@ -83,7 +84,11 @@ int Fang_Main(int argc, char** argv)
     SDL_RaiseWindow(window);
 
     FangSDL_InitInput(&input, &controller);
-    Fang_Init();
+
+    {
+        const Fang_InitResult init = Fang_Init();
+        FangSDL_ConnectAudio(init.sounds);
+    }
 
     while (!SDL_QuitRequested())
     {
@@ -112,6 +117,8 @@ Error_Renderer:
 
 Error_Window:
     SDL_DestroyWindow(window);
+
+    FangSDL_DisconnectAudio();
 
 Error_SDL:
     puts(SDL_GetError());
