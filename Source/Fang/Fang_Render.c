@@ -367,7 +367,7 @@ Fang_DrawMapSkybox(
         (Fang_Vec2){.x = 0.0f, .y = -1.0f}
     );
 
-    const float ratio = -(angle / ((float)M_PI / 2.0f)) * 2.0f;
+    const float ratio = (angle / ((float)M_PI / 2.0f)) * 2.0f;
 
     const Fang_Rect dest = {
         .x = (int)(viewport.w * ratio),
