@@ -92,19 +92,11 @@ Fang_Vec2Dot(
 }
 
 static inline float
-Fang_Vec2Determ(
+Fang_Vec2Cross(
     const Fang_Vec2 a,
     const Fang_Vec2 b)
 {
     return (a.x * b.y) - (a.y * b.x);
-}
-
-static inline float
-Fang_Vec2Angle(
-    const Fang_Vec2 a,
-    const Fang_Vec2 b)
-{
-    return atan2f(Fang_Vec2Dot(a, b), Fang_Vec2Determ(a, b));
 }
 
 static inline float
@@ -133,4 +125,12 @@ Fang_Vec3Normalize(
     const Fang_Vec3 a)
 {
     return Fang_Vec3Divf(a, Fang_Vec3Norm(a));
+}
+
+static inline float
+Fang_Vec2Angle(
+    const Fang_Vec2 a,
+    const Fang_Vec2 b)
+{
+    return atan2f(Fang_Vec2Cross(a, b), Fang_Vec2Dot(a, b));
 }
