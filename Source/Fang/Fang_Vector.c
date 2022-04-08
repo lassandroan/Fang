@@ -35,6 +35,14 @@ Fang_Vec2Add(
     return (Fang_Vec2){.x = a.x + b.x, .y = a.y + b.y};
 }
 
+static inline Fang_Vec2
+Fang_Vec2Sub(
+    const Fang_Vec2 a,
+    const Fang_Vec2 b)
+{
+    return (Fang_Vec2){.x = a.x - b.x, .y = a.y - b.y};
+}
+
 static inline Fang_Vec3
 Fang_Vec3Add(
     const Fang_Vec3 a,
@@ -129,8 +137,9 @@ Fang_Vec3Normalize(
 
 static inline float
 Fang_Vec2Angle(
-    const Fang_Vec2 a,
-    const Fang_Vec2 b)
+    const Fang_Vec2 a)
 {
-    return atan2f(Fang_Vec2Cross(a, b), Fang_Vec2Dot(a, b));
+    const Fang_Vec2 up = {.y = -1.0f};
+
+    return atan2f(Fang_Vec2Cross(a, up), Fang_Vec2Dot(a, up));
 }

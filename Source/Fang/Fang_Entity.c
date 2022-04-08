@@ -132,7 +132,7 @@ typedef struct Fang_EntityCollisions {
 **/
 typedef struct Fang_Entities {
     Fang_Entity            entities[FANG_MAX_ENTITIES];
-    Fang_EntityId          last_index;
+    Fang_EntityId          last_out;
     Fang_EntityCollisions  collisions;
     Fang_EntityCollisions  last_collisions;
 } Fang_Entities;
@@ -172,7 +172,7 @@ Fang_GetEntity(
     assert(entities);
     assert(entity_id < FANG_MAX_ENTITIES);
 
-    Fang_Entity * result = &entities->entities[entity_id];
+    Fang_Entity * const result = &entities->entities[entity_id];
 
     if (!result->state)
         return NULL;
@@ -197,9 +197,9 @@ Fang_AddEntity(
     const Fang_Entity   * const initial)
 {
     assert(entities);
-    assert(entities->last_index < FANG_MAX_ENTITIES);
+    assert(entities->last_out < FANG_MAX_ENTITIES);
 
-    const Fang_EntityId result = entities->last_index;
+    const Fang_EntityId result = entities->last_out;
 
     {
         Fang_Entity * const entity = &entities->entities[result];
@@ -210,15 +210,15 @@ Fang_AddEntity(
         entity->state = FANG_ENTITYSTATE_CREATING;
     }
 
-    const bool last_index_valid = result < FANG_MAX_ENTITIES - 1;
-    const bool last_index_open  = !Fang_GetEntity(
-        entities, entities->last_index + 1
+    const bool last_out_valid = result < FANG_MAX_ENTITIES - 1;
+    const bool last_out_open  = !Fang_GetEntity(
+        entities, entities->last_out + 1
     );
 
     // Attempt to grab the next array index, otherwise find the first available
-    if (last_index_valid && last_index_open)
+    if (last_out_valid && last_out_open)
     {
-        entities->last_index++;
+        entities->last_out++;
     }
     else
     {
@@ -229,14 +229,14 @@ Fang_AddEntity(
 
             if (!Fang_GetEntity(entities, i))
             {
-                entities->last_index = i;
+                entities->last_out = i;
                 break;
             }
         }
     }
 
     // The entity limit has been reached!
-    assert(entities->last_index != result);
+    assert(entities->last_out != result);
 
     return result;
 }
@@ -257,7 +257,7 @@ Fang_RemoveEntity(
     assert(entity_id < FANG_MAX_ENTITIES);
 
     memset(&entities->entities[entity_id], 0, sizeof(Fang_Entity));
-    entities->last_index = entity_id;
+    entities->last_out = entity_id;
 }
 
 /**

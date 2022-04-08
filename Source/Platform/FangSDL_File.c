@@ -31,7 +31,7 @@ FangSDL_GetResourcePath(
     return full_path;
 }
 
-Fang_FileError
+FANG_PLATFORM_CALL Fang_FileError
 Fang_LoadFile(
     const char      * const filename,
           Fang_File * const result)

@@ -27,6 +27,8 @@ enum {
     FANG_CHUNK_MIN = -(1 << 6),
 };
 
+static const float FANG_MUSIC_FADE = 8.0f;
+
 static const float FANG_GRAVITY        = 9.834f;
 static const float FANG_RUN_SPEED      = 8.33f; // 30 km/h ~= 8.33 m/s
 static const float FANG_JUMP_SPEED     = 3.0f;
@@ -62,4 +64,8 @@ enum {
 enum {
     FANG_MAX_ENTITIES   = 256,
     FANG_MAX_COLLISIONS = FANG_MAX_ENTITIES * 64,
+};
+
+enum {
+    FANG_MAX_SOUNDS = 256,
 };

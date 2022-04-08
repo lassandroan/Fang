@@ -41,4 +41,6 @@ typedef struct Fang_State {
     Fang_Entities    entities;
     Fang_LerpVec2    sway;
     float            bob;
+    Fang_Audios      audios;
+    Fang_Sounds      sounds;
 } Fang_State;
