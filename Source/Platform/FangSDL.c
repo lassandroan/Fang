@@ -18,41 +18,10 @@
 #include <SDL2/SDL.h>
 
 #include "FangSDL_File.c"
+#include "FangSDL_Input.c"
 
-static inline void
-FangSDL_ConnectController(
-    SDL_GameController ** const controller)
-{
-    SDL_assert(controller);
-
-    if (*controller && SDL_GameControllerGetAttached(*controller))
-        SDL_GameControllerClose(*controller);
-
-    const int id = SDL_NumJoysticks() - 1;
-
-    if (id < 0)
-        return;
-
-    if (!SDL_IsGameController(id))
-        return;
-
-    *controller = SDL_GameControllerOpen(id);
-}
-
-static inline void
-FangSDL_DisconnectController(
-    SDL_GameController ** const controller)
-{
-    SDL_assert(controller);
-
-    if (!*controller)
-        return;
-
-    if (SDL_GameControllerGetAttached(*controller))
-        SDL_GameControllerClose(*controller);
-
-    *controller = NULL;
-}
+Fang_Input           input;
+SDL_GameController * controller;
 
 int Fang_Main(int argc, char** argv)
 {
@@ -72,8 +41,6 @@ int Fang_Main(int argc, char** argv)
 
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER))
         goto Error_SDL;
-
-    SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
 
     SDL_Window * const window = SDL_CreateWindow(
         FANG_TITLE,
@@ -110,222 +77,17 @@ int Fang_Main(int argc, char** argv)
     if (!target)
         goto Error_Texture;
 
-    SDL_GameController * controller = NULL;
-    FangSDL_ConnectController(&controller);
-
     SDL_RenderSetIntegerScale(renderer, true);
     SDL_RenderSetLogicalSize(renderer, FANG_WINDOW_SIZE, FANG_WINDOW_SIZE);
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
-
-    SDL_JoystickEventState(SDL_ENABLE);
-    SDL_GameControllerEventState(SDL_ENABLE);
-
-    SDL_SetRelativeMouseMode(1);
-
     SDL_RaiseWindow(window);
 
-    Fang_Input input;
-    SDL_memset(&input, 0, sizeof(Fang_Input));
-
+    FangSDL_InitInput(&input, &controller);
     Fang_Init();
 
-    bool quit = false;
-    while (!quit)
+    while (!SDL_QuitRequested())
     {
-        Fang_ClearInput(&input);
-
-        SDL_Event event;
-        while (SDL_PollEvent(&event))
-        {
-            switch (event.type)
-            {
-                case SDL_QUIT:
-                {
-                    quit = true;
-                    break;
-                }
-
-                case SDL_JOYDEVICEADDED:
-                {
-                    FangSDL_ConnectController(&controller);
-                    break;
-                }
-
-                case SDL_JOYDEVICEREMOVED:
-                {
-                    FangSDL_DisconnectController(&controller);
-                    break;
-                }
-
-                case SDL_CONTROLLERAXISMOTION:
-                {
-                    const float min_axis = (float)INT16_MIN;
-                    const float max_axis = (float)INT16_MAX;
-
-                    float axis = (event.caxis.value - min_axis)
-                               / (max_axis - min_axis);
-
-                    axis = 2.0f * axis - 1.0f;
-
-                    if (fabsf(axis) <= 0.1f)
-                        axis = 0.0f;
-
-                    const SDL_GameControllerAxis type = event.caxis.axis;
-                    if (type == SDL_CONTROLLER_AXIS_LEFTX)
-                        input.controller.joystick_left.x = axis;
-                    else if (type == SDL_CONTROLLER_AXIS_LEFTY)
-                        input.controller.joystick_left.y = axis;
-                    else if (type == SDL_CONTROLLER_AXIS_RIGHTX)
-                        input.controller.joystick_right.x = axis;
-                    else if (type == SDL_CONTROLLER_AXIS_RIGHTY)
-                        input.controller.joystick_right.y = axis;
-                    else if (type == SDL_CONTROLLER_AXIS_TRIGGERLEFT)
-                        input.controller.trigger_left = axis;
-                    else if (type == SDL_CONTROLLER_AXIS_TRIGGERRIGHT)
-                        input.controller.trigger_right = axis;
-
-                    break;
-                }
-
-                case SDL_CONTROLLERBUTTONDOWN:
-                case SDL_CONTROLLERBUTTONUP:
-                {
-                    Fang_InputButton * button = NULL;
-
-                    const SDL_GameControllerButton type = event.cbutton.button;
-                    if (type == SDL_CONTROLLER_BUTTON_START)
-                        button = &input.controller.start;
-                    else if (type == SDL_CONTROLLER_BUTTON_BACK)
-                        button = &input.controller.back;
-                    else if (type == SDL_CONTROLLER_BUTTON_LEFTSTICK)
-                        button = &input.controller.joystick_left.button;
-                    else if (type == SDL_CONTROLLER_BUTTON_RIGHTSTICK)
-                        button = &input.controller.joystick_right.button;
-                    else if (type == SDL_CONTROLLER_BUTTON_DPAD_UP)
-                        button = &input.controller.direction_up;
-                    else if (type == SDL_CONTROLLER_BUTTON_DPAD_DOWN)
-                        button = &input.controller.direction_down;
-                    else if (type == SDL_CONTROLLER_BUTTON_DPAD_LEFT)
-                        button = &input.controller.direction_left;
-                    else if (type == SDL_CONTROLLER_BUTTON_DPAD_RIGHT)
-                        button = &input.controller.direction_right;
-                    else if (type == SDL_CONTROLLER_BUTTON_Y)
-                        button = &input.controller.action_up;
-                    else if (type == SDL_CONTROLLER_BUTTON_A)
-                        button = &input.controller.action_down;
-                    else if (type == SDL_CONTROLLER_BUTTON_X)
-                        button = &input.controller.action_left;
-                    else if (type == SDL_CONTROLLER_BUTTON_B)
-                        button = &input.controller.action_right;
-                    else if (type == SDL_CONTROLLER_BUTTON_LEFTSHOULDER)
-                        button = &input.controller.shoulder_left;
-                    else if (type == SDL_CONTROLLER_BUTTON_RIGHTSHOULDER)
-                        button = &input.controller.shoulder_right;
-
-                    if (button)
-                    {
-                        button->transitions++;
-                        button->pressed = (event.cbutton.state == SDL_PRESSED);
-                    }
-
-                    break;
-                }
-
-                case SDL_MOUSEMOTION:
-                {
-                    input.mouse.position.x = event.motion.x;
-                    input.mouse.position.y = event.motion.y;
-                    input.mouse.relative.x = event.motion.xrel;
-                    input.mouse.relative.y = event.motion.yrel;
-                    break;
-                }
-
-                case SDL_MOUSEBUTTONDOWN:
-                case SDL_MOUSEBUTTONUP:
-                {
-                    Fang_InputButton * button = NULL;
-
-                    const uint8_t type = event.button.button;
-                    if (type == SDL_BUTTON_LEFT)
-                        button = &input.mouse.left;
-                    else if (type == SDL_BUTTON_MIDDLE)
-                        button = &input.mouse.middle;
-                    else if (type == SDL_BUTTON_RIGHT)
-                        button = &input.mouse.right;
-
-                    if (button)
-                    {
-                        button->transitions++;
-                        button->pressed = (event.button.state == SDL_PRESSED);
-                    }
-
-                    input.mouse.position.x = event.button.x;
-                    input.mouse.position.y = event.button.y;
-                    break;
-                }
-
-                case SDL_KEYDOWN:
-                case SDL_KEYUP:
-                {
-                    if (event.key.repeat)
-                        break;
-
-                    Fang_InputButton * button = NULL;
-
-                    SDL_Keycode sym = event.key.keysym.sym;
-                    if (sym == SDLK_w)
-                        button = &input.controller.direction_up;
-                    else if (sym == SDLK_s)
-                        button = &input.controller.direction_down;
-                    else if (sym == SDLK_a)
-                        button = &input.controller.direction_left;
-                    else if (sym == SDLK_d)
-                        button = &input.controller.direction_right;
-                    else if (sym == SDLK_q)
-                        button = &input.controller.shoulder_left;
-                    else if (sym == SDLK_e)
-                        button = &input.controller.shoulder_right;
-                    else if (sym == SDLK_SPACE)
-                        button = &input.controller.action_down;
-                    else if (sym == SDLK_LSHIFT)
-                        button = &input.controller.joystick_left.button;
-
-                    if (button)
-                    {
-                        button->transitions++;
-                        button->pressed = (event.key.state == SDL_PRESSED);
-                    }
-
-                    break;
-                }
-
-                case SDL_TEXTINPUT:
-                {
-                    input.text.mode = FANG_INPUTTEXT_TYPING;
-                    input.text.cursor = 0;
-                    input.text.length = 0;
-                    SDL_memcpy(
-                        input.text.text,
-                        event.text.text,
-                        sizeof(char[32])
-                    );
-                    break;
-                }
-
-                case SDL_TEXTEDITING:
-                {
-                    input.text.mode = FANG_INPUTTEXT_EDITING;
-                    input.text.cursor = event.edit.start;
-                    input.text.length = event.edit.length;
-                    SDL_memcpy(
-                        input.text.text,
-                        event.edit.text,
-                        sizeof(char[32])
-                    );
-                    break;
-                }
-            }
-        }
+        FangSDL_PollEvents(&input, &controller);
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
