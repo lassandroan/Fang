@@ -405,13 +405,6 @@ Fang_Update(
                     &gamestate.map.chunks, &entity->body.pos
                 );
 
-                if (i == 0)
-                {
-                    assert(entity->type == FANG_ENTITYTYPE_PLAYER);
-
-                    printf("Other entities in your chunk:\n");
-                }
-
                 for (size_t j = 0; j < chunk->entities.count; ++j)
                 {
                     if (chunk->entities.entities[j] == entity->id)
@@ -423,20 +416,6 @@ Fang_Update(
 
                     if (!other)
                         continue;
-
-                    if (i == 0)
-                    {
-                        const char * name;
-                        switch (other->type)
-                        {
-                            case FANG_ENTITYTYPE_PLAYER:     name = "Player"; break;
-                            case FANG_ENTITYTYPE_PROJECTILE: name = "Projectile"; break;
-                            case FANG_ENTITYTYPE_AMMO:       name = "Ammo"; break;
-                            case FANG_ENTITYTYPE_HEALTH:     name = "Health"; break;
-                        }
-
-                        printf("\t%zu - %s\n", other->id, name);
-                    }
 
                     if (Fang_BodiesIntersect(&entity->body, &other->body))
                     {

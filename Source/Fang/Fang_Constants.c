@@ -22,7 +22,7 @@ static const float FANG_PROJECTION_RATIO = 1.0f / (1.0f / 2.0f);
 enum {
     FANG_CHUNK_SIZE  = 16,
     FANG_CHUNK_COUNT = 1 << 12,
-    FANG_CHUNK_ENTITY_CAPACITY = 16,
+    FANG_CHUNK_ENTITY_CAPACITY = 128,
     FANG_CHUNK_MAX =  (1 << 6) - 1,
     FANG_CHUNK_MIN = -(1 << 6),
 };
