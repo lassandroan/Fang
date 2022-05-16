@@ -72,9 +72,9 @@ Fang_GetIndexedChunk(
     assert(chunks);
 
     assert(x_index >= FANG_CHUNK_MIN);
-    assert(x_index <= FANG_CHUNK_MAX - 1);
+    assert(x_index <= FANG_CHUNK_MAX);
     assert(y_index >= FANG_CHUNK_MIN);
-    assert(y_index <= FANG_CHUNK_MAX - 1);
+    assert(y_index <= FANG_CHUNK_MAX);
 
     static uint64_t lookup[1 << 3] = {
         [0] = 0b000000,
@@ -144,9 +144,9 @@ Fang_GetChunkVec2(
     assert(chunks);
     assert(position);
     assert(position->x >= FANG_CHUNK_SIZE * FANG_CHUNK_MIN);
-    assert(position->x <= FANG_CHUNK_SIZE * FANG_CHUNK_MAX - 1);
+    assert(position->x <= FANG_CHUNK_SIZE * FANG_CHUNK_MAX);
     assert(position->y >= FANG_CHUNK_SIZE * FANG_CHUNK_MIN);
-    assert(position->y <= FANG_CHUNK_SIZE * FANG_CHUNK_MAX - 1);
+    assert(position->y <= FANG_CHUNK_SIZE * FANG_CHUNK_MAX);
 
     const int8_t x_offset = (position->x < 0.0f) ? -1 : 0;
     const int8_t y_offset = (position->y < 0.0f) ? -1 : 0;
@@ -172,9 +172,9 @@ Fang_GetChunkVec3(
     assert(chunks);
     assert(position);
     assert(position->x >= FANG_CHUNK_SIZE * FANG_CHUNK_MIN);
-    assert(position->x <= FANG_CHUNK_SIZE * FANG_CHUNK_MAX - 1);
+    assert(position->x <= FANG_CHUNK_SIZE * FANG_CHUNK_MAX);
     assert(position->y >= FANG_CHUNK_SIZE * FANG_CHUNK_MIN);
-    assert(position->y <= FANG_CHUNK_SIZE * FANG_CHUNK_MAX - 1);
+    assert(position->y <= FANG_CHUNK_SIZE * FANG_CHUNK_MAX);
 
     const int8_t x_offset = (position->x < 0.0f) ? -1 : 0;
     const int8_t y_offset = (position->y < 0.0f) ? -1 : 0;
@@ -197,9 +197,9 @@ Fang_GetChunkPoint(
     assert(chunks);
     assert(position);
     assert(position->x >= FANG_CHUNK_SIZE * FANG_CHUNK_MIN);
-    assert(position->x <= FANG_CHUNK_SIZE * FANG_CHUNK_MAX - 1);
+    assert(position->x <= FANG_CHUNK_SIZE * FANG_CHUNK_MAX);
     assert(position->y >= FANG_CHUNK_SIZE * FANG_CHUNK_MIN);
-    assert(position->y <= FANG_CHUNK_SIZE * FANG_CHUNK_MAX - 1);
+    assert(position->y <= FANG_CHUNK_SIZE * FANG_CHUNK_MAX);
 
     const int8_t x_offset = (position->x < 0) ? -1 : 0;
     const int8_t y_offset = (position->y < 0) ? -1 : 0;

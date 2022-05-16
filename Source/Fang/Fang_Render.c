@@ -13,6 +13,8 @@
 // You should have received a copy of the GNU General Public License along
 // with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+
+
 /**
  * Draws a line in the framebuffer using Bresenham's Algorithm.
  *
@@ -829,7 +831,138 @@ Fang_DrawMinimap(
 
 
 static void
-Fang_DrawEntities(
+Fang_DrawEntitiesCulled(
+          Fang_Framebuffer * const framebuf,
+    const Fang_Camera      * const camera,
+    const Fang_Textures    * const textures,
+    const Fang_Ray         * const rays,
+    const Fang_Map         * const map,
+          Fang_Entities    * const entities,
+    const size_t                   ray_count)
+{
+    assert(framebuf);
+    assert(camera);
+    assert(textures);
+    assert(map);
+    assert(entities);
+    assert(rays);
+
+    const Fang_Rect viewport = Fang_GetViewport(framebuf);
+
+    Fang_Point min_viewable_pos, max_viewable_pos;
+    {
+        const Fang_Ray * const first_ray = &rays[0];
+        const Fang_Ray * const last_ray  = &rays[ray_count - 1];
+
+        // TODO: If a ray never hits anything then we need to calculate the
+        //       "infinite" point at which the ray goes towards. Because we have
+        //       a maximum distance a ray can move (which is shorter than the
+        //       world itself) we should calculate this "un-hit point" based on
+        //       that distance and the angle that the ray is firing.
+
+        // if (!first_ray->hit_count)
+        // {
+        //     printf("%f\n", first_ray->hits[0].front_dist);
+        //     breakpoint();
+        // }
+
+        const Fang_Vec2 first_hit = first_ray->hit_count > 0
+            ? first_ray->hits[first_ray->hit_count - 1].front_hit
+            : first_ray->hits[0].front_hit;
+
+        const Fang_Vec2 last_hit = last_ray->hit_count > 0
+            ? last_ray->hits[last_ray->hit_count - 1].front_hit
+            : last_ray->hits[0].front_hit;
+
+        // const Fang_Vec2 first_hit = (
+        //     first_ray->hits[first_ray->hit_count - 1].front_hit
+        // );
+
+        // const Fang_Vec2 last_hit = (
+        //     last_ray->hits[last_ray->hit_count - 1].front_hit
+        // );
+
+        if (first_hit.x < last_hit.x)
+        {
+            min_viewable_pos.x = (int)first_hit.x;
+            max_viewable_pos.x = (int)last_hit.x;
+        }
+        else
+        {
+            min_viewable_pos.x = (int)last_hit.x;
+            max_viewable_pos.x = (int)first_hit.x;
+        }
+
+        if (first_hit.y < last_hit.y)
+        {
+            min_viewable_pos.y = (int)first_hit.y;
+            max_viewable_pos.y = (int)last_hit.y;
+        }
+        else
+        {
+            min_viewable_pos.y = (int)last_hit.y;
+            max_viewable_pos.y = (int)first_hit.y;
+        }
+    }
+
+    const int world_min = FANG_CHUNK_SIZE * FANG_CHUNK_MIN;
+    const int world_max = FANG_CHUNK_SIZE * FANG_CHUNK_MAX;
+
+    min_viewable_pos.x = clamp(min_viewable_pos.x, world_min, world_max);
+    min_viewable_pos.y = clamp(min_viewable_pos.y, world_min, world_max);
+
+    for (int x = min_viewable_pos.x; x <= max_viewable_pos.x; ++x)
+    {
+        for (int y = min_viewable_pos.y; y <= max_viewable_pos.y; ++y)
+        {
+            const Fang_Chunk * const chunk = Fang_GetChunkPoint(
+                &map->chunks, &(Fang_Point){x, y}
+            );
+
+            for (size_t i = 0; i < chunk->entities.count; ++i)
+            {
+                const Fang_Entity * const entity = Fang_GetEntity(
+                    entities, chunk->entities.entities[i]
+                );
+
+                if (!entity)
+                    continue;
+
+                const Fang_Rect dest_rect = Fang_ProjectBody(
+                    camera,
+                    &entity->body,
+                    &viewport,
+                    &framebuf->state.current_depth
+                );
+
+                if (dest_rect.h <= 0)
+                    continue;
+
+                if (dest_rect.x + dest_rect.w <= 0 || dest_rect.x >= viewport.w)
+                    continue;
+
+                if (dest_rect.y + dest_rect.h <= 0 || dest_rect.y >= viewport.h)
+                    continue;
+
+                if (framebuf->state.current_depth > map->fog_distance)
+                    continue;
+
+                Fang_DrawImageEx(
+                    framebuf,
+                    Fang_GetTexture(textures, Fang_GetEntityTexture(entity)),
+                    NULL,
+                    &dest_rect,
+                    false,
+                    false
+                );
+            }
+        }
+    }
+}
+
+
+static void
+Fang_DrawEntitiesUnculled(
           Fang_Framebuffer * const framebuf,
     const Fang_Camera      * const camera,
     const Fang_Textures    * const textures,

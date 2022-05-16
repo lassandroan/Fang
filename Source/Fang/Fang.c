@@ -96,6 +96,29 @@ Fang_Init(void)
         tile->type    = FANG_TILETYPE_SOLID;
         tile->height  = 0.5f;
         tile->texture = FANG_TEXTURE_TILE;
+
+        for (int x = 0; x < FANG_CHUNK_SIZE; ++x)
+        {
+            tile = &chunk->tiles[x][0];
+            tile->type    = FANG_TILETYPE_SOLID;
+            tile->height  = 0.5f;
+            tile->texture = FANG_TEXTURE_TILE;
+
+            tile = &chunk->tiles[x][FANG_CHUNK_SIZE - 1];
+            tile->type    = FANG_TILETYPE_SOLID;
+            tile->height  = 0.5f;
+            tile->texture = FANG_TEXTURE_TILE;
+
+            tile = &chunk->tiles[0][x];
+            tile->type    = FANG_TILETYPE_SOLID;
+            tile->height  = 0.5f;
+            tile->texture = FANG_TEXTURE_TILE;
+
+            tile = &chunk->tiles[FANG_CHUNK_SIZE - 1][x];
+            tile->type    = FANG_TILETYPE_SOLID;
+            tile->height  = 0.5f;
+            tile->texture = FANG_TEXTURE_TILE;
+        }
     }
 
     {
@@ -406,11 +429,11 @@ Fang_Update(
                 );
 
                 if (i == 0)
-                {
-                    assert(entity->type == FANG_ENTITYTYPE_PLAYER);
+                // {
+                //     assert(entity->type == FANG_ENTITYTYPE_PLAYER);
 
-                    printf("Other entities in your chunk:\n");
-                }
+                //     printf("Other entities in your chunk:\n");
+                // }
 
                 for (size_t j = 0; j < chunk->entities.count; ++j)
                 {
@@ -424,19 +447,19 @@ Fang_Update(
                     if (!other)
                         continue;
 
-                    if (i == 0)
-                    {
-                        const char * name;
-                        switch (other->type)
-                        {
-                            case FANG_ENTITYTYPE_PLAYER:     name = "Player"; break;
-                            case FANG_ENTITYTYPE_PROJECTILE: name = "Projectile"; break;
-                            case FANG_ENTITYTYPE_AMMO:       name = "Ammo"; break;
-                            case FANG_ENTITYTYPE_HEALTH:     name = "Health"; break;
-                        }
+                    // if (i == 0)
+                    // {
+                    //     const char * name;
+                    //     switch (other->type)
+                    //     {
+                    //         case FANG_ENTITYTYPE_PLAYER:     name = "Player"; break;
+                    //         case FANG_ENTITYTYPE_PROJECTILE: name = "Projectile"; break;
+                    //         case FANG_ENTITYTYPE_AMMO:       name = "Ammo"; break;
+                    //         case FANG_ENTITYTYPE_HEALTH:     name = "Health"; break;
+                    //     }
 
-                        printf("\t%zu - %s\n", other->id, name);
-                    }
+                    //     printf("\t%zu - %s\n", other->id, name);
+                    // }
 
                     if (Fang_BodiesIntersect(&entity->body, &other->body))
                     {
@@ -650,12 +673,22 @@ Fang_Update(
         (size_t)FANG_WINDOW_SIZE
     );
 
-    Fang_DrawEntities(
+    // Fang_DrawEntitiesUnculled(
+    //     &gamestate.framebuffer,
+    //     &gamestate.camera,
+    //     &gamestate.textures,
+    //     &gamestate.map,
+    //     &gamestate.entities
+    // );
+
+    Fang_DrawEntitiesCulled(
         &gamestate.framebuffer,
         &gamestate.camera,
         &gamestate.textures,
+        gamestate.raycast,
         &gamestate.map,
-        &gamestate.entities
+        &gamestate.entities,
+        (size_t)FANG_WINDOW_SIZE
     );
 
     Fang_ShadeFramebuffer(

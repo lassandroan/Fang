@@ -99,7 +99,7 @@ Fang_CastRays(
 
             hit->tile = (Fang_Tile*)Fang_GetChunkTile(chunks, &dda.pos);
 
-            if (hit->tile)
+            // if (hit->tile)
             {
                 const Fang_DDAState old_dda = dda;
 
@@ -116,7 +116,9 @@ Fang_CastRays(
                 };
 
                 dda = old_dda;
-                hit_count++;
+
+                if (hit->tile)
+                    hit_count++;
             }
         }
 
